@@ -97,6 +97,7 @@
       "key": "╰─  OS Age",
       "text": "echo $(dfr-birthday)",
       "keyColor": "magenta"
-    }
+    },
+    "break"
   ]
 }

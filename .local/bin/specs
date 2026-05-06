@@ -8,4 +8,4 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-fastfetch --logo none --structure-disabled "Colors" | tail -n +2 | tee >(clip-copy) || true
+fastfetch --logo none --structure-disabled "Colors" | sed '1d;$d' | tee >(clip-copy) || true
