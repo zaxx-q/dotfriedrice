@@ -51,7 +51,7 @@
     {
       "type": "os",
       "key": "├─{icon} ",
-      "format": "{name}",
+      "format": "{pretty-name}",
       "keyColor": "blue"
     },
     {
