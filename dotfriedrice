@@ -36,8 +36,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # shellcheck disable=SC1091
   . "${DOTFRIEDRICE_PATH}/_install/default/systemd_services"
 
-  # Pull in the latest remote changes.
+  # Pull in the latest remote changes and maybe install them.
   PULL="0"
+  PULL_UPDATE="0"
 
   SKIP_SYSTEM_PACKAGES="0"
 
@@ -1149,8 +1150,8 @@ update_dotfriedrice() {
     return
   fi
 
-  if [ "${PULL}" != "1" ]; then
-    _skipping "Rerun with pull to get the latest changes"
+  if [[ "${PULL}" != "1" && "${PULL_UPDATE}" != "1" ]]; then
+    _skipping "Rerun with pull or update to get the latest changes"
     return
   fi
 
@@ -1163,7 +1164,7 @@ update_dotfriedrice() {
   local test_branch="${2:-}"
 
   if [[ -z "${local_branch}" && -z "${test_branch}" ]]; then
-    _error "Are you in a detached state? Checkout a branch before pulling, aborting!"
+    _error "Are you in a detached state? Checkout a branch before pulling or updating, aborting!"
   fi
 
   # If a custom branch name was set, we're testing a branch which means
@@ -2326,6 +2327,9 @@ parse_args() {
   pull)
     PULL="1"
     ;;
+  update)
+    PULL_UPDATE="1"
+    ;;
   --skip-system-packages | -S)
     SKIP_SYSTEM_PACKAGES="1"
     ;;
@@ -2380,6 +2384,9 @@ ${C_WHITE}# Pulls in the latest remote commits and merges them into your local b
 #
 # It defaults to the currently checked out branch if not supplied.
 ${C_GREEN}./dotfriedrice pull ${C_CYAN}[BRANCH]
+
+${C_WHITE}# The same as pull but also runs dotfriedrice afterwards to install.
+${C_GREEN}./dotfriedrice update ${C_CYAN}[BRANCH]
 
 ${C_BLUE}-------------------------------------------------------------------------------
 WHAT'S DIFFERENT

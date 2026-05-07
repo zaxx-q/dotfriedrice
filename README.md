@@ -238,14 +238,17 @@ directory and open it in Neovim.
 Here's a few handy commands, you can run `./dotfriedrice --help` to see all of them:
 
 - `./dotfriedrice`
-  - Install everything based on the local copy of DotFriedRice (you can run this regularly)
-  - Keeps your system up to date or apply local changes
+  - Install everything based on your local copy of DotFriedRice (you can run this regularly)
+  - Keeps your system up to date and apply local config changes
 - `./dotfriedrice --skip-system-packages | -S`
   - The same as above but skip installing or updating packages
   - Helps regenerate symlinks, configs and everything else without modifying packages
 - `./dotfriedrice pull`
   - Pulls in the latest remote commits but doesn't install anything
   - Lets you review any changes locally before you install anything
+- `./dotfriedrice update`
+  - Pulls in the latest remote commits and installs everything
+  - Shortcut to pull and install in 1 command
 - `./dotfriedrice diff-config`
   - Compare your local `dotfriedrice-config` to the local `dotfriedrice-config.example`
   - Helps keep your git ignored `dotfriedrice-config` in sync with new options
@@ -257,7 +260,7 @@ Here's a few handy commands, you can run `./dotfriedrice --help` to see all of t
   - Present a quick list of what's available to pull locally
 - `./dotfriedrice changelog`
   - Show all remote commits
-  - Present a quick list of all commits to see what has changed
+  - Present a quick list of all commits to see what has changed over time
 - `./dotfriedrice local-files`
   - Show all local git ignored files such as configs, history and scripts
   - Useful to see everything not committed and for optionally backing up those files
