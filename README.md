@@ -235,7 +235,7 @@ Once you've installed DotFriedRice you can run `cd "${DOTFRIEDRICE_PATH}"` to
 manage it moving forward. There's also the `dfr` alias to move into that
 directory and open it in Neovim.
 
-Here's a few handy commands, you can run `dotfriedrice --help` to see all of them:
+Here's a few handy commands you can run from anywhere:
 
 - `dotfriedrice`
   - Install everything based on your local copy of DotFriedRice (you can run this regularly)
@@ -268,6 +268,8 @@ Here's a few handy commands, you can run `dotfriedrice --help` to see all of the
 - `dotfriedrice debug`
   - Show DotFriedRice environment and system information
   - Can be used to help report issues and check your system stats
+
+You can always see a list of commands by running `dotfriedrice --help`.
 
 ### 🍚 Make it your own
 
