@@ -2347,7 +2347,7 @@ ${C_WHITE}\`\`\`${C_RESET}
 EOF
 
     local system_info=
-    if system_info="$(fastfetch --logo none --structure-disabled "Title:Separator:Colors:Break" 2>/dev/null)"; then
+    if system_info="$(fastfetch --logo none --structure-disabled "Colors" 2>/dev/null | sed '1d;$d')"; then
       cat <<EOF
 
 ${C_BLUE}#### System Details${C_RESET}
