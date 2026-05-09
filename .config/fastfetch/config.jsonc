@@ -79,7 +79,7 @@
     {
       "type": "command",
       "key": "├─ ",
-      "text": "printf '\\e[90m■ \\e[97m■ \\e[96m■ \\e[95m■ \\e[94m■ \\e[93m■ \\e[92m■ \\e[91m■\\e[0m (%s)\n' \"$(dfr-theme-set --current)\"",
+      "text": "[ -z \"${FASTFETCH_DISABLE_THEME}\" ] && printf '\\e[90m■ \\e[97m■ \\e[96m■ \\e[95m■ \\e[94m■ \\e[93m■ \\e[92m■ \\e[91m■\\e[0m (%s)\n' \"$(dfr-theme-set --current)\"",
       "keyColor": "yellow"
     },
     {
