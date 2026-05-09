@@ -12,7 +12,7 @@ if [ -r /etc/os-release ]; then
   # shellcheck disable=SC1091
   OS_DISTRO="$(. /etc/os-release && echo "${ID_LIKE:-${ID}}")"
   if [ "${OS_DISTRO}" != "arch" ]; then
-    echo "This script is only available on Arch Linux, sorry!" >&2
+    echo "This script is only available on Arch Linux, aborting!" >&2
     exit 1
   fi
 fi
