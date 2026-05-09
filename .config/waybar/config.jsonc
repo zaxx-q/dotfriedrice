@@ -89,6 +89,8 @@
     "on-click": "playerctl play-pause",
     "on-click-right": "playerctl stop",
     "on-click-middle": "dfr-launch-or-focus-tui rmpc",
+    "on-click-backward": "playerctl position 10-",
+    "on-click-forward": "playerctl position 10+",
     "on-scroll-up": "playerctl previous",
     "on-scroll-down": "playerctl next"
   },
