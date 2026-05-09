@@ -21,7 +21,7 @@ export C_CYAN=$'\e[1;36;1m'
 export C_WHITE=$'\e[1;37;1m'
 export C_RESET=$'\e[0m'
 
-export PACKAGES_CRITICAL=("less" "git" "nano")
+export PACKAGES_CRITICAL=("git" "nano")
 
 export LOCAL="0"
 
@@ -488,24 +488,24 @@ ${C_YELLOW}What would you like to do next?
 
 1) Install DotFriedRice (command line)
 2) Install DotFriedRice (command line + niri based GUI)${not_eligible}
-${C_YELLOW}3) Review which packages get installed and edit the config (optional)${C_RESET}
+${C_YELLOW}3) Review which packages get installed and edit your config (optional)${C_RESET}
 
-${C_MAGENTA}You can also quit with CTRL+c and browse the repo at your discretion. When
+${C_MAGENTA}You can also quit with Ctrl+c and browse the repo at your discretion. When
 you're ready to install DotFriedRice, you can run:
 
 cd "${DOTFRIEDRICE_PATH}" && ./dotfriedrice${C_RESET}
 
 In any case, you're all set to install DotFriedRice however you see fit.
 
-With option 3, when viewing the packages use the arrow keys to scroll up / down
-and "q" to quit when you're done. If editing the config, hit CTRL+o to save your
-changes and CTRL+x to exit (nano shows the key shortcuts on the bottom).
+With option 3, you can press Alt + . (or Escape + .) to flip between the default
+package list (read-only) and your config file (safe to edit). If editing your
+config hit Ctrl+o to save it and Ctrl+x to exit (these are shown on the bottom).
 
 ${C_WHITE}Extra information:
 
 Choosing option 1 runs the above dotfriedrice script. Option 2 does the same except
-it edits the config for you to enable GUI mode. Option 3 uses less and nano to
-let you view / edit files, then it shows this prompt again.${C_RESET}
+it edits your config to enable GUI mode. Option 3 opens nano to let you view and
+edit files, then it shows this prompt again.${C_RESET}
 EOF
 
   while true; do
@@ -535,8 +535,9 @@ EOF
       break
       ;;
     3)
-      less "${DOTFRIEDRICE_PATH}/_install/default/packages/${OS_DISTRO}"
-      nano "${DOTFRIEDRICE_PATH}/dotfriedrice-config"
+      nano \
+        "${DOTFRIEDRICE_PATH}/_install/default/packages/${OS_DISTRO}" \
+        "${DOTFRIEDRICE_PATH}/dotfriedrice-config"
 
       next_steps
       ;;
