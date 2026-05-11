@@ -495,7 +495,8 @@ Very little! DotFriedRice works great on high end and low end machines.
 
 On a fresh boot, the total system memory used is about 1 GB. GPU memory will
 vary depending on which GPU vendor you use but it's only a few hundred megs
-with niri and Walker loaded.
+with niri and Walker loaded. With everything installed and running it uses a
+touch over 10 GB of disk space.
 
 To put things into perspective my main desktop was built from parts in 2014. I
 have an i5-4460 quad core CPU at 3.4ghz with 16 GB of RAM and an SSD. I used a
@@ -504,9 +505,9 @@ eventually switched to an AMD RX 480 (8 GB) GPU because I noticed with 2 GB on
 an NVIDIA card I'd sometimes run out of VRAM while recording videos with a lot
 of things open.
 
-Long story short, the system blazes. After switching from Windows 10 it felt
-like I got a hardware upgrade. This is thanks to the Linux kernel, Arch Linux,
-niri and generally people caring about performance!
+Long story short, the system blazes. After switching from Windows 10 Pro it
+felt like I got a hardware upgrade. This is thanks to the Linux kernel, Arch
+Linux, niri and generally people caring about performance!
 
 I spend all day working on this machine developing web apps, running Docker
 containers, Virtual Machines, recording and editing videos, a little gaming,
