@@ -1141,7 +1141,7 @@ create_initial_dirs() {
     "${XDG_CONFIG_HOME}/tmux/plugins" \
     "${XDG_CONFIG_HOME}/zsh" \
     "${XDG_DATA_HOME}/fonts" \
-    "${XDG_STATE_HOME}"
+    "${XDG_STATE_HOME}/dotfriedrice"
 
   if [ "${GUI_ENABLED}" == "1" ]; then
     mkdir -p \

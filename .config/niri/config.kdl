@@ -13,6 +13,7 @@ spawn-at-startup "elephant"
 spawn-at-startup "walker" "--gapplication-service"
 spawn-at-startup "mpd"
 spawn-sh-at-startup "sleep 1; exec mpd-mpris"
+spawn-at-startup "dfr-first-boot"
 
 // ----------------------------------------------------------------------------
 // Input devices (mouse, trackpad, keyboard, etc.)

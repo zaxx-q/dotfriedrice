@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Provide a welcome message after first booting into DotFriedRice.
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+FIRST_BOOT_FILE="${XDG_STATE_HOME}/dotfriedrice/first-boot-completed"
+
+[ -f "${FIRST_BOOT_FILE}" ] && exit
+
+completed() {
+  touch "${FIRST_BOOT_FILE}"
+}
+
+trap completed EXIT INT
+
+niri msg action spawn -- ghostty -e sh -c "
+printf -- '--------------------------------------------------------\n'
+printf 'Welcome to DotFriedRice, this message only appears once!\n'
+printf -- '--------------------------------------------------------\n'
+
+if compgen -G \"/sys/class/net/*/wireless\" 1>/dev/null; then
+  printf '\n  Setup Wi-Fi\n   After launching impala in the top right, it shows a help menu on the bottom\n'
+fi
+
+if [ -d \"/sys/class/bluetooth\" ]; then
+  printf '\n󰂯 Setup Bluetooth\n  After launching bluetui in the top right, it shows a help menu on the bottom\n'
+fi
+
+cat <<EOF
+
+ Setup Audio
+  After launching wiremix in the top right, press ? to show its help menu
+    Quick tip: Press 'Tab' to move between the panes
+
+  Handy Keyboard Shortcuts
+   Mod + Alt + B  :: Browser
+   Mod + Alt + T  :: Terminal
+   Mod + <-       :: Scroll left
+   Mod + ->       :: Scroll right
+   Mod + /        :: View all key binds
+
+󱠶  Documentation and Help
+
+Visit: https://github.com/nickjj/dotfriedrice
+
+Have fun with your new system!
+
+You can configure DotFriedRice in a new terminal by running the 'dfr' alias.
+
+[Press any key to exit and never show this again]
+EOF
+
+read -n 1 -s
+"
