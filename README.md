@@ -611,20 +611,6 @@ services were delayed from starting by ~2 minutes.
 At this point, you can [install DotFriedRice](#%EF%B8%8F-install) from inside
 your WSL 2 instance, have fun!
 
-### Where is the original Vim config?
-
-I've made dozens of [blog posts and
-videos](https://nickjanetakis.com/blog/tag/vim-tips-tricks-and-tutorials) about
-Vim. Sometimes I linked directly to a commit so there's a permalink to it but
-other times I did not.
-
-Before switching to Neovim I made a `vim` git tag. You can check out the state
-of the repo for that tag by [going
-here](https://github.com/nickjj/dotfriedrice/tree/vim). You'll see `.vimrc` in the
-root directory. If you cloned DotFriedRice locally you can `git checkout
-vim`. Keep in mind that's frozen to that point in time. Future updates
-unrelated to Vim will not be included in that tag.
-
 ## 🤝 Feedback and Code Contributions
 
 You're more than welcome to offer suggestions and improvements!
