@@ -54,7 +54,6 @@ export DEFAULT_CONFIG_INSTALL_GUI_LINUX=(
 export DEFAULT_CONFIG_INSTALL_ARCH=(
   "sudo ln -fns \"/run/systemd/resolve/stub-resolv.conf\" \"/etc/resolv.conf\""
   "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/conf.d/pacman-contrib\" \"/etc/conf.d/pacman-contrib\""
-  "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/pacman.d/01-options.conf\" \"/etc/pacman.d/01-options.conf\""
 )
 
 export DEFAULT_CONFIG_INSTALL_WSL=(
