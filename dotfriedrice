@@ -1893,6 +1893,99 @@ EOF
   echo "Configured in '$(dirname "${git_config_local_path}")'"
 }
 
+configure_gui_app_themes() {
+  _info "CONFIGURE GUI APP THEMES"
+
+  if [ "${GUI_ENABLED}" != "1" ]; then
+    _skipping "Only runs on Linux when GUI_LINUX=1 is set"
+    return
+  fi
+
+  if [[ " ${PACKAGES_PACMAN_GUI[*]} " == *" firefox "* ]]; then
+    local firefox_config_base_dir=
+    local firefox_modified="0"
+
+    if [ -d "${HOME}/.mozilla/firefox" ]; then
+      firefox_config_base_dir="${HOME}/.mozilla/firefox"
+    else
+      firefox_config_base_dir="${XDG_CONFIG_HOME}/firefox"
+    fi
+
+    local firefox_config_dir=
+    firefox_config_dir=$(find "${firefox_config_base_dir}" -maxdepth 1 -type d -name '*.default-release' -printf '%T@ %p\n' |
+      sort --numeric-sort |
+      tail -n 1 |
+      cut -d " " -f 2- || true)
+
+    if [ -d "${firefox_config_dir}" ]; then
+      local firefox_prefs_js="${firefox_config_dir}/prefs.js"
+
+      firefox_modified="0"
+
+      if ! grep --fixed-strings --quiet 'user_pref("browser.theme.toolbar-theme", 0);' "${firefox_prefs_js}"; then
+        if grep --extended-regexp --quiet 'user_pref\("browser.theme.toolbar-theme", [0-9]+\);' "${firefox_prefs_js}"; then
+          sed -i 's/user_pref("browser.theme.toolbar-theme", [0-9]\+);/user_pref("browser.theme.toolbar-theme", 0);/g' "${firefox_prefs_js}"
+        else
+          echo 'user_pref("browser.theme.toolbar-theme", 0);' >>"${firefox_prefs_js}"
+        fi
+        firefox_modified="1"
+      fi
+
+      if [ "${firefox_modified}" == "1" ]; then
+        echo "'${firefox_prefs_js}' updated to use the system theme"
+      else
+        _skipping "'${firefox_prefs_js}' already set to the system theme"
+      fi
+    else
+      _warning "Firefox was never run manually, cannot modify user config, launch + close Firefox then re-run dotfriedrice"
+    fi
+  else
+    _skipping "Firefox is not installed"
+  fi
+
+  local gimp_latest_version=
+  local gimp_modified="0"
+
+  gimp_latest_version=$(find "${XDG_CONFIG_HOME}/GIMP" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" |
+    grep --extended-regexp '^[0-9]+\.[0-9]+$' |
+    sort --version-sort |
+    tail -n 1 || true)
+
+  if [[ " ${PACKAGES_PACMAN_GUI[*]} " == *" gimp "* ]]; then
+    local gimp_config="${XDG_CONFIG_HOME}/GIMP/${gimp_latest_version}/gimprc"
+
+    if [ -f "${gimp_config}" ]; then
+      if ! grep --fixed-strings --quiet '(theme "System")' "${gimp_config}"; then
+        if grep --extended-regexp --quiet '^\(theme ' "${gimp_config}"; then
+          sed -i 's/^(theme .*)/(theme "System")/' "${gimp_config}"
+        else
+          echo '(theme "System")' >>"${gimp_config}"
+        fi
+        gimp_modified="1"
+      fi
+
+      if ! grep --fixed-strings --quiet '(theme-color-scheme system)' "${gimp_config}"; then
+        if grep --extended-regexp --quiet '^\(theme-color-scheme ' "${gimp_config}"; then
+          sed -i 's/^(theme-color-scheme .*)/(theme-color-scheme system)/g' "${gimp_config}"
+        else
+          echo '(theme-color-scheme system)' >>"${gimp_config}"
+        fi
+        gimp_modified="1"
+      fi
+
+      if [ "${gimp_modified}" == "1" ]; then
+        echo "'${gimp_config}' updated to use the system theme"
+      else
+        _skipping "'${gimp_config}' already set to the system theme"
+      fi
+    else
+      _warning "GIMP was never run manually, cannot modify user config, launch + close GIMP then re-run dotfriedrice"
+    fi
+  else
+    _skipping "GIMP is not installed"
+  fi
+}
+
 configure_shell() {
   _info "CONFIGURE SHELL (ZSH)"
 
@@ -2533,6 +2626,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   configure_groups
   configure_home_configs
   configure_xdg_directories
+  configure_gui_app_themes
   configure_git
   configure_shell
   install_tmux_plugins
