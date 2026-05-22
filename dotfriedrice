@@ -1923,7 +1923,7 @@ configure_gui_app_themes() {
     fi
 
     local firefox_config_dir=
-    firefox_config_dir=$(find "${firefox_config_base_dir}" -maxdepth 1 -type d -name '*.default-release' -printf '%T@ %p\n' |
+    firefox_config_dir=$(find "${firefox_config_base_dir}" -maxdepth 1 -type d -name '*.default-release' -printf '%T@ %p\n' 2>/dev/null |
       sort --numeric-sort |
       tail -n 1 |
       cut -d " " -f 2- || true)
@@ -1957,7 +1957,7 @@ configure_gui_app_themes() {
   local gimp_latest_version=
   local gimp_modified="0"
 
-  gimp_latest_version=$(find "${XDG_CONFIG_HOME}/GIMP" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" |
+  gimp_latest_version=$(find "${XDG_CONFIG_HOME}/GIMP" -mindepth 1 -maxdepth 1 -type d -printf "%f\n" 2>/dev/null |
     grep --extended-regexp '^[0-9]+\.[0-9]+$' |
     sort --version-sort |
     tail -n 1 || true)
