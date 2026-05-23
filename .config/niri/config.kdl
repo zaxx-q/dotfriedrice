@@ -23,7 +23,7 @@ input {
     keyboard {
         xkb {
             // Swap caps lock and escape.
-            // Remap menu key to act as the super / mod key.
+            // Remap menu key to act as an extra super / mod key.
             options "caps:swapescape,altwin:menu_win"
         }
 
