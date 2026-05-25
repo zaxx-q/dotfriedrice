@@ -891,6 +891,24 @@ EOF
 
   echo "${gpu_line}"
 
+  _unsupported_gpu() {
+    local help_text="${1}"
+    local vendor="${2:-}"
+
+    [ -n "${vendor}" ] && vendor=" ${vendor}"
+
+    cat <<EOF
+
+${help_text}
+
+If you think it should work, please open an issue with the above device output.
+You can open an issue here: ${DOTFRIEDRICE_CLONE_URL}
+
+EOF
+
+    _error "Unsupported${vendor} GPU found, aborting!"
+  }
+
   case "${gpu_line}" in
   *NVIDIA*)
     PACKAGES_PACMAN+=("${kernel_package}")
@@ -942,14 +960,7 @@ EOF
       PACKAGES_AUR+=("nvidia-580xx-dkms" "nvidia-580xx-utils" "lib32-nvidia-580xx-utils")
       ;;
     *)
-      cat <<EOF
-
-See if your GPU is listed here: https://wiki.archlinux.org/title/NVIDIA
-
-If you think it should work, please open an issue with the above device output.
-
-EOF
-      _error "Unsupported NVIDIA GPU found, aborting!"
+      _unsupported_gpu "See if your GPU is listed here: https://wiki.archlinux.org/title/NVIDIA" "NVIDIA"
       ;;
     esac
     ;;
@@ -971,15 +982,7 @@ EOF
       PACKAGES_PACMAN+=("libva-intel-driver")
       ;;
     *)
-      cat <<EOF
-
-See if your GPU is listed here: https://wiki.archlinux.org/title/Intel_graphics
-
-If you think it should work, please open an issue with the above device output.
-
-EOF
-
-      _error "Unsupported Intel GPU found, aborting!"
+      _unsupported_gpu "See if your GPU is listed here: https://wiki.archlinux.org/title/Intel_graphics" "Intel"
       ;;
     esac
     ;;
@@ -988,16 +991,8 @@ EOF
     :
     ;;
   *)
-    cat <<EOF
-$(grep --ignore-case "VGA" <<<"${lspci_output}")
-
-Most variants of NVIDIA, AMD and Intel GPUs should all be supported.
-
-If you think it should work, please open an issue with the above device output.
-
-EOF
-
-    _error "Unsupported GPU found, aborting!"
+    grep --ignore-case "VGA" <<<"${lspci_output}"
+    _unsupported_gpu "Most variants of NVIDIA, AMD and Intel GPUs should all be supported." ""
     ;;
   esac
 }
