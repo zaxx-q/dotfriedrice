@@ -1821,6 +1821,17 @@ configure_home_configs() {
 EOF
       echo "'${wm_config}' has been created"
     fi
+
+    local packages=("${PACKAGES_AUR_GUI[@]}" "${PACKAGES_AUR_GUI_EXTRAS[@]}")
+
+    if [[ " ${packages[*]} " == *" docker-desktop "* ]]; then
+      if [ -f "${XDG_CONFIG_HOME}/password-store/.gpg-id" ]; then
+        _skipping "'${XDG_CONFIG_HOME}/password-store' already exists for Docker Desktop"
+      else
+        printf "Creating password store for Docker Desktop...\n\n"
+        pass init "${YOUR_EMAIL}"
+      fi
+    fi
   fi
 }
 
