@@ -2,7 +2,6 @@
 # Customize these in the config file instead of editing them here.
 
 export DEFAULT_SYSTEMD_ENABLED_SERVICES=(
-  "docker.service"
   "lactd.service"
   "libvirtd.socket"
   "paccache.timer --now"
