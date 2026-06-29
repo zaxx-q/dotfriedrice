@@ -53,6 +53,7 @@ If needed, these get automatically installed for you by DotFriedRice.
 | docker                     | Pack, ship and run any application as a lightweight container                     |
 | docker-buildx              | Docker CLI plugin for extended build capabilities with BuildKit                   |
 | docker-compose             | Fast, isolated development environments using Docker                              |
+| dust                       | A more intuitive version of du in rust                              |
 | eza                        | A modern replacement for ls (community fork of exa)                               |
 | fastfetch                  | A feature-rich and performance oriented neofetch-like system information tool     |
 | fd                         | Simple, fast and user-friendly alternative to find                                |

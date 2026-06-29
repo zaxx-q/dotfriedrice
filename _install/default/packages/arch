@@ -10,6 +10,7 @@ export DEFAULT_PACKAGES_PACMAN=(
   "btop"
   "curl"
   "dnsutils"
+  "dust"
   "eza"
   "fastfetch"
   "fd"
