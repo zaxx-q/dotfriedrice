@@ -885,7 +885,7 @@ EOF
   lspci_output="$(lspci)"
 
   local gpu_line=
-  gpu_line="$(grep --ignore-case -E "VGA|3D controller" <<<"${lspci_output}" | head -n 1 || true)"
+  gpu_line="$(grep --ignore-case -E "VGA|3D|Display controller" <<<"${lspci_output}" | head -n 1 || true)"
 
   [ -z "${gpu_line}" ] && _error "No GPU detected, aborting!"
 
