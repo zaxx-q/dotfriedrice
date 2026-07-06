@@ -2851,7 +2851,6 @@ set_theme() {
   ln -fns "${DOTFRIEDRICE_PATH}/_themes/${theme}/btop.theme" "${XDG_CONFIG_HOME}/btop/themes/theme.theme"
   ln -fns "${DOTFRIEDRICE_PATH}/_themes/${theme}/fzf.sh" "${XDG_CONFIG_HOME}/fzf/theme.sh"
   ln -fns "${DOTFRIEDRICE_PATH}/_themes/${theme}/ghostty" "${XDG_CONFIG_HOME}/ghostty/theme"
-  ln -fns "${DOTFRIEDRICE_PATH}/_themes/${theme}/nvim.lua" "${XDG_CONFIG_HOME}/nvim/lua/plugins/theme.lua"
   ln -fns "${DOTFRIEDRICE_PATH}/_themes/${theme}/tmux.conf" "${XDG_CONFIG_HOME}/tmux/theme.conf"
 
   if [ "${GUI_ENABLED}" == "1" ]; then
@@ -2932,8 +2931,6 @@ $(git config --get-regex "user.(name|email)")
 ${C_BLUE}tmux:${C_RESET}
 $(tmux -V)
 
-${C_BLUE}Neovim:${C_RESET}
-$(nvim --version)
 
 ${C_BLUE}Fastfetch:${C_RESET}
 EOF

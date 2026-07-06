@@ -32,7 +32,6 @@ export DEFAULT_PACKAGES_DNF=(
   "libqalculate"
   "man-db"
   "man-pages"
-  "neovim"
   "nmap-ncat"
   "openssh"
   "pwgen"

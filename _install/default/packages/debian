@@ -43,7 +43,6 @@ export DEFAULT_MISE_DEBIAN=(
   "fd"
   "fzf"
   "jq"
-  "neovim"
   "ripgrep"
   "shellcheck"
   "shfmt"

@@ -11,7 +11,6 @@ export DEFAULT_CONFIG_INSTALL=(
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/git/config.local\" \"\${XDG_CONFIG_HOME}/git/config.local\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/git/config\" \"\${XDG_CONFIG_HOME}/git/config\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/gnupg/gpg-agent.conf\" \"\${XDG_CONFIG_HOME}/gnupg/gpg-agent.conf\""
-  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/nvim\" \"\${XDG_CONFIG_HOME}/nvim\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/tmux/tmux.conf\" \"\${XDG_CONFIG_HOME}/tmux/tmux.conf\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/zsh/.aliases.local\" \"\${XDG_CONFIG_HOME}/zsh/.aliases.local\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/zsh/.aliases\" \"\${XDG_CONFIG_HOME}/zsh/.aliases\""

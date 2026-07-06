@@ -11,14 +11,10 @@ alias diff="diff --color -u"
 alias sz='. ${ZDOTDIR}/.zprofile && . ${ZDOTDIR}/.zshrc'
 alias SZ='tmux-shell-cmd --kill "sz"'
 alias dfr='cd ${DOTFRIEDRICE_PATH} && ${EDITOR} .'
-alias lzv='cd ${XDG_DATA_HOME}/nvim/lazy/LazyVim && ${EDITOR} .'
-alias lzp='cd ${XDG_DATA_HOME}/nvim/lazy && ${EDITOR} .'
 
 alias 755d="find . -type d -exec chmod 755 {} \;"
 alias 644f="find . -type f -exec chmod 644 {} \;"
 
-alias vss='sort -u ${XDG_CONFIG_HOME}/nvim/spell/en.utf-8.add -o ${XDG_CONFIG_HOME}/nvim/spell/en.utf-8.add'
-alias vdt='rm ${XDG_STATE_HOME}/nvim/swap/%*'
 
 # shellcheck disable=SC2139
 alias pf="fzf ${FZF_CTRL_T_OPTS}"

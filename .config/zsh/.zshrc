@@ -63,7 +63,7 @@ zstyle ":completion:*" use-compctl false
 zstyle ":completion:*" verbose true
 
 # Use Vim key binds.
-bindkey -v
+# bindkey -v
 
 # Ensure home / end keys continue to work.
 bindkey "\e[1~" beginning-of-line
@@ -78,18 +78,7 @@ bindkey "\e[3~" delete-char
 GPG_TTY="$(tty)"
 export GPG_TTY
 
-# zsh-vi-mode-plugin sets a few key binds such as CTRL+r/p/n which may conflict
-# with other binds. This ensures fzf and our binds always win. If you choose
-# to remove this zsh plugin then each array item can exist normally in zshrc.
-zvm_after_init_commands+=(
-  ". <(fzf --zsh)"
-  "bindkey '^p' history-search-backward"
-  "bindkey '^n' history-search-forward"
-  "bindkey '^[OA' history-search-backward"
-  "bindkey '^[OB' history-search-forward"
-  "bindkey '^[[A' history-search-backward"
-  "bindkey '^[[B' history-search-forward"
-)
+. <(fzf --zsh)
 
 # Configure fzf.
 # shellcheck disable=SC1091
@@ -103,8 +92,6 @@ export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 . "${XDG_DATA_HOME}/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh"
 # shellcheck disable=SC1091
 . "${XDG_DATA_HOME}/zsh-autosuggestions/zsh-autosuggestions.zsh"
-# shellcheck disable=SC1091
-. "${XDG_DATA_HOME}/zsh-vi-mode/zsh-vi-mode.plugin.zsh"
 # shellcheck disable=SC1091
 . "${XDG_DATA_HOME}/fzf-tab/fzf-tab.plugin.zsh"
 

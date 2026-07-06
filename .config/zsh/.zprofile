@@ -12,8 +12,8 @@ export PATH="${HOME}/.local/bin:${HOME}/.local/bin/local:${PATH}"
 export PATH="${XDG_DATA_HOME}/mise/shims:${PATH}"
 
 # Default programs to run.
-export EDITOR="nvim"
-export DIFFPROG="nvim -d"
+export EDITOR="zed --wait"
+export DIFFPROG="meld"
 
 # Add colors to the less command.
 export LESS="-R"
@@ -39,10 +39,6 @@ export PASSWORD_STORE_DIR="${XDG_CONFIG_HOME}/password-store"
 # Configure delta (diffs) defaults.
 # https://dandavison.github.io/delta/environment-variables.html
 export DELTA_FEATURES="diff-so-fancy"
-
-# Configure zsh-vi-mode.
-export ZVM_NORMAL_MODE_CURSOR="${ZVM_CURSOR_BLOCK:-}"
-export ZVM_INSERT_MODE_CURSOR="${ZVM_CURSOR_BEAM:-}"
 
 # Load local settings if they exist.
 # shellcheck disable=SC1091

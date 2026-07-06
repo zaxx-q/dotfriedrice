@@ -1,5 +1,5 @@
 [core]
-  editor = nvim
+  editor = zed --wait
   pager = delta
 
 [delta]
@@ -9,21 +9,21 @@
   diffFilter = delta --color-only
 
 [diff]
-  tool = nvimdiff
+  tool = zed
 
-[difftool "nvimdiff"]
-  cmd = "nvim -d \"$LOCAL\" \"$REMOTE\""
+[difftool "zed"]
+  cmd = zed --wait --diff \"$LOCAL\" \"$REMOTE\"
 
 [merge]
-  tool = nvimdiff
+  tool = meld
   conflictStyle = zdiff3
 
 [mergetool]
   keepBackup = false
   prompt = false
 
-[mergetool "nvimdiff"]
-  cmd = "nvim -d \"$MERGED\" \"$LOCAL\" \"$BASE\" \"$REMOTE\" -c 'wincmd J | wincmd ='"
+[mergetool "meld"]
+  cmd = meld \"$LOCAL\" \"$BASE\" \"$REMOTE\" --output \"$MERGED\"
 
 [include]
   path = ~/.config/git/config.local

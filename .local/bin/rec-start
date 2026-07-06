@@ -87,9 +87,6 @@ if [ ! -f "${CLIPBOARD_HISTORY_FILE}.bak" ]; then
   dfr-reload-app walker
 fi
 
-NEOVIM_SWAP_PATH="${XDG_STATE_HOME}/nvim/swap/%"
-rm -f "${NEOVIM_SWAP_PATH}"*
-
 # Avoid adjusting font sizes or anything else.
 [ "${EXIT_EARLY}" == "1" ] && exit
 

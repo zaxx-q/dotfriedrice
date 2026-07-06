@@ -29,7 +29,6 @@ export DEFAULT_PACKAGES_PACMAN=(
   "man-db"
   "man-pages"
   "mise"
-  "neovim"
   "openbsd-netcat"
   "openssh"
   "pacman-contrib"

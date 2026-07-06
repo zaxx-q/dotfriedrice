@@ -22,7 +22,6 @@ export DEFAULT_PACKAGES_BREW=(
   "jq"
   "libqalculate"
   "mise"
-  "nvim"
   "nvtop"
   "pwgen"
   "ripgrep"
