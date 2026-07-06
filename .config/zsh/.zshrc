@@ -9,23 +9,7 @@ stty stop undef
 # Enable comments when working in an interactive shell.
 setopt interactive_comments
 
-# Prompt. Using single quotes around the PROMPT is very important, otherwise
-# the git branch will always be empty. Using single quotes delays the
-# evaluation of the prompt. Also PROMPT is an alias to PS1.
-git_prompt() {
-  local branch
-  branch="$(git symbolic-ref HEAD 2>/dev/null | cut -d'/' -f3-)"
-  local branch_truncated="${branch:0:30}"
-  if ((${#branch} > ${#branch_truncated})); then
-    branch="${branch_truncated}..."
-  fi
-
-  [ -n "${branch}" ] && echo " (${branch})"
-}
-setopt PROMPT_SUBST
-# shellcheck disable=SC2016
-PROMPT='%B%{$fg[green]%}%n@%{$fg[green]%}%M %{$fg[blue]%}%~%{$fg[yellow]%}$(git_prompt)%{$reset_color%} %(?.$.%{$fg[red]%}$)%b '
-export PROMPT
+# Prompt is managed by pure prompt (initialized below after plug-ins are loaded).
 
 # History settings.
 export HISTFILE="${DOTFRIEDRICE_PATH}/.config/zsh/.zsh_history"
@@ -42,6 +26,11 @@ setopt HIST_REDUCE_BLANKS      # Remove unnecessary blank lines.
 autoload -U compinit
 compinit
 _comp_options+=(globdots)
+
+# Initialize zoxide (smarter cd command).
+if command -v zoxide >/dev/null 2>&1; then
+  eval "$(zoxide init zsh)"
+fi
 
 zstyle ":completion:*" menu select=2
 zstyle ":completion:*" auto-description "specify: %d"
@@ -78,22 +67,71 @@ bindkey "\e[3~" delete-char
 GPG_TTY="$(tty)"
 export GPG_TTY
 
-. <(fzf --zsh)
+# shellcheck disable=SC1090
+if command -v fzf >/dev/null 2>&1; then
+  . <(fzf --zsh)
+fi
 
 # Configure fzf.
 # shellcheck disable=SC1091
-. "${XDG_CONFIG_HOME}/fzf/config.sh"
+if [ -f "${XDG_CONFIG_HOME}/fzf/config.sh" ]; then
+  . "${XDG_CONFIG_HOME}/fzf/config.sh"
+fi
 
 # zsh-autosuggestions settings.
 export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 
-# Load / source zsh plugins.
-# shellcheck disable=SC1091
-. "${XDG_DATA_HOME}/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh"
-# shellcheck disable=SC1091
-. "${XDG_DATA_HOME}/zsh-autosuggestions/zsh-autosuggestions.zsh"
-# shellcheck disable=SC1091
-. "${XDG_DATA_HOME}/fzf-tab/fzf-tab.plugin.zsh"
+# Set the root name of the plugins files (.txt and .zsh) antidote will use.
+zsh_plugins="${ZDOTDIR:-"${HOME}/.config/zsh"}/.zsh_plugins"
+
+# Locate an installed antidote and, if found, (re)generate the static
+# plugins file whenever .zsh_plugins.txt is updated.
+_dotfriedrice_load_antidote() {
+  local -a antidote_dirs=(
+    "${XDG_DATA_HOME:-"${HOME}/.local/share"}/antidote"
+    "/opt/homebrew/share/antidote"
+  )
+  local antidote_dir dir
+  for dir in "${antidote_dirs[@]}"; do
+    if [[ -d "${dir}/functions" ]]; then
+      antidote_dir="${dir}"
+      break
+    elif [[ -f "${dir}/antidote.zsh" ]]; then
+      antidote_dir="${dir}"
+      break
+    fi
+  done
+
+  if [[ -n "${antidote_dir}" ]]; then
+    if [[ -d "${antidote_dir}/functions" ]]; then
+      fpath=("${antidote_dir}/functions" "${fpath[@]}")
+      autoload -Uz antidote
+    else
+      # shellcheck disable=SC1091
+      source "${antidote_dir}/antidote.zsh"
+    fi
+    antidote bundle < "${zsh_plugins}.txt" >| "${zsh_plugins}.zsh"
+  else
+    echo "DotFriedRice warning: Antidote plugin manager not found."
+  fi
+}
+
+if [[ ! -f "${zsh_plugins}.txt" ]]; then
+  : # Nothing to bundle yet; skip silently.
+elif [[ ! "${zsh_plugins}.zsh" -nt "${zsh_plugins}.txt" ]]; then
+  _dotfriedrice_load_antidote
+fi
+unfunction _dotfriedrice_load_antidote 2>/dev/null
+
+# Source your static plugins file.
+if [[ -f "${zsh_plugins}.zsh" ]]; then
+  # shellcheck disable=SC1090
+  source "${zsh_plugins}.zsh"
+fi
+
+# Initialize the prompt system and choose pure.
+autoload -Uz promptinit && promptinit
+prompt pure
 
 # Ensure colors match by using FZF_DEFAULT_OPTS.
 zstyle ":fzf-tab:*" use-fzf-default-opts yes

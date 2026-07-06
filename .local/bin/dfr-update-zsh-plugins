@@ -19,6 +19,29 @@ function clone_or_pull {
   fi
 }
 
-clone_or_pull "zdharma-continuum/fast-syntax-highlighting"
-clone_or_pull "zsh-users/zsh-autosuggestions"
-clone_or_pull "Aloxaf/fzf-tab"
+clone_or_pull "mattmc3/antidote"
+
+# Source antidote to update the rest of the plugins.
+# shellcheck disable=SC1091
+antidote_dirs=(
+  "${XDG_DATA_HOME}/antidote"
+  "/usr/share/zsh-antidote"
+  "/usr/share/zsh/plugins/antidote"
+  "/opt/homebrew/share/antidote"
+  "/usr/local/share/antidote"
+)
+
+antidote_dir=
+for dir in "${antidote_dirs[@]}"; do
+  if [ -f "${dir}/antidote.zsh" ]; then
+    antidote_dir="${dir}"
+    break
+  fi
+done
+
+if [ -n "${antidote_dir}" ]; then
+  if command -v zsh >/dev/null 2>&1; then
+    echo "Updating antidote plugins..."
+    zsh -c "source '${antidote_dir}/antidote.zsh' && antidote update"
+  fi
+fi

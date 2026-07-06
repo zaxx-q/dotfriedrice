@@ -51,6 +51,7 @@ export DEFAULT_PACKAGES_DNF=(
   "xz"
   "yq"
   "zip"
+  "zoxide"
   "zsh"
 )
 

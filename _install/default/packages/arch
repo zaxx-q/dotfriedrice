@@ -47,6 +47,7 @@ export DEFAULT_PACKAGES_PACMAN=(
   "whois"
   "wl-clipboard"
   "zip"
+  "zoxide"
   "zsh"
 )
 

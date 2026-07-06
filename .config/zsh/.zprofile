@@ -6,10 +6,13 @@
 . "${XDG_CONFIG_HOME:-"${HOME}/.config"}/zsh/.xdg.local"
 
 # Add all local binaries to the system path and make sure they are first.
-export PATH="${HOME}/.local/bin:${HOME}/.local/bin/local:${PATH}"
+export PATH="${HOME}/.local/bin/local:${HOME}/.local/bin:${PATH}"
 
 # Confiure Mise (programming language run-time manager).
 export PATH="${XDG_DATA_HOME}/mise/shims:${PATH}"
+
+# Additional paths.
+export PATH="${HOME}/.cache/.bun/bin:${PATH}"
 
 # Default programs to run.
 export EDITOR="zed --wait"

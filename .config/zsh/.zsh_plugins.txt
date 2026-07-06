@@ -1,0 +1,6 @@
+mafredri/zsh-async
+sindresorhus/pure kind:fpath
+zdharma-continuum/fast-syntax-highlighting
+zsh-users/zsh-autosuggestions
+Aloxaf/fzf-tab
+MichaelAquilina/zsh-you-should-use

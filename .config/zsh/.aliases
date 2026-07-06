@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 
-alias ll="ls -alF"
-alias la="ls -A"
+alias ll="ls -halF"
+alias la="ls -hA"
 alias l="ls -CF"
 
 alias eza="EZA_ICON_SPACING=2 eza --long --all --octal-permissions --group --group-directories-first --time-style long-iso --header --icons auto"
@@ -10,7 +10,7 @@ alias diff="diff --color -u"
 
 alias sz='. ${ZDOTDIR}/.zprofile && . ${ZDOTDIR}/.zshrc'
 alias SZ='tmux-shell-cmd --kill "sz"'
-alias dfr='cd ${DOTFRIEDRICE_PATH} && ${EDITOR} .'
+alias dfr='cd ${DOTFRIEDRICE_PATH} && ${=EDITOR} .'
 
 alias 755d="find . -type d -exec chmod 755 {} \;"
 alias 644f="find . -type f -exec chmod 644 {} \;"
