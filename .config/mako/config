@@ -12,7 +12,6 @@ outer-margin=20
 max-icon-size=32
 
 include=~/.config/mako/theme
-include=~/.config/mako/config.local
 
 [mode=do-not-disturb]
 invisible=true

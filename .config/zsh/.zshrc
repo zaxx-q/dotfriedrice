@@ -143,8 +143,4 @@ zstyle ":fzf-tab:complete:cd:*" fzf-preview "ls --color=always \${realpath}"
 # shellcheck disable=SC1091
 [ -f "${XDG_CONFIG_HOME}/zsh/.aliases" ] && . "${XDG_CONFIG_HOME}/zsh/.aliases"
 
-# Load local settings if they exist.
-# shellcheck disable=SC1091
-[ -f "${XDG_CONFIG_HOME}/zsh/.zshrc.local" ] && . "${XDG_CONFIG_HOME}/zsh/.zshrc.local"
-# shellcheck disable=SC1091
-if [ -f "${XDG_CONFIG_HOME}/zsh/.aliases.local" ]; then . "${XDG_CONFIG_HOME}/zsh/.aliases.local"; fi
+

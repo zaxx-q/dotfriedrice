@@ -2327,29 +2327,7 @@ configure_home_configs() {
     ;;
   esac
 
-  # ghostty config.local — only if ghostty is in the package list.
-  if [[ " ${all_packages[*]} " == *" ghostty "* ]]; then
-    local ghostty_config="${XDG_CONFIG_HOME}/ghostty/config.local"
-
-    if [ -f "${ghostty_config}" ]; then
-      _skipping "'${ghostty_config}' already exists"
-    else
-      printf "# Add your custom overrides and new additions here.\n" >"${ghostty_config}"
-      echo "'${ghostty_config}' has been created"
-    fi
-  fi
-
   if [ "${GUI_ENABLED}" == "1" ]; then
-    # mako config.local — only if mako is in the package list.
-    if [[ " ${all_packages[*]} " == *" mako "* ]]; then
-      local mako_config="${XDG_CONFIG_HOME}/mako/config.local"
-      if [ -f "${mako_config}" ]; then
-        _skipping "'${mako_config}' already exists"
-      else
-        printf "# Add your custom overrides and new additions here.\n" >"${mako_config}"
-        echo "'${mako_config}' has been created"
-      fi
-    fi
 
     # niri config.kdl.local — only if niri is in the package list.
     if [[ " ${all_packages[*]} " == *" niri "* ]]; then
@@ -2594,7 +2572,7 @@ configure_gui_app_themes() {
 configure_shell() {
   _info "CONFIGURE SHELL (ZSH)"
 
-  local local_files=(".zshrc.local" ".zprofile.local" ".aliases.local")
+  local local_files=(".zprofile.local")
   local original_dotfriedrice_path="${DOTFRIEDRICE_PATH}"
 
   for file in "${local_files[@]}"; do
@@ -2606,7 +2584,6 @@ configure_shell() {
   done
 
   local zprofile_path="${DOTFRIEDRICE_PATH}/.config/zsh/.zprofile.local"
-  local aliases_path="${DOTFRIEDRICE_PATH}/.config/zsh/.aliases.local"
 
   if ! grep -q "^export DOTFRIEDRICE_PATH=.*$" "${zprofile_path}" 2>/dev/null; then
     printf '\nexport DOTFRIEDRICE_PATH="%s"\n' "${DOTFRIEDRICE_PATH}" >>"${zprofile_path}"
@@ -2626,27 +2603,7 @@ configure_shell() {
       # shellcheck disable=SC2016,SC2128
       printf "\neval \"\$(%s/bin/brew shellenv)\"\n" "${prefix}" >>"${zprofile_path}"
     fi
-
-    if ! grep -q '^alias ls="ls -G"' "${aliases_path}" 2>/dev/null; then
-      cat <<EOF >>"${aliases_path}"
-
-alias ls="ls -G"
-alias grep="grep -G"
-alias fgrep="fgrep -G"
-alias egrep="egrep -G"
-EOF
-    fi
   else
-    if ! grep -q 'alias ls="ls --color=auto"' "${aliases_path}" 2>/dev/null; then
-      cat <<EOF >>"${aliases_path}"
-
-alias ls="ls --color=auto"
-alias grep="grep --color=auto"
-alias fgrep="fgrep --color=auto"
-alias egrep="egrep --color=auto"
-EOF
-    fi
-
     # Is a Linux GUI supported?
     if [ "${GUI_ENABLED}" == "1" ]; then
       if ! grep -q "^if uwsm check may-start.*$" "${zprofile_path}" 2>/dev/null; then
@@ -2677,24 +2634,6 @@ EOF
             fi
           fi
         fi
-      fi
-
-      if ! grep -q '^alias drop_cache=' "${aliases_path}" 2>/dev/null; then
-        cat <<EOF >>"${aliases_path}"
-
-# This is specific to WSL 2. If the WSL 2 VM goes rogue and decides not to free
-# up memory, this command will free your memory after about 20-30 seconds.
-#   Details: https://github.com/microsoft/WSL/issues/4166#issuecomment-628493643
-alias drop_cache="sudo sh -c \"echo 3 >'/proc/sys/vm/drop_caches' && swapoff -a && swapon -a && printf '\n%s\n' 'Ram-cache and Swap Cleared'\""
-EOF
-      fi
-
-      if ! grep -q '^alias open="/mnt/c/Program' "${aliases_path}" 2>/dev/null; then
-        cat <<EOF >>"${aliases_path}"
-
-alias open="/mnt/c/Program\ Files/Mozilla\ Firefox/firefox.exe"
-alias wopen="cmd.exe /C start 2> /dev/null"
-EOF
       fi
     fi
   fi

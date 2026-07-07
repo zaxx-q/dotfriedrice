@@ -22,6 +22,3 @@ keybind = alt+down=unbind
 
 # Load theme.
 config-file = ?theme
-
-# Load a custom config for overrides, ? silently fails if the file is missing.
-config-file = ?config.local
