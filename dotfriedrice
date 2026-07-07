@@ -601,6 +601,63 @@ _skip_packages() {
   packages_default=("${packages_filtered[@]}")
 }
 
+# Populated by _build_effective_packages — maps every package name that will
+# be installed to 1 so _has_package can do O(1) lookups.
+declare -A _EFFECTIVE_PACKAGES=()
+
+_build_effective_packages() {
+  # Apply skip filters to all package arrays. This mutates the arrays in place
+  # so that downstream functions (install_packages, etc.) see the filtered
+  # lists without needing to re-run the filters.
+  _skip_packages "PACKAGES_PACMAN" "PACKAGES_PACMAN_SKIP"
+  _skip_packages "PACKAGES_PACMAN_GUI" "PACKAGES_PACMAN_GUI_SKIP"
+  _skip_packages "PACKAGES_AUR" "PACKAGES_AUR_SKIP"
+  _skip_packages "PACKAGES_AUR_GUI" "PACKAGES_AUR_GUI_SKIP"
+  _skip_packages "PACKAGES_APT" "PACKAGES_APT_SKIP"
+  _skip_packages "PACKAGES_BREW" "PACKAGES_BREW_SKIP"
+  _skip_packages "PACKAGES_BREW_CASK" "PACKAGES_BREW_CASK_SKIP"
+  _skip_packages "MISE_ARCH" "MISE_ARCH_SKIP"
+  _skip_packages "MISE_DEBIAN" "MISE_DEBIAN_SKIP"
+  _skip_packages "MISE_DARWIN" "MISE_DARWIN_SKIP"
+
+  # Build the effective package set for the current distro.
+  local _pkgs=()
+
+  case "${OS_DISTRO}" in
+  arch)
+    _pkgs+=(
+      "${PACKAGES_PACMAN[@]}" "${PACKAGES_PACMAN_EXTRAS[@]}"
+      "${PACKAGES_AUR[@]}" "${PACKAGES_AUR_EXTRAS[@]}"
+    )
+    if [ "${GUI_ENABLED}" == "1" ]; then
+      _pkgs+=(
+        "${PACKAGES_PACMAN_GUI[@]}" "${PACKAGES_PACMAN_GUI_EXTRAS[@]}"
+        "${PACKAGES_AUR_GUI[@]}" "${PACKAGES_AUR_GUI_EXTRAS[@]}"
+      )
+    fi
+    ;;
+  debian)
+    _pkgs+=("${PACKAGES_APT[@]}" "${PACKAGES_APT_EXTRAS[@]}")
+    ;;
+  darwin)
+    _pkgs+=(
+      "${PACKAGES_BREW[@]}" "${PACKAGES_BREW_EXTRAS[@]}"
+      "${PACKAGES_BREW_CASK[@]}" "${PACKAGES_BREW_CASK_EXTRAS[@]}"
+    )
+    ;;
+  esac
+
+  local _pkg
+  for _pkg in "${_pkgs[@]}"; do
+    _EFFECTIVE_PACKAGES["${_pkg}"]=1
+  done
+}
+
+# Check if a package will be installed (is in the effective package set).
+_has_package() {
+  [[ -n "${_EFFECTIVE_PACKAGES[${1}]+x}" ]]
+}
+
 _display_packages() {
   if [ "${OS_TYPE}" == "linux" ]; then
     if [ "${OS_DISTRO}" == "arch" ]; then
@@ -1196,26 +1253,21 @@ create_initial_dirs() {
     "${XDG_STATE_HOME}/dotfriedrice"
 
   if [ "${GUI_ENABLED}" == "1" ]; then
+    # Helper: create a directory only if the associated package is not skipped.
+    _mkdir_if_pkg() {
+      local pkg="${1}"
+      shift
+      _has_package "${pkg}" && mkdir -p "${@}"
+    }
+
+    # Directories that are always needed when GUI is enabled (not tied to a
+    # single skippable package).
     mkdir -p \
-      "${XDG_CACHE_HOME}/mpd" \
       "${XDG_CONFIG_HOME}/fontconfig" \
       "${XDG_CONFIG_HOME}/gtk-3.0" \
       "${XDG_CONFIG_HOME}/gtk-4.0" \
       "${XDG_CONFIG_HOME}/hypr" \
-      "${XDG_CONFIG_HOME}/mako" \
-      "${XDG_CONFIG_HOME}/mpd" \
-      "${XDG_CONFIG_HOME}/niri" \
-      "${XDG_CONFIG_HOME}/rmpc" \
-      "${XDG_CONFIG_HOME}/satty" \
-      "${XDG_CONFIG_HOME}/swayidle" \
-      "${XDG_CONFIG_HOME}/swaylock" \
-      "${XDG_CONFIG_HOME}/tumbler" \
-      "${XDG_CONFIG_HOME}/uwsm" \
-      "${XDG_CONFIG_HOME}/walker/themes/base" \
       "${XDG_CONFIG_HOME}/wallpaper" \
-      "${XDG_CONFIG_HOME}/waybar" \
-      "${XDG_CONFIG_HOME}/xarchiver" \
-      "${XDG_CONFIG_HOME}/zathura" \
       "${XDG_DATA_HOME}/applications" \
       "${XDG_DATA_HOME}/themes" \
       "${XDG_DATA_HOME}/thumbnailers" \
@@ -1227,6 +1279,21 @@ create_initial_dirs() {
       "${XDG_PUBLICSHARE_DIR}" \
       "${XDG_TEMPLATES_DIR}" \
       "${XDG_VIDEOS_DIR}"
+
+    # Directories tied to a specific package.
+    _mkdir_if_pkg "mako" "${XDG_CONFIG_HOME}/mako"
+    _mkdir_if_pkg "mpd" "${XDG_CACHE_HOME}/mpd" "${XDG_CONFIG_HOME}/mpd"
+    _mkdir_if_pkg "niri" "${XDG_CONFIG_HOME}/niri"
+    _mkdir_if_pkg "rmpc" "${XDG_CONFIG_HOME}/rmpc"
+    _mkdir_if_pkg "satty" "${XDG_CONFIG_HOME}/satty"
+    _mkdir_if_pkg "swayidle" "${XDG_CONFIG_HOME}/swayidle"
+    _mkdir_if_pkg "swaylock" "${XDG_CONFIG_HOME}/swaylock"
+    _mkdir_if_pkg "tumbler" "${XDG_CONFIG_HOME}/tumbler"
+    _mkdir_if_pkg "uwsm" "${XDG_CONFIG_HOME}/uwsm"
+    _mkdir_if_pkg "walker" "${XDG_CONFIG_HOME}/walker/themes/base"
+    _mkdir_if_pkg "waybar" "${XDG_CONFIG_HOME}/waybar"
+    _mkdir_if_pkg "xarchiver" "${XDG_CONFIG_HOME}/xarchiver"
+    _mkdir_if_pkg "zathura" "${XDG_CONFIG_HOME}/zathura"
   fi
 }
 
@@ -1465,18 +1532,6 @@ install_packages() {
     _skipping "You've chosen not to install packages"
     return
   fi
-
-  # Filter default packages before we do anything.
-  _skip_packages "PACKAGES_PACMAN" "PACKAGES_PACMAN_SKIP"
-  _skip_packages "PACKAGES_PACMAN_GUI" "PACKAGES_PACMAN_GUI_SKIP"
-  _skip_packages "PACKAGES_AUR" "PACKAGES_AUR_SKIP"
-  _skip_packages "PACKAGES_AUR_GUI" "PACKAGES_AUR_GUI_SKIP"
-  _skip_packages "PACKAGES_APT" "PACKAGES_APT_SKIP"
-  _skip_packages "PACKAGES_BREW" "PACKAGES_BREW_SKIP"
-  _skip_packages "PACKAGES_BREW_CASK" "PACKAGES_BREW_CASK_SKIP"
-  _skip_packages "MISE_ARCH" "MISE_ARCH_SKIP"
-  _skip_packages "MISE_DEBIAN" "MISE_DEBIAN_SKIP"
-  _skip_packages "MISE_DARWIN" "MISE_DARWIN_SKIP"
 
   # On the first run, there will be a number of prompts to contend with, if
   # someone wanted to customize the packages first, that was proposed during
@@ -1847,29 +1902,37 @@ configure_groups() {
 configure_home_configs() {
   _info "CONFIGURE HOME CONFIGS"
 
-  local ghostty_config="${XDG_CONFIG_HOME}/ghostty/config.local"
+  # ghostty config.local — only if ghostty is in the package list.
+  if _has_package "ghostty"; then
+    local ghostty_config="${XDG_CONFIG_HOME}/ghostty/config.local"
 
-  if [ -f "${ghostty_config}" ]; then
-    _skipping "'${ghostty_config}' already exists"
-  else
-    printf "# Add your custom overrides and new additions here.\n" >"${ghostty_config}"
-    echo "'${ghostty_config}' has been created"
+    if [ -f "${ghostty_config}" ]; then
+      _skipping "'${ghostty_config}' already exists"
+    else
+      printf "# Add your custom overrides and new additions here.\n" >"${ghostty_config}"
+      echo "'${ghostty_config}' has been created"
+    fi
   fi
 
   if [ "${GUI_ENABLED}" == "1" ]; then
-    local mako_config="${XDG_CONFIG_HOME}/mako/config.local"
-    if [ -f "${mako_config}" ]; then
-      _skipping "'${mako_config}' already exists"
-    else
-      printf "# Add your custom overrides and new additions here.\n" >"${mako_config}"
-      echo "'${mako_config}' has been created"
+    # mako config.local — only if mako is in the package list.
+    if _has_package "mako"; then
+      local mako_config="${XDG_CONFIG_HOME}/mako/config.local"
+      if [ -f "${mako_config}" ]; then
+        _skipping "'${mako_config}' already exists"
+      else
+        printf "# Add your custom overrides and new additions here.\n" >"${mako_config}"
+        echo "'${mako_config}' has been created"
+      fi
     fi
 
-    local wm_config="${XDG_CONFIG_HOME}/niri/config.kdl.local"
-    if [ -f "${wm_config}" ]; then
-      _skipping "'${wm_config}' already exists"
-    else
-      cat <<EOF >"${wm_config}"
+    # niri config.kdl.local — only if niri is in the package list.
+    if _has_package "niri"; then
+      local wm_config="${XDG_CONFIG_HOME}/niri/config.kdl.local"
+      if [ -f "${wm_config}" ]; then
+        _skipping "'${wm_config}' already exists"
+      else
+        cat <<EOF >"${wm_config}"
 // Add your custom overrides and new additions here.
 
 // ----------------------------------------------------------------------------
@@ -1887,7 +1950,8 @@ configure_home_configs() {
 //     position x=2560 y=0
 // }
 EOF
-      echo "'${wm_config}' has been created"
+        echo "'${wm_config}' has been created"
+      fi
     fi
 
     local packages=("${PACKAGES_AUR_GUI[@]}" "${PACKAGES_AUR_GUI_EXTRAS[@]}")
@@ -2707,6 +2771,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 
   compare_dotfriedrice_config
   ensure_sudo_works
+  _build_effective_packages
   create_initial_dirs
   ask_for_name
   ask_for_email
