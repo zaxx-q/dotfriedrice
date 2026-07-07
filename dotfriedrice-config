@@ -1,0 +1,431 @@
+#!/usr/bin/env bash
+
+# -----------------------------------------------------------------------------
+# Repo configuration
+# -----------------------------------------------------------------------------
+
+# Provide a different repo to use. This could be useful if you've forked the
+# project into your account.
+export DOTFRIEDRICE_CLONE_URL="${DOTFRIEDRICE_CLONE_URL:-https://github.com/nickjj/dotfriedrice}"
+export DOTFRIEDRICE_UPSTREAM_URL="${DOTFRIEDRICE_UPSTREAM_URL:-https://github.com/nickjj/dotfriedrice}"
+
+# Provide a different remote branch. This branch will be merged into your
+# current locally checked out branch when pulling in updates.
+export DOTFRIEDRICE_BRANCH="${DOTFRIEDRICE_BRANCH:-master}"
+
+# -----------------------------------------------------------------------------
+# Personalization
+# -----------------------------------------------------------------------------
+
+# If you define these, they will get used instead of prompting you for them.
+# Keep in mind, after you've been prompted once your answers will be persisted
+# to your git config and read from there if these values are empty.
+export YOUR_NAME=
+export YOUR_EMAIL=
+
+# -----------------------------------------------------------------------------
+# Graphical User Interface (GUI)
+# -----------------------------------------------------------------------------
+
+# When set to "1", niri and graphical apps will be installed if you're using an
+# Arch or Fedora based Linux distro. This is always skipped in WSL and in containers.
+export GUI_LINUX="1"
+
+# -----------------------------------------------------------------------------
+# Theme system
+# -----------------------------------------------------------------------------
+
+# When set to "1" (default), DotFriedRice manages themes for terminal and GUI
+# apps (btop, fzf, ghostty, tmux, neovim, niri, mako, waybar, walker, etc.).
+# Themes can be switched with dfr-theme-set and wallpapers with dfr-theme-set-bg.
+#
+# When set to "0", no theme files are symlinked and no GTK themes are downloaded.
+# You are then free to manage your own theme configs.
+export THEME_SYSTEM="0"
+
+# -----------------------------------------------------------------------------
+# XDG directories
+# -----------------------------------------------------------------------------
+
+# If you ever want to change them then change them here, they will get written
+# to the correct files from this script, there's a few spots!
+#
+# I use the defaults and I suggest you do the same, here's the source:
+#   https://specifications.freedesktop.org/basedir/latest/
+export XDG_CACHE_HOME="${HOME}/.cache"
+export XDG_CONFIG_HOME="${HOME}/.config"
+export XDG_DATA_HOME="${HOME}/.local/share"
+export XDG_STATE_HOME="${HOME}/.local/state"
+
+# Most of these have customized defaults, here's the source with defaults:
+#   https://wiki.archlinux.org/title/XDG_user_directories
+#
+# My thought process is if a program writes something to pictures, videos or
+# most other directories listed below it's probably a temporary location
+# because I would organize where the file will live permanently afterwards.
+#
+# However, for things like music I want music players to use the real directory.
+#
+# Of course you are free to customize these however you see fit! These only
+# get created and set if you have GUI_LINUX enabled on Arch.
+export XDG_DESKTOP_DIR="${HOME}/tmp/desktop"
+export XDG_DOCUMENTS_DIR="${HOME}/docs"
+export XDG_DOWNLOAD_DIR="${HOME}/downloads"
+export XDG_MUSIC_DIR="${HOME}/media/music"
+export XDG_PICTURES_DIR="${HOME}/tmp/pictures"
+export XDG_PUBLICSHARE_DIR="${HOME}/public"
+export XDG_TEMPLATES_DIR="${HOME}/docs/templates"
+export XDG_VIDEOS_DIR="${HOME}/tmp/videos"
+
+# -----------------------------------------------------------------------------
+# System packages
+# -----------------------------------------------------------------------------
+
+# When set to "1", package managers that support non-interactive mode where you
+# can skip typing "y" to confirm will be set. Be careful, this allows hands free
+# installs at the cost of not being able to review changes before installing.
+export PACKAGES_AUTO_CONFIRM="0"
+
+# These rules apply to all package variables:
+# - Left as is OR commented out            -> default packages get used
+# - Remove () and set an empty value OR "" -> nothing gets used
+# - Add your own array items               -> only your packages get used
+#
+# You can use "extras" to keep the default packages but add your own to avoid
+# needing to duplicate the entire package list. Think of this as merging.
+#
+# You can use "skip" to avoid installing these packages from the default list.
+# It's useful if you want to skip a handful of packages without needing to
+# duplicate and maintain the default package list.
+#
+# Here's a documented list of what's installed by default:
+# https://github.com/nickjj/dotfriedrice/blob/master/_docs/packages.md
+#
+# You can also find the defaults in _install/default/packages for each supported OS.
+
+# Applies to Arch Linux.
+export PACKAGES_PACMAN=()
+export PACKAGES_PACMAN_EXTRAS=()
+export PACKAGES_PACMAN_SKIP=()
+
+# Packages defined here only get installed when GUI_LINUX=1 is set.
+export PACKAGES_PACMAN_GUI=()
+export PACKAGES_PACMAN_GUI_EXTRAS=()
+export PACKAGES_PACMAN_GUI_SKIP=()
+
+export PACKAGES_AUR=()
+export PACKAGES_AUR_EXTRAS=()
+export PACKAGES_AUR_SKIP=()
+
+# Packages defined here only get installed when GUI_LINUX=1 is set.
+export PACKAGES_AUR_GUI=()
+export PACKAGES_AUR_GUI_EXTRAS=()
+export PACKAGES_AUR_GUI_SKIP=()
+
+# Applies to Debian and Ubuntu.
+export PACKAGES_APT=()
+export PACKAGES_APT_EXTRAS=()
+export PACKAGES_APT_SKIP=()
+
+# Applies to Fedora.
+export PACKAGES_DNF=()
+export PACKAGES_DNF_EXTRAS=(
+  hd-idle
+  keyd
+)
+export PACKAGES_DNF_SKIP=(
+  "aspell"
+  "aspell-en"
+)
+
+# Packages defined here only get installed when GUI_LINUX=1 is set on Fedora.
+export PACKAGES_DNF_GUI=()
+export PACKAGES_DNF_GUI_EXTRAS=()
+# CHANGED: Skip packages we don't need.
+# - Desktop suite already provides: brightnessctl, grim, hyprpicker, mako,
+#   satty, slurp, swaybg, swayidle, swaylock, waybar
+# - Explicit exclusions: docker-buildx, firefox, kdenlive, keepassxc,
+#   libreoffice, tesseract, tesseract-langpack-eng, timidity++, zathura-djvu,
+#   qt6-qtmultimedia
+export PACKAGES_DNF_GUI_SKIP=(
+  "brightnessctl"
+  "docker"
+  "docker-buildx"
+  "docker-compose"
+  "firefox"
+  "grim"
+  "hyprpicker"
+  "kdenlive"
+  "keepassxc"
+  "libreoffice"
+  "mako"
+  "qt6-qtmultimedia"
+  "satty"
+  "slurp"
+  "swaybg"
+  "swayidle"
+  "swaylock"
+  "tesseract"
+  "tesseract-langpack-eng"
+  "timidity++"
+  "waybar"
+  "zathura-djvu"
+)
+
+# Install Fedora weak dependencies?
+# When set to "1" (default), DNF installs weak dependencies.
+# When set to "0", DNF --setopt=install_weak_deps=False is passed.
+export DNF_INSTALL_WEAK_DEPS="1"
+
+# Specific weak dependencies to skip when DNF_INSTALL_WEAK_DEPS is enabled.
+# When populated, DNF --setopt=exclude_from_weak=some-pkg,another-pkg is passed.
+export PACKAGES_DNF_WEAK_DEPS_SKIP=(
+   "alacritty"
+   "fuzzel"
+   "mako"
+   "swaybg"
+   "swayidle"
+   "swaylock"
+   "waybar"
+   "obs-studio-plugin-vlc-video"
+   "wofi"
+)
+
+# Extra COPR repositories to enable on Fedora (GUI mode only).
+# These are enabled in addition to the built-in COPRs defined in
+# _install/default/packages/fedora. Format: "owner/project"
+export FEDORA_COPRS_EXTRAS=()
+
+# COPR repositories to skip or disable on Fedora (GUI mode only).
+# Any repositories listed here will not be enabled. If they are
+# currently enabled on the system, the script will disable them.
+export FEDORA_COPRS_SKIP=()
+
+# Applies to macOS.
+export PACKAGES_BREW=()
+export PACKAGES_BREW_EXTRAS=()
+export PACKAGES_BREW_SKIP=()
+export PACKAGES_BREW_CASK=()
+export PACKAGES_BREW_CASK_EXTRAS=()
+export PACKAGES_BREW_CASK_SKIP=()
+
+# -----------------------------------------------------------------------------
+# Mise packages
+# -----------------------------------------------------------------------------
+
+# The same rules apply as system packages for how to define these.
+# You can also find the defaults in _install/default/packages for each supported OS.
+
+export MISE_ARCH=()
+export MISE_ARCH_EXTRAS=()
+export MISE_ARCH_SKIP=()
+
+export MISE_DEBIAN=()
+export MISE_DEBIAN_EXTRAS=()
+export MISE_DEBIAN_SKIP=()
+
+export MISE_FEDORA=()
+export MISE_FEDORA_EXTRAS=()
+export MISE_FEDORA_SKIP=()
+
+export MISE_DARWIN=()
+export MISE_DARWIN_EXTRAS=()
+export MISE_DARWIN_SKIP=()
+
+# Install programming languages.
+#
+# You can find the defaults in _install/default/mise_languages.
+declare -A MISE_LANGUAGES=()
+declare -A MISE_LANGUAGES_EXTRAS=()
+
+# Here's an example to demonstrate the syntax. The key is the binary name and
+# the value is what you would pass into Mise to install it.
+MISE_LANGUAGES_EXTRAS["bun"]="bun@latest"
+
+# To skip a default language, supply its key name, for example:
+#MISE_LANGUAGES_SKIP=("node")
+export MISE_LANGUAGES_SKIP=("node" "python")
+
+export MISE_LANGUAGES
+export MISE_LANGUAGES_EXTRAS
+
+# -----------------------------------------------------------------------------
+# External scripts
+# -----------------------------------------------------------------------------
+
+# The same rules apply as system packages for how to define these.
+
+# These are single files that get downloaded and made executable. Typically
+# they would be standalone scripts and tools that aren't in a package manager.
+#
+# For skipping, supply the name of the script, for example "invoice" but for
+# everything else you must supply the RAW_GITHUB_URL|VERSION_COMMAND, example:
+#   "https://raw.githubusercontent.com/nickjj/notes/v0.3.1/notes|--version"
+#
+# The version is used to avoid downloading the same copy on every run.
+#
+# Here's a documented list of what's installed:
+# https://github.com/nickjj/dotfriedrice/blob/master/_docs/scripts.md
+#
+# You can also find the defaults in _install/default/scripts.
+
+# Scripts defined here will get installed in all OS / environments.
+export SCRIPTS_INSTALL=()
+export SCRIPTS_INSTALL_EXTRAS=()
+export SCRIPTS_INSTALL_SKIP=(
+    bmsu
+    invoice
+    lcurl
+    notes
+    plutus
+    wait-until
+    webserver
+)
+
+# -----------------------------------------------------------------------------
+# Install configs
+# -----------------------------------------------------------------------------
+
+# The same rules apply as system packages for how to define these.
+# You can find the defaults in _install/default/install_configs.
+
+# When set to "1", even if there's files not managed by DotFriedRice they
+# will get overwritten without showing you a prompt to confirm. This could
+# result in you losing your original files, be careful setting this.
+export CONFIG_INSTALL_AUTO_CONFIRM="0"
+
+# Typically these should be symlinks but they could be created with cp / rsync
+# or whatever commands you want.
+#
+# Symlinks allow you to keep the configs in DotFriedRice's repo but have them
+# exist in ~/.config/xxx so programs pick them up. You can also create .local
+# versions of these files in DFR's repo and symlink them. This allows you
+# to modify a config without forking this repo.
+#
+# The only requirement is each item in the list follows this format, use the
+# default file to see what real examples look like.
+#
+# "<COMMAND> <SOURCE> <DESTINATION>"
+#
+# For skipping, you can copy the exact full item from the defaults in
+# _install/default/config_install into the associated variable below.
+
+# Configs defined here will get created in all OS / environments.
+export CONFIG_INSTALL=()
+export CONFIG_INSTALL_EXTRAS=(
+  sudo ln -s $(which bun) ~/.local/bin/local/node
+  sudo ln -s $(which bun) ~/.local/bin/local/npm
+  sudo ln -s $(which bun) ~/.local/bin/local/pnpm
+  sudo ln -s $(which bun) ~/.local/bin/local/yarn
+  sudo ln -s $(which bunx) ~/.local/bin/local/npx
+)
+export CONFIG_INSTALL_SKIP=(
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/fastfetch/config.jsonc\" \"\${XDG_CONFIG_HOME}/fastfetch/config.jsonc\""
+)
+
+# Configs defined here only get created when GUI_LINUX=1 is set.
+export CONFIG_INSTALL_GUI_LINUX=()
+export CONFIG_INSTALL_GUI_LINUX_EXTRAS=()
+export CONFIG_INSTALL_GUI_LINUX_SKIP=(
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/fontconfig/fonts.conf\" \"\${XDG_CONFIG_HOME}/fontconfig/fonts.conf\""
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/mako/config.local\" \"\${XDG_CONFIG_HOME}/mako/config.local\""
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/mako/config\" \"\${XDG_CONFIG_HOME}/mako/config\""
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/satty/config.toml\" \"\${XDG_CONFIG_HOME}/satty/config.toml\""
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/swayidle/config\" \"\${XDG_CONFIG_HOME}/swayidle/config\""
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/swaylock/config\" \"\${XDG_CONFIG_HOME}/swaylock/config\""
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/waybar/config.jsonc\" \"\${XDG_CONFIG_HOME}/waybar/config.jsonc\""
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/waybar/style.css\" \"\${XDG_CONFIG_HOME}/waybar/style.css\""
+)
+
+# Configs defined here only get created when on Arch Linux.
+export CONFIG_INSTALL_ARCH=()
+export CONFIG_INSTALL_ARCH_EXTRAS=()
+export CONFIG_INSTALL_ARCH_SKIP=()
+
+# Configs defined here only get created when on Fedora Linux.
+export CONFIG_INSTALL_FEDORA=()
+export CONFIG_INSTALL_FEDORA_EXTRAS=()
+export CONFIG_INSTALL_FEDORA_SKIP=()
+
+# Configs defined here only get created when in WSL.
+export CONFIG_INSTALL_WSL=()
+export CONFIG_INSTALL_WSL_EXTRAS=()
+export CONFIG_INSTALL_WSL_SKIP=()
+
+# -----------------------------------------------------------------------------
+# Sudoers entries
+# -----------------------------------------------------------------------------
+
+# The same rules apply as mise languages for how to define these.
+# You can find the defaults in _install/default/sudoers_entries.
+
+# Creates sudoers entries into /etc/sudoers.d/.
+declare -A SUDOERS_ENTRIES=()
+declare -A SUDOERS_ENTRIES_EXTRAS=()
+
+# Here's an example to demonstrate the syntax. The key is the file name and
+# the value is the line written to the file.
+#SUDOERS_ENTRIES_EXTRAS["dfr-whois"]="${USER} ALL=(ALL) NOPASSWD: /usr/bin/whoami"
+
+# To skip a default entry, supply its file name key, for example:
+#SUDOERS_ENTRIES_SKIP=("dfr-timedatectl")
+export SUDOERS_ENTRIES_SKIP=("dfr-timedatectl")
+
+export SUDOERS_ENTRIES
+export SUDOERS_ENTRIES_EXTRAS
+
+# -----------------------------------------------------------------------------
+# Udev rules
+# -----------------------------------------------------------------------------
+
+# The same rules apply as mise languages for how to define these.
+# You can find the defaults in _install/default/udev_rules.
+
+# On systems that support this, you can add any rules you need. You can use this
+# to tweak certain device properties such as power management rules. They will
+# get applied immediately without needing to reboot.
+
+# Creates configs into /etc/udev/rules.d/.
+declare -A UDEV_RULES=()
+
+# Here's an example to demonstrate the syntax. The key is the file name and
+# the value is the line written to the file which is any udev rule exactly how
+# you'd define it manually. Omit the ".rules" file extension.
+# declare -A UDEV_RULES_EXTRAS=(
+#   ["99-my-custom-rule"]='ACTION="add" [ADD_YOUR_RULE]'
+# )
+
+# To skip a default rule, supply its file name key (without .rules), for example:
+#UDEV_RULES_SKIP=("99-my-custom-rule")
+export UDEV_RULES_SKIP=()
+
+export UDEV_RULES
+export UDEV_RULES_EXTRAS
+
+# -----------------------------------------------------------------------------
+# Enabled systemd services
+# -----------------------------------------------------------------------------
+
+# The same rules apply as system packages for how to define these.
+# You can find the defaults in _install/default/systemd_services.
+
+# Services in this list will start on boot if they exist, for example
+# SYSTEMD_ENABLED_SERVICES_EXTRAS=("docker.service") is enabled by default.
+# Use "myservice.service --user" to have it enabled with --user, likewise you
+# can use "myservice.service --now" and combine these flags as needed.
+export SYSTEMD_ENABLED_SERVICES=()
+export SYSTEMD_ENABLED_SERVICES_EXTRAS=(
+  "hd-idle.service"
+  "keyd.service"
+)
+
+# To skip a default service, simply supply its service name stripped off any flags, for example:
+#SYSTEMD_ENABLED_SERVICES_SKIP=("docker-desktop.service")
+export SYSTEMD_ENABLED_SERVICES_SKIP=(
+  "lactd.service"
+  "libvirtd.socket"
+  "paccache.timer"
+  "virtlogd.socket"
+  "docker.service"
+  "docker-desktop.service"
+)

@@ -26,4 +26,3 @@ tags
 .config/zsh/.zsh_plugins.zsh
 .local/bin/local/
 etc/pacman.d/02-ignore.conf.example
-dotfriedrice-config
