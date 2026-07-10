@@ -1,8 +1,8 @@
 [Default Applications]
 inode/directory=thunar.desktop;
 
-x-scheme-handler/http=firefox.desktop;
-x-scheme-handler/https=firefox.desktop;
+x-scheme-handler/http=zen-browser.desktop;
+x-scheme-handler/https=zen-browser.desktop
 
 video/mp4=mpv.desktop;
 video/x-matroska=mpv.desktop;
@@ -146,3 +146,13 @@ application/vnd.openxmlformats-officedocument.spreadsheetml.template=libreoffice
 application/vnd.openxmlformats-officedocument.wordprocessingml.document=libreoffice-writer.desktop;
 application/vnd.openxmlformats-officedocument.wordprocessingml.template=libreoffice-writer.desktop;
 text/csv=libreoffice-calc.desktop;
+x-scheme-handler/chrome=zen-browser.desktop
+application/x-extension-htm=zen-browser.desktop
+application/x-extension-html=zen-browser.desktop
+application/x-extension-shtml=zen-browser.desktop
+application/xhtml+xml=zen-browser.desktop
+application/x-extension-xhtml=zen-browser.desktop
+application/x-extension-xht=zen-browser.desktop
+
+[Added Associations]
+text/html=zen-browser.desktop;

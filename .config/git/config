@@ -1,9 +1,12 @@
 [core]
   editor = zed --wait
   pager = delta
-
+  symlinks = true
 [delta]
   navigate = true
+
+[init]
+  defaultBranch = main
 
 [interactive]
   diffFilter = delta --color-only
