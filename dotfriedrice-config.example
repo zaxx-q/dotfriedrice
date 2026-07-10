@@ -32,6 +32,18 @@ export YOUR_EMAIL=
 export GUI_LINUX="0"
 
 # -----------------------------------------------------------------------------
+# Theme system
+# -----------------------------------------------------------------------------
+
+# When set to "1" (default), DotFriedRice manages themes for terminal and GUI
+# apps (btop, fzf, ghostty, tmux, neovim, niri, mako, waybar, walker, etc.).
+# Themes can be switched with dfr-theme-set and wallpapers with dfr-theme-set-bg.
+#
+# When set to "0", no theme files are symlinked and no GTK themes are downloaded.
+# You are then free to manage your own theme configs.
+export THEME_SYSTEM="1"
+
+# -----------------------------------------------------------------------------
 # XDG directories
 # -----------------------------------------------------------------------------
 

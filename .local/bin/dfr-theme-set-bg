@@ -13,6 +13,10 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
+# Source the config to pick up THEME_SYSTEM and other settings.
+# shellcheck disable=SC1091
+[ -f "${DOTFRIEDRICE_PATH}/dotfriedrice-config" ] && . "${DOTFRIEDRICE_PATH}/dotfriedrice-config"
+
 ARG="${1:-}"
 CURRENT_WALLPAPER=
 
@@ -20,6 +24,17 @@ WALLPAPER_DIR="${XDG_CONFIG_HOME}/wallpaper"
 WALLPAPER_PATH="${WALLPAPER_DIR}/wallpaper.jpg"
 
 THEME_DATA_PATH="${WALLPAPER_DIR}/theme.json"
+
+# When the theme system is disabled, the theme.json is a minimal stub with an
+# empty synergy array so there's nothing to cycle through. Exit silently for
+# automated calls (--keep-current on boot) and with a message for manual ones.
+if [ "${THEME_SYSTEM:-1}" != "1" ]; then
+  if [[ "${ARG}" != "--keep-current" ]]; then
+    echo "Theme system is disabled (THEME_SYSTEM=0 in dotfriedrice-config)."
+    echo "Set THEME_SYSTEM=\"1\" to enable wallpaper management."
+  fi
+  exit
+fi
 
 eligible_wallpapers() {
   jq --raw-output ".wallpaper.synergy[]" "${THEME_DATA_PATH}"
