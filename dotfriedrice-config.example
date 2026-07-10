@@ -32,6 +32,18 @@ export YOUR_EMAIL=
 export GUI_LINUX="0"
 
 # -----------------------------------------------------------------------------
+# Theme system
+# -----------------------------------------------------------------------------
+
+# When set to "1" (default), DotFriedRice manages themes for terminal and GUI
+# apps (btop, fzf, ghostty, tmux, neovim, niri, mako, waybar, walker, etc.).
+# Themes can be switched with dfr-theme-set and wallpapers with dfr-theme-set-bg.
+#
+# When set to "0", no theme files are symlinked and no GTK themes are downloaded.
+# You are then free to manage your own theme configs.
+export THEME_SYSTEM="1"
+
+# -----------------------------------------------------------------------------
 # XDG directories
 # -----------------------------------------------------------------------------
 
@@ -185,6 +197,10 @@ declare -A MISE_LANGUAGES_EXTRAS=()
 # the value is what you would pass into Mise to install it.
 #MISE_LANGUAGES_EXTRAS["ruby"]="ruby@3.4"
 
+# To skip a default language, supply its key name, for example:
+#MISE_LANGUAGES_SKIP=("node")
+export MISE_LANGUAGES_SKIP=()
+
 export MISE_LANGUAGES
 export MISE_LANGUAGES_EXTRAS
 
@@ -284,6 +300,10 @@ declare -A SUDOERS_ENTRIES_EXTRAS=()
 # the value is the line written to the file.
 #SUDOERS_ENTRIES_EXTRAS["dfr-whois"]="${USER} ALL=(ALL) NOPASSWD: /usr/bin/whoami"
 
+# To skip a default entry, supply its file name key, for example:
+#SUDOERS_ENTRIES_SKIP=("dfr-timedatectl")
+export SUDOERS_ENTRIES_SKIP=()
+
 export SUDOERS_ENTRIES
 export SUDOERS_ENTRIES_EXTRAS
 
@@ -310,6 +330,10 @@ declare -A UDEV_RULES=()
 # declare -A UDEV_RULES_EXTRAS=(
 #   ["99-my-custom-rule"]='ACTION="add" [ADD_YOUR_RULE]'
 # )
+
+# To skip a default rule, supply its file name key (without .rules), for example:
+#UDEV_RULES_SKIP=("99-my-custom-rule")
+export UDEV_RULES_SKIP=()
 
 export UDEV_RULES
 export UDEV_RULES_EXTRAS

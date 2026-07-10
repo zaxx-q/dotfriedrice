@@ -54,6 +54,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # Do we want to auto confirm installing config files during installation?
   CONFIG_INSTALL_AUTO_CONFIRM="${CONFIG_INSTALL_AUTO_CONFIRM:-0}"
 
+  # Enable theme system?
+  THEME_SYSTEM="${THEME_SYSTEM:-1}"
+
   # Do we want to auto confirm packages during installation?
   PACKAGES_AUTO_CONFIRM="${PACKAGES_AUTO_CONFIRM:-0}"
 
@@ -1552,26 +1555,42 @@ create_initial_dirs() {
     "${XDG_STATE_HOME}/dotfriedrice"
 
   if [ "${GUI_ENABLED}" == "1" ]; then
+    # Build a set of skipped packages so we can avoid creating directories for
+    # packages the user does not want. The _SKIP arrays are already populated
+    # from the config normalization block but _skip_packages hasn't run yet.
+    declare -A _dir_skip_map
+    local _skip_pkg
+
+    case "${OS_DISTRO}" in
+    arch)
+      for _skip_pkg in "${PACKAGES_PACMAN_GUI_SKIP[@]}" "${PACKAGES_AUR_GUI_SKIP[@]}"; do
+        _dir_skip_map["${_skip_pkg}"]=1
+      done
+      ;;
+    fedora)
+      for _skip_pkg in "${PACKAGES_DNF_GUI_SKIP[@]}"; do
+        _dir_skip_map["${_skip_pkg}"]=1
+      done
+      ;;
+    esac
+
+    # Helper: create a directory only if the associated package is not skipped.
+    _mkdir_if_not_skipped() {
+      local pkg="${1}"
+      shift
+      if [[ -z "${_dir_skip_map[${pkg}]+x}" ]]; then
+        mkdir -p "${@}"
+      fi
+    }
+
+    # Directories that are always needed when GUI is enabled (not tied to a
+    # single skippable package).
     mkdir -p \
-      "${XDG_CACHE_HOME}/mpd" \
       "${XDG_CONFIG_HOME}/fontconfig" \
       "${XDG_CONFIG_HOME}/gtk-3.0" \
       "${XDG_CONFIG_HOME}/gtk-4.0" \
       "${XDG_CONFIG_HOME}/hypr" \
-      "${XDG_CONFIG_HOME}/mako" \
-      "${XDG_CONFIG_HOME}/mpd" \
-      "${XDG_CONFIG_HOME}/niri" \
-      "${XDG_CONFIG_HOME}/rmpc" \
-      "${XDG_CONFIG_HOME}/satty" \
-      "${XDG_CONFIG_HOME}/swayidle" \
-      "${XDG_CONFIG_HOME}/swaylock" \
-      "${XDG_CONFIG_HOME}/tumbler" \
-      "${XDG_CONFIG_HOME}/uwsm" \
-      "${XDG_CONFIG_HOME}/walker/themes/base" \
       "${XDG_CONFIG_HOME}/wallpaper" \
-      "${XDG_CONFIG_HOME}/waybar" \
-      "${XDG_CONFIG_HOME}/xarchiver" \
-      "${XDG_CONFIG_HOME}/zathura" \
       "${XDG_DATA_HOME}/applications" \
       "${XDG_DATA_HOME}/themes" \
       "${XDG_DATA_HOME}/thumbnailers" \
@@ -1583,6 +1602,21 @@ create_initial_dirs() {
       "${XDG_PUBLICSHARE_DIR}" \
       "${XDG_TEMPLATES_DIR}" \
       "${XDG_VIDEOS_DIR}"
+
+    # Directories tied to a specific package.
+    _mkdir_if_not_skipped "mako" "${XDG_CONFIG_HOME}/mako"
+    _mkdir_if_not_skipped "mpd" "${XDG_CACHE_HOME}/mpd" "${XDG_CONFIG_HOME}/mpd"
+    _mkdir_if_not_skipped "niri" "${XDG_CONFIG_HOME}/niri"
+    _mkdir_if_not_skipped "rmpc" "${XDG_CONFIG_HOME}/rmpc"
+    _mkdir_if_not_skipped "satty" "${XDG_CONFIG_HOME}/satty"
+    _mkdir_if_not_skipped "swayidle" "${XDG_CONFIG_HOME}/swayidle"
+    _mkdir_if_not_skipped "swaylock" "${XDG_CONFIG_HOME}/swaylock"
+    _mkdir_if_not_skipped "tumbler" "${XDG_CONFIG_HOME}/tumbler"
+    _mkdir_if_not_skipped "uwsm" "${XDG_CONFIG_HOME}/uwsm"
+    _mkdir_if_not_skipped "walker" "${XDG_CONFIG_HOME}/walker/themes/base"
+    _mkdir_if_not_skipped "waybar" "${XDG_CONFIG_HOME}/waybar"
+    _mkdir_if_not_skipped "xarchiver" "${XDG_CONFIG_HOME}/xarchiver"
+    _mkdir_if_not_skipped "zathura" "${XDG_CONFIG_HOME}/zathura"
   fi
 }
 
@@ -1974,6 +2008,11 @@ install_gui_themes() {
     return
   fi
 
+  if [ "${THEME_SYSTEM}" != "1" ]; then
+    _skipping "Theme system is disabled (THEME_SYSTEM=0)"
+    return
+  fi
+
   _theme_download \
     "tokyonight-moon" \
     "https://github.com/user-attachments/files/26270035/Tokyonight-BL-LB-dark-Moon.zip" \
@@ -2259,29 +2298,66 @@ configure_groups() {
 configure_home_configs() {
   _info "CONFIGURE HOME CONFIGS"
 
-  local ghostty_config="${XDG_CONFIG_HOME}/ghostty/config.local"
+  # Build the full package list for the current distro so we can check whether
+  # a given app will actually be installed.
+  local all_packages=()
+  case "${OS_DISTRO}" in
+  arch)
+    all_packages+=(
+      "${PACKAGES_PACMAN[@]}" "${PACKAGES_PACMAN_EXTRAS[@]}"
+      "${PACKAGES_PACMAN_GUI[@]}" "${PACKAGES_PACMAN_GUI_EXTRAS[@]}"
+      "${PACKAGES_AUR[@]}" "${PACKAGES_AUR_EXTRAS[@]}"
+      "${PACKAGES_AUR_GUI[@]}" "${PACKAGES_AUR_GUI_EXTRAS[@]}"
+    )
+    ;;
+  debian)
+    all_packages+=("${PACKAGES_APT[@]}" "${PACKAGES_APT_EXTRAS[@]}")
+    ;;
+  fedora)
+    all_packages+=(
+      "${PACKAGES_DNF[@]}" "${PACKAGES_DNF_EXTRAS[@]}"
+      "${PACKAGES_DNF_GUI[@]}" "${PACKAGES_DNF_GUI_EXTRAS[@]}"
+    )
+    ;;
+  darwin)
+    all_packages+=(
+      "${PACKAGES_BREW[@]}" "${PACKAGES_BREW_EXTRAS[@]}"
+      "${PACKAGES_BREW_CASK[@]}" "${PACKAGES_BREW_CASK_EXTRAS[@]}"
+    )
+    ;;
+  esac
 
-  if [ -f "${ghostty_config}" ]; then
-    _skipping "'${ghostty_config}' already exists"
-  else
-    printf "# Add your custom overrides and new additions here.\n" >"${ghostty_config}"
-    echo "'${ghostty_config}' has been created"
+  # ghostty config.local — only if ghostty is in the package list.
+  if [[ " ${all_packages[*]} " == *" ghostty "* ]]; then
+    local ghostty_config="${XDG_CONFIG_HOME}/ghostty/config.local"
+
+    if [ -f "${ghostty_config}" ]; then
+      _skipping "'${ghostty_config}' already exists"
+    else
+      printf "# Add your custom overrides and new additions here.\n" >"${ghostty_config}"
+      echo "'${ghostty_config}' has been created"
+    fi
   fi
 
   if [ "${GUI_ENABLED}" == "1" ]; then
-    local mako_config="${XDG_CONFIG_HOME}/mako/config.local"
-    if [ -f "${mako_config}" ]; then
-      _skipping "'${mako_config}' already exists"
-    else
-      printf "# Add your custom overrides and new additions here.\n" >"${mako_config}"
-      echo "'${mako_config}' has been created"
+    # mako config.local — only if mako is in the package list.
+    if [[ " ${all_packages[*]} " == *" mako "* ]]; then
+      local mako_config="${XDG_CONFIG_HOME}/mako/config.local"
+      if [ -f "${mako_config}" ]; then
+        _skipping "'${mako_config}' already exists"
+      else
+        printf "# Add your custom overrides and new additions here.\n" >"${mako_config}"
+        echo "'${mako_config}' has been created"
+      fi
     fi
 
-    local wm_config="${XDG_CONFIG_HOME}/niri/config.kdl.local"
-    if [ -f "${wm_config}" ]; then
-      _skipping "'${wm_config}' already exists"
-    else
-      cat <<EOF >"${wm_config}"
+    # niri config.kdl.local — only if niri is in the package list.
+    if [[ " ${all_packages[*]} " == *" niri "* ]]; then
+      local wm_config="${XDG_CONFIG_HOME}/niri/config.kdl.local"
+      if [ -f "${wm_config}" ]; then
+        _skipping "'${wm_config}' already exists"
+      else
+        cat <<EOF >"${wm_config}"
 // Add your custom overrides and new additions here.
 
 // ----------------------------------------------------------------------------
@@ -2299,7 +2375,8 @@ configure_home_configs() {
 //     position x=2560 y=0
 // }
 EOF
-      echo "'${wm_config}' has been created"
+        echo "'${wm_config}' has been created"
+      fi
     fi
 
     local packages=("${PACKAGES_AUR_GUI[@]}" "${PACKAGES_AUR_GUI_EXTRAS[@]}")
@@ -2423,6 +2500,11 @@ configure_gui_app_themes() {
     local packages=()
     ;;
   esac
+
+  if [ "${THEME_SYSTEM}" != "1" ]; then
+    _skipping "Theme system is disabled (THEME_SYSTEM=0)"
+    return
+  fi
 
   if [[ " ${PACKAGES_PACMAN_GUI[*]} " == *" firefox "* ]]; then
     local firefox_config_base_dir=
@@ -2726,6 +2808,11 @@ set_theme() {
   local switch_wallpaper=1
 
   _info "SETTING THEME"
+
+  if [ "${THEME_SYSTEM:-1}" != "1" ]; then
+    _skipping "Theme system is disabled (THEME_SYSTEM=0)"
+    return
+  fi
 
   # Extract the theme name from the symlink path, ie. tokyonight-moon.
   # There are scenarios (first run, etc.) where this will be empty in which
