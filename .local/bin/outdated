@@ -12,6 +12,8 @@ if [[ "${OSTYPE}" == linux* ]]; then
   if [ "${OS_DISTRO}" == "arch" ]; then
     checkupdates && printf '\n\n'
     yay -Qua
+  elif [ "${OS_DISTRO}" == "fedora" ]; then
+    sudo dnf check-update
   else
     sudo apt-get update -qq
     apt list --upgradable

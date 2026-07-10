@@ -119,6 +119,9 @@ _package_install() {
   debian)
     _run_as_root apt-get update && _run_as_root apt-get install --yes --no-install-recommends "${packages[*]}"
     ;;
+  fedora)
+    _run_as_root dnf install -y --best --skip-broken "${packages[*]}"
+    ;;
   *)
     brew install "${packages[@]}"
     ;;
@@ -182,13 +185,21 @@ detect_env() {
       OS_DISTRO="debian"
     fi
 
+    # Fedora identifies as ID=fedora with ID_LIKE="fedora rhel". RHEL / CentOS
+    # Stream / Alma / Rocky all carry "rhel" or "fedora" in ID_LIKE so they
+    # would technically route through here too, but only vanilla Fedora is
+    # officially supported.
+    if [[ "${OS_DISTRO}" == "fedora" || "${OS_DISTRO_LIKE}" =~ fedora ]]; then
+      OS_DISTRO="fedora"
+    fi
+
     # Only fully support these Linux distros.
-    if [[ -z "${OS_DISTRO_LIKE}" || ! "arch ubuntu debian raspbian" =~ ${OS_DISTRO_LIKE} ]]; then
+    if [[ -z "${OS_DISTRO_LIKE}" || ! "arch ubuntu debian raspbian fedora" =~ ${OS_DISTRO_LIKE} ]]; then
       cat <<EOF >&2
 Your distro identified as: '${OS_DISTRO_ORIGINAL}' (based on: '${OS_DISTRO_LIKE}')
 
-Supported distros are Arch and Debian based distros. If your distro identifies
-as one of those the expectation is it should be supported.
+Supported distros are Arch, Debian (and Ubuntu), Fedora and macOS. If your distro
+identifies as one of those the expectation is it should be supported.
 
 If you feel this is a bug please open an issue at: ${DOTFRIEDRICE_CLONE_URL}
 
@@ -210,7 +221,7 @@ EOF
     [[ -f "/.dockerenv" || -f "/run/.containerenv" ]] && OS_IN_CONTAINER="1"
 
     # Can we install and configure a window manager and GUI tools?
-    if [[ "${OS_DISTRO_LIKE}" = "arch" && "${OS_IN_WSL}" != "1" && "${OS_IN_CONTAINER}" != "1" ]]; then
+    if [[ "${OS_DISTRO_LIKE}" =~ ^(arch|fedora)$ && "${OS_IN_WSL}" != "1" && "${OS_IN_CONTAINER}" != "1" ]]; then
       GUI_ELIGIBLE="1"
     fi
 
@@ -252,9 +263,9 @@ detect_env_results() {
 
 ---
 ${C_YELLOW}
-DotFriedRice is designed for vanilla Arch and you have an Arch based distro.
-There could be minor issues with packages or system config files. It might also
-be perfect, it really depends on the distro!${C_RESET}
+DotFriedRice is designed for vanilla Arch and Fedora, and you have a derivative
+distro. There could be minor issues with packages or system config files. It
+might also be perfect, it really depends on the distro!${C_RESET}
 
 If you run into an issue please report it at: ${DOTFRIEDRICE_CLONE_URL}
 ${C_WHITE}
@@ -523,7 +534,7 @@ EOF
 
 ${C_RED}Sorry your OS isn't eligible, this option requires all of these to be true:${C_RESET}
 
-- Running an Arch based Linux distro [Yours: ${OS_DISTRO}]
+- Running an Arch or Fedora based Linux distro [Yours: ${OS_DISTRO}]
 - Not running within WSL (Windows Subsystem for Linux) [Yours: ${OS_IN_WSL}]
 - Not running in a container [Yours: ${OS_IN_CONTAINER}]
 EOF

@@ -28,7 +28,7 @@ export YOUR_EMAIL=
 # -----------------------------------------------------------------------------
 
 # When set to "1", niri and graphical apps will be installed if you're using an
-# Arch based Linux distro. This is always skipped in WSL and in containers.
+# Arch or Fedora based Linux distro. This is always skipped in WSL and in containers.
 export GUI_LINUX="0"
 
 # -----------------------------------------------------------------------------
@@ -115,6 +115,35 @@ export PACKAGES_APT=()
 export PACKAGES_APT_EXTRAS=()
 export PACKAGES_APT_SKIP=()
 
+# Applies to Fedora.
+export PACKAGES_DNF=()
+export PACKAGES_DNF_EXTRAS=()
+export PACKAGES_DNF_SKIP=()
+
+# Packages defined here only get installed when GUI_LINUX=1 is set on Fedora.
+export PACKAGES_DNF_GUI=()
+export PACKAGES_DNF_GUI_EXTRAS=()
+export PACKAGES_DNF_GUI_SKIP=()
+
+# Install Fedora weak dependencies?
+# When set to "1" (default), DNF installs weak dependencies.
+# When set to "0", DNF --setopt=install_weak_deps=False is passed.
+export DNF_INSTALL_WEAK_DEPS="1"
+
+# Specific weak dependencies to skip when DNF_INSTALL_WEAK_DEPS is enabled.
+# When populated, DNF --setopt=exclude_from_weak=some-pkg,another-pkg is passed.
+export PACKAGES_DNF_WEAK_DEPS_SKIP=()
+
+# Extra COPR repositories to enable on Fedora (GUI mode only).
+# These are enabled in addition to the built-in COPRs defined in
+# _install/default/packages/fedora. Format: "owner/project"
+export FEDORA_COPRS_EXTRAS=()
+
+# COPR repositories to skip or disable on Fedora (GUI mode only).
+# Any repositories listed here will not be enabled. If they are
+# currently enabled on the system, the script will disable them.
+export FEDORA_COPRS_SKIP=()
+
 # Applies to macOS.
 export PACKAGES_BREW=()
 export PACKAGES_BREW_EXTRAS=()
@@ -137,6 +166,10 @@ export MISE_ARCH_SKIP=()
 export MISE_DEBIAN=()
 export MISE_DEBIAN_EXTRAS=()
 export MISE_DEBIAN_SKIP=()
+
+export MISE_FEDORA=()
+export MISE_FEDORA_EXTRAS=()
+export MISE_FEDORA_SKIP=()
 
 export MISE_DARWIN=()
 export MISE_DARWIN_EXTRAS=()
@@ -225,6 +258,11 @@ export CONFIG_INSTALL_GUI_LINUX_SKIP=()
 export CONFIG_INSTALL_ARCH=()
 export CONFIG_INSTALL_ARCH_EXTRAS=()
 export CONFIG_INSTALL_ARCH_SKIP=()
+
+# Configs defined here only get created when on Fedora Linux.
+export CONFIG_INSTALL_FEDORA=()
+export CONFIG_INSTALL_FEDORA_EXTRAS=()
+export CONFIG_INSTALL_FEDORA_SKIP=()
 
 # Configs defined here only get created when in WSL.
 export CONFIG_INSTALL_WSL=()

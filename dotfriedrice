@@ -22,6 +22,8 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # shellcheck disable=SC1091
   . "${DOTFRIEDRICE_PATH}/_install/default/packages/debian"
   # shellcheck disable=SC1091
+  . "${DOTFRIEDRICE_PATH}/_install/default/packages/fedora"
+  # shellcheck disable=SC1091
   . "${DOTFRIEDRICE_PATH}/_install/default/packages/darwin"
   # shellcheck disable=SC1091
   . "${DOTFRIEDRICE_PATH}/_install/default/mise_languages"
@@ -54,6 +56,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
 
   # Do we want to auto confirm packages during installation?
   PACKAGES_AUTO_CONFIRM="${PACKAGES_AUTO_CONFIRM:-0}"
+
+  # Do we want to install weak dependencies on Fedora?
+  DNF_INSTALL_WEAK_DEPS="${DNF_INSTALL_WEAK_DEPS:-1}"
 
   # Is the variable defined as an array or string? -z doesn't reliably work
   # on arrays since it only looks at the first element.
@@ -149,6 +154,62 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     PACKAGES_APT_SKIP=()
   fi
 
+  if [[ "${PACKAGES_DNF+x}" ]]; then
+    # If the variable is defined with an empty value, the intent is to
+    # override the defaults with nothing.
+    [ -z "${PACKAGES_DNF}" ] && PACKAGES_DNF=()
+  else
+    PACKAGES_DNF=("${DEFAULT_PACKAGES_DNF[@]}")
+  fi
+
+  if [[ "${PACKAGES_DNF_EXTRAS+x}" ]]; then
+    [ -z "${PACKAGES_DNF_EXTRAS}" ] && PACKAGES_DNF_EXTRAS=()
+  else
+    PACKAGES_DNF_EXTRAS=()
+  fi
+
+  if [[ "${PACKAGES_DNF_SKIP+x}" ]]; then
+    [ -z "${PACKAGES_DNF_SKIP}" ] && PACKAGES_DNF_SKIP=()
+  else
+    PACKAGES_DNF_SKIP=()
+  fi
+
+  if [[ "${PACKAGES_DNF_GUI+x}" ]]; then
+    [ -z "${PACKAGES_DNF_GUI}" ] && PACKAGES_DNF_GUI=()
+  else
+    PACKAGES_DNF_GUI=("${DEFAULT_PACKAGES_DNF_GUI[@]}")
+  fi
+
+  if [[ "${PACKAGES_DNF_GUI_EXTRAS+x}" ]]; then
+    [ -z "${PACKAGES_DNF_GUI_EXTRAS}" ] && PACKAGES_DNF_GUI_EXTRAS=()
+  else
+    PACKAGES_DNF_GUI_EXTRAS=()
+  fi
+
+  if [[ "${PACKAGES_DNF_GUI_SKIP+x}" ]]; then
+    [ -z "${PACKAGES_DNF_GUI_SKIP}" ] && PACKAGES_DNF_GUI_SKIP=()
+  else
+    PACKAGES_DNF_GUI_SKIP=()
+  fi
+
+  if [[ "${PACKAGES_DNF_WEAK_DEPS_SKIP+x}" ]]; then
+    [ -z "${PACKAGES_DNF_WEAK_DEPS_SKIP}" ] && PACKAGES_DNF_WEAK_DEPS_SKIP=()
+  else
+    PACKAGES_DNF_WEAK_DEPS_SKIP=()
+  fi
+
+  if [[ "${FEDORA_COPRS_EXTRAS+x}" ]]; then
+    [ -z "${FEDORA_COPRS_EXTRAS}" ] && FEDORA_COPRS_EXTRAS=()
+  else
+    FEDORA_COPRS_EXTRAS=()
+  fi
+
+  if [[ "${FEDORA_COPRS_SKIP+x}" ]]; then
+    [ -z "${FEDORA_COPRS_SKIP}" ] && FEDORA_COPRS_SKIP=()
+  else
+    FEDORA_COPRS_SKIP=()
+  fi
+
   if [[ "${PACKAGES_BREW+x}" ]]; then
     [ -z "${PACKAGES_BREW}" ] && PACKAGES_BREW=()
   else
@@ -219,6 +280,24 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     [ -z "${MISE_DEBIAN_SKIP}" ] && MISE_DEBIAN_SKIP=()
   else
     MISE_DEBIAN_SKIP=()
+  fi
+
+  if [[ "${MISE_FEDORA+x}" ]]; then
+    [ -z "${MISE_FEDORA}" ] && MISE_FEDORA=()
+  else
+    MISE_FEDORA=("${DEFAULT_MISE_FEDORA[@]}")
+  fi
+
+  if [[ "${MISE_FEDORA_EXTRAS+x}" ]]; then
+    [ -z "${MISE_FEDORA_EXTRAS}" ] && MISE_FEDORA_EXTRAS=()
+  else
+    MISE_FEDORA_EXTRAS=()
+  fi
+
+  if [[ "${MISE_FEDORA_SKIP+x}" ]]; then
+    [ -z "${MISE_FEDORA_SKIP}" ] && MISE_FEDORA_SKIP=()
+  else
+    MISE_FEDORA_SKIP=()
   fi
 
   if [[ "${MISE_DARWIN+x}" ]]; then
@@ -326,6 +405,24 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     CONFIG_INSTALL_ARCH_SKIP=()
   fi
 
+  if [[ "${CONFIG_INSTALL_FEDORA+x}" ]]; then
+    [ -z "${CONFIG_INSTALL_FEDORA}" ] && CONFIG_INSTALL_FEDORA=()
+  else
+    CONFIG_INSTALL_FEDORA=("${DEFAULT_CONFIG_INSTALL_FEDORA[@]}")
+  fi
+
+  if [[ "${CONFIG_INSTALL_FEDORA_EXTRAS+x}" ]]; then
+    [ -z "${CONFIG_INSTALL_FEDORA_EXTRAS}" ] && CONFIG_INSTALL_FEDORA_EXTRAS=()
+  else
+    CONFIG_INSTALL_FEDORA_EXTRAS=()
+  fi
+
+  if [[ "${CONFIG_INSTALL_FEDORA_SKIP+x}" ]]; then
+    [ -z "${CONFIG_INSTALL_FEDORA_SKIP}" ] && CONFIG_INSTALL_FEDORA_SKIP=()
+  else
+    CONFIG_INSTALL_FEDORA_SKIP=()
+  fi
+
   if [[ "${CONFIG_INSTALL_WSL+x}" ]]; then
     [ -z "${CONFIG_INSTALL_WSL}" ] && CONFIG_INSTALL_WSL=()
   else
@@ -415,6 +512,7 @@ _package_install() {
     ["pacman"]="--noconfirm"
     ["yay"]="--noconfirm --answerdiff None --answerclean None"
     ["apt"]="--yes"
+    ["dnf"]="-y"
   )
 
   local -a confirm_flag=()
@@ -443,6 +541,21 @@ EOF
     ;;
   apt)
     sudo apt-get update && sudo apt-get install "${confirm_flag[@]}" --no-install-recommends "${packages[@]}"
+    ;;
+  dnf)
+    # Make sure dnf knows about the latest metadata before installing. We use
+    # --best to prefer the highest version and --skip-broken so a single
+    # unavailable package doesn't abort the whole transaction.
+    sudo dnf makecache || true
+
+    local dnf_options=()
+    if [[ "${DNF_INSTALL_WEAK_DEPS}" == "0" ]]; then
+      dnf_options+=("--setopt=install_weak_deps=False")
+    elif ((${#PACKAGES_DNF_WEAK_DEPS_SKIP[@]} > 0)); then
+      dnf_options+=("--setopt=exclude_from_weak=$(IFS=,; echo "${PACKAGES_DNF_WEAK_DEPS_SKIP[*]}")")
+    fi
+
+    sudo dnf install "${confirm_flag[@]}" --best --skip-broken "${dnf_options[@]}" "${packages[@]}"
     ;;
   brew)
     brew install "${packages[@]}"
@@ -541,6 +654,129 @@ _install_packages_debian() {
   _package_install mise "${MISE_DEBIAN[@]}" "${MISE_DEBIAN_EXTRAS[@]}"
 }
 
+_install_packages_fedora() {
+  # Ensure GUI packages get skipped unless GUI is enabled.
+  if [ "${GUI_ENABLED}" != "1" ]; then
+    PACKAGES_DNF_GUI=()
+    PACKAGES_DNF_GUI_EXTRAS=()
+    PACKAGES_DNF_GUI_SKIP=()
+  fi
+
+  # Enable RPM Fusion free / nonfree repositories. A number of packages such as
+  # ffmpeg, gimp plugins and some multimedia codecs only live in RPM Fusion on
+  # Fedora. We enable both free and nonfree but only the free one is needed for
+  # DotFriedRice's defaults - nonfree is enabled for user convenience (e.g.
+  # for proprietary codecs / drivers).
+  if ! sudo dnf repolist enabled | grep --quiet --ignore-case "rpmfusion-free"; then
+    sudo dnf install -y \
+      "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" || true
+  fi
+
+  if ! sudo dnf repolist enabled | grep --quiet --ignore-case "rpmfusion-nonfree"; then
+    sudo dnf install -y \
+      "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm" || true
+  fi
+
+  # Enable Terra repository. A number of packages such as satty, rmpc and lact
+  # are available through Terra. We check if terra-release is already installed
+  # to avoid reinstalling it on every run.
+  if ! rpm -q terra-release >/dev/null 2>&1; then
+    sudo dnf install -y --nogpgcheck \
+      --repofrompath 'terra,https://repos.fyralabs.com/terra$releasever' \
+      terra-release || true
+  fi
+
+  # Make sure the system is up to date before installing anything new. This
+  # mirrors the pacman -Syu behaviour on Arch.
+  sudo dnf upgrade --refresh || true
+
+  # Enable COPR repositories for GUI components. The default list lives in
+  # _install/default/packages/fedora and can be extended or disabled from the
+  # dotfriedrice-config file.
+  if [ "${GUI_ENABLED}" == "1" ]; then
+    local -a fedora_coprs=()
+    fedora_coprs+=("${DEFAULT_FEDORA_COPRS[@]}")
+    fedora_coprs+=("${FEDORA_COPRS_EXTRAS[@]}")
+
+    # Remove skipped COPRs from the list of repositories to enable.
+    if [ ${#FEDORA_COPRS_SKIP[@]} -gt 0 ]; then
+      declare -A coprs_skip_map
+      for copr in "${FEDORA_COPRS_SKIP[@]}"; do
+        coprs_skip_map["${copr}"]=1
+      done
+
+      local -a filtered_coprs=()
+      for copr in "${fedora_coprs[@]}"; do
+        if [[ -z "${coprs_skip_map[${copr}]+x}" ]]; then
+          filtered_coprs+=("${copr}")
+        fi
+      done
+      fedora_coprs=("${filtered_coprs[@]}")
+    fi
+
+    # Disable repositories that are configured to be skipped but are currently enabled.
+    if [ ${#FEDORA_COPRS_SKIP[@]} -gt 0 ]; then
+      local enabled_repos
+      enabled_repos=$(sudo dnf repolist enabled 2>/dev/null || true)
+      for copr in "${FEDORA_COPRS_SKIP[@]}"; do
+        local copr_normalized="${copr//\//:}"
+        if echo "${enabled_repos}" | grep --quiet --ignore-case "copr:copr.fedorainfracloud.org:${copr_normalized}"; then
+          _skipping "COPR '${copr}' is enabled but skipped, disabling it..."
+          sudo dnf copr disable -y "${copr}" || true
+        fi
+      done
+    fi
+
+    for copr in "${fedora_coprs[@]}"; do
+      # The COPR repo file path follows dnf's naming convention:
+      #   /etc/yum.repos.d/_copr:copr.fedorainfracloud.org:owner:project.repo
+      local repo_file="/etc/yum.repos.d/_copr:copr.fedorainfracloud.org:${copr//\//:}.repo"
+
+      if [ -f "${repo_file}" ]; then
+        _skipping "COPR '${copr}' already enabled"
+      else
+        sudo dnf copr enable -y "${copr}" || true
+      fi
+    done
+  fi
+
+  # Check if ffmpeg is in any of the DNF package arrays. If so, remove it from
+  # the arrays and install it separately via dnf swap. Fedora ships ffmpeg-free
+  # by default and the full ffmpeg (RPM Fusion) must replace it with --allowerasing.
+  local ffmpeg_requested=0
+  local _ffmpeg_skip=("ffmpeg")
+
+  local _all_dnf_pkgs="${PACKAGES_DNF[*]} ${PACKAGES_DNF_EXTRAS[*]} ${PACKAGES_DNF_GUI[*]} ${PACKAGES_DNF_GUI_EXTRAS[*]}"
+  if [[ " ${_all_dnf_pkgs} " == *" ffmpeg "* ]]; then
+    ffmpeg_requested=1
+    _skip_packages "PACKAGES_DNF" "_ffmpeg_skip"
+    _skip_packages "PACKAGES_DNF_EXTRAS" "_ffmpeg_skip"
+    _skip_packages "PACKAGES_DNF_GUI" "_ffmpeg_skip"
+    _skip_packages "PACKAGES_DNF_GUI_EXTRAS" "_ffmpeg_skip"
+  fi
+
+  # Install Fedora (dnf) packages.
+  _package_install dnf "${PACKAGES_DNF[@]}" "${PACKAGES_DNF_EXTRAS[@]}" "${PACKAGES_DNF_GUI[@]}" "${PACKAGES_DNF_GUI_EXTRAS[@]}"
+
+  # Swap ffmpeg-free for the full ffmpeg (RPM Fusion) if ffmpeg was requested
+  # and ffmpeg-free is still installed on the system.
+  if [[ "${ffmpeg_requested}" == "1" ]] && rpm -q ffmpeg-free >/dev/null 2>&1; then
+    sudo dnf swap ffmpeg-free ffmpeg --allowerasing -y
+  fi
+
+  # Install Mise via the official standalone install script. Mise is not in the
+  # official Fedora repositories, mirroring how Debian handles it.
+  if ! command -v mise >/dev/null 2>&1; then
+    _curl https://mise.run | sh
+  fi
+
+  # Make sure mise's shims are on PATH for the rest of this script.
+  export PATH="${HOME}/.local/share/mise/shims:${PATH}"
+
+  # Install Mise packages.
+  _package_install mise "${MISE_FEDORA[@]}" "${MISE_FEDORA_EXTRAS[@]}"
+}
+
 _install_packages_macos() {
   local prefix="/opt/homebrew"
   [[ "${CPU_ARCH}" == "x86_64" ]] && prefix="/usr/local"
@@ -620,6 +856,14 @@ _display_packages() {
       _package_display "APT (extras)" "${PACKAGES_APT_EXTRAS[@]}"
       _package_display "Mise (default)" "${MISE_DEBIAN[@]}"
       _package_display "Mise (extras)" "${MISE_DEBIAN_EXTRAS[@]}"
+
+    elif [ "${OS_DISTRO}" == "fedora" ]; then
+      _package_display "DNF (default)" "${PACKAGES_DNF[@]}"
+      _package_display "DNF (extras)" "${PACKAGES_DNF_EXTRAS[@]}"
+      [ "${GUI_ENABLED}" == "1" ] && _package_display "DNF GUI (default)" "${PACKAGES_DNF_GUI[@]}"
+      [ "${GUI_ENABLED}" == "1" ] && _package_display "DNF GUI (extras)" "${PACKAGES_DNF_GUI_EXTRAS[@]}"
+      _package_display "Mise (default)" "${MISE_FEDORA[@]}"
+      _package_display "Mise (extras)" "${MISE_FEDORA_EXTRAS[@]}"
     fi
   else
     _package_display "Brew (default)" "${PACKAGES_BREW[@]}"
@@ -691,7 +935,7 @@ _config_install() {
 
   for item in "${commands[@]}"; do
     # A special rule to avoid breaking DNS in WSL 2.
-    if [[ "${OS_IN_WSL}" == "1" && "${OS_DISTRO}" = "arch" ]]; then
+    if [[ "${OS_IN_WSL}" == "1" && ("${OS_DISTRO}" = "arch" || "${OS_DISTRO}" = "fedora") ]]; then
       [[ "${item}" == *"stub-resolv.conf"* ]] && continue
     fi
 
@@ -779,7 +1023,7 @@ _config_install_display() {
     done
 
     # A special rule to avoid breaking DNS in WSL 2.
-    if [[ "${OS_IN_WSL}" == "1" && "${OS_DISTRO}" = "arch" ]]; then
+    if [[ "${OS_IN_WSL}" == "1" && ("${OS_DISTRO}" = "arch" || "${OS_DISTRO}" = "fedora") ]]; then
       [[ "${item}" == *"stub-resolv.conf"* ]] && continue
     fi
   done
@@ -889,28 +1133,46 @@ detect_and_prepare_gpu() {
     return
   fi
 
+  # Helper that appends GPU driver packages to the correct distro package list.
+  # On Arch this is PACKAGES_PACMAN, on Fedora it is PACKAGES_DNF. This lets the
+  # rest of the function stay vendor-focused without sprinkling distro checks
+  # into every branch.
+  _gpu_pkg() {
+    case "${OS_DISTRO}" in
+    arch)
+      PACKAGES_PACMAN+=("$@")
+      ;;
+    fedora)
+      PACKAGES_DNF+=("$@")
+      ;;
+    esac
+  }
+
   local kernel_package=
-  case "${OS_KERNEL}" in
-  *cachyos-lts*)
-    kernel_package="linux-cachyos-lts-headers"
-    ;;
-  *cachyos*)
-    kernel_package="linux-cachyos-headers"
-    ;;
-  *arch*)
-    kernel_package="linux-headers"
-    ;;
-  *lts*)
-    kernel_package="linux-lts-headers"
-    ;;
-  *zen*)
-    kernel_package="linux-zen-headers"
-    ;;
-  *hardened*)
-    kernel_package="linux-hardened-headers"
-    ;;
-  *)
-    cat <<EOF
+  case "${OS_DISTRO}" in
+  arch)
+    # Arch has multiple kernel variants, each with its own -headers package.
+    case "${OS_KERNEL}" in
+    *cachyos-lts*)
+      kernel_package="linux-cachyos-lts-headers"
+      ;;
+    *cachyos*)
+      kernel_package="linux-cachyos-headers"
+      ;;
+    *arch*)
+      kernel_package="linux-headers"
+      ;;
+    *lts*)
+      kernel_package="linux-lts-headers"
+      ;;
+    *zen*)
+      kernel_package="linux-zen-headers"
+      ;;
+    *hardened*)
+      kernel_package="linux-hardened-headers"
+      ;;
+    *)
+      cat <<EOF
 
 '${OS_KERNEL}' Linux kernel was detected but this script doesn't automatically
 support it because it can't determine which linux-*-headers package to install.
@@ -918,7 +1180,15 @@ support it because it can't determine which linux-*-headers package to install.
 If you feel this is a bug please open an issue at: ${DOTFRIEDRICE_CLONE_URL}
 
 EOF
-    _error "Unsupported Linux Kernel detected, aborting!"
+      _error "Unsupported Linux Kernel detected, aborting!"
+      ;;
+    esac
+    ;;
+  fedora)
+    # Fedora ships a single unified kernel so kernel-devel / kernel-headers
+    # always match the running kernel. kernel-devel is what akmod-nvidia needs
+    # to build the nvidia module on boot.
+    kernel_package="kernel-devel"
     ;;
   esac
 
@@ -952,7 +1222,7 @@ EOF
 
   case "${gpu_line}" in
   *NVIDIA*)
-    PACKAGES_PACMAN+=("${kernel_package}")
+    _gpu_pkg "${kernel_package}"
 
     # Avoid recreating the file every time, if a user changes it manually then
     # let's not clobber their changes.
@@ -995,10 +1265,60 @@ EOF
     # Choose driver based on generation.
     case "${gpu_line}" in
     *RTX\ [2-9][0-9]* | *GTX\ 16*)
-      PACKAGES_PACMAN+=("nvidia-open-dkms" "nvidia-utils" "lib32-nvidia-utils")
+      case "${OS_DISTRO}" in
+      arch)
+        _gpu_pkg "nvidia-open-dkms" "nvidia-utils" "lib32-nvidia-utils"
+        ;;
+      fedora)
+        _gpu_pkg "akmod-nvidia" "xorg-x11-drv-nvidia-cuda"
+        _gpu_pkg "nvidia-driver-libs.i686"
+        ;;
+      esac
       ;;
     *GTX\ [7-9]* | *GTX\ 10*)
-      PACKAGES_AUR+=("nvidia-580xx-dkms" "nvidia-580xx-utils" "lib32-nvidia-580xx-utils")
+      case "${OS_DISTRO}" in
+      arch)
+        PACKAGES_AUR+=("nvidia-580xx-dkms" "nvidia-580xx-utils" "lib32-nvidia-580xx-utils")
+        ;;
+      fedora)
+        # Since driver v590 and later (Fedora 44+), support for GTX 800/900/10
+        # was dropped. These GPUs need the v580 legacy driver on Fedora 44+.
+        # On older Fedora releases the current akmod-nvidia still supports them.
+        local fedora_ver
+        fedora_ver="$(rpm -E %fedora)"
+
+        if (( fedora_ver >= 44 )); then
+          _gpu_pkg "akmod-nvidia-580xx" "xorg-x11-drv-nvidia-580xx" "xorg-x11-drv-nvidia-580xx-cuda"
+        else
+          _gpu_pkg "akmod-nvidia" "xorg-x11-drv-nvidia-cuda"
+          _gpu_pkg "nvidia-driver-libs.i686"
+        fi
+        ;;
+      esac
+      ;;
+    *GTX\ 6*)
+      case "${OS_DISTRO}" in
+      arch)
+        # GTX 600 series (Kepler) also uses the 580xx driver on Arch.
+        PACKAGES_AUR+=("nvidia-580xx-dkms" "nvidia-580xx-utils" "lib32-nvidia-580xx-utils")
+        ;;
+      fedora)
+        # GeForce 600 series are Kepler GPUs and require the v470 legacy driver.
+        _gpu_pkg "akmod-nvidia-470xx" "xorg-x11-drv-nvidia-470xx" "xorg-x11-drv-nvidia-470xx-cuda"
+        ;;
+      esac
+      ;;
+    *GTX\ [45]*)
+      case "${OS_DISTRO}" in
+      arch)
+        _unsupported_gpu "See if your GPU is listed here: https://wiki.archlinux.org/title/NVIDIA" "NVIDIA"
+        ;;
+      fedora)
+        # GeForce 400/500 series are Fermi GPUs and require the v390 legacy driver.
+        # WARNING: v390 is end-of-line and has no Wayland support.
+        _gpu_pkg "akmod-nvidia-390xx" "xorg-x11-drv-nvidia-390xx" "xorg-x11-drv-nvidia-390xx-cuda"
+        ;;
+      esac
       ;;
     *)
       _unsupported_gpu "See if your GPU is listed here: https://wiki.archlinux.org/title/NVIDIA" "NVIDIA"
@@ -1008,19 +1328,29 @@ EOF
   *AMD*)
     # AMD drivers are handled automatically by the Linux kernel but let's get
     # the Vulkan drivers so Steam and gaming works. amdgpu_top is for monitoring.
-    PACKAGES_PACMAN+=("vulkan-radeon" "lib32-vulkan-radeon" "amdgpu_top")
+    case "${OS_DISTRO}" in
+    arch)
+      _gpu_pkg "vulkan-radeon" "lib32-vulkan-radeon" "amdgpu_top"
+      ;;
+    fedora)
+      # mesa-vulkan-drivers is in the official Fedora repos. The 32-bit
+      # drivers come from the .i686 subpackage. corectrl is the closest
+      # monitoring / OC tool to amdgpu_top available on Fedora.
+      _gpu_pkg "mesa-vulkan-drivers" "mesa-vulkan-drivers.i686" "corectrl"
+      ;;
+    esac
     ;;
   *Intel*)
     # This is for monitoring.
-    PACKAGES_PACMAN+=("intel-gpu-tools")
+    _gpu_pkg "intel-gpu-tools"
 
     # Choose driver based on generation.
     case "${gpu_line}" in
     *HD\ Graphics* | *Iris* | *Xe*)
-      PACKAGES_PACMAN+=("intel-media-driver")
+      _gpu_pkg "intel-media-driver"
       ;;
     *2nd\ Gen* | *3rd\ Gen* | *GMA*)
-      PACKAGES_PACMAN+=("libva-intel-driver")
+      _gpu_pkg "libva-intel-driver"
       ;;
     *)
       _unsupported_gpu "See if your GPU is listed here: https://wiki.archlinux.org/title/Intel_graphics" "Intel"
@@ -1048,7 +1378,23 @@ detect_and_prepare_network() {
   fi
 
   if compgen -G "/sys/class/net/*/wireless" 1>/dev/null; then
-    PACKAGES_PACMAN+=("impala" "iwd")
+    # impala is a TUI Wi-Fi manager. On Arch it lives in the official repos.
+    # On Fedora it isn't packaged, so only iwd gets installed here - users who
+    # want impala can install it manually from the upstream GitHub releases
+    # (https://github.com/pythops/impala). iwd is the wireless daemon used on
+    # both distros when you want a standalone wireless stack separate from
+    # NetworkManager.
+    case "${OS_DISTRO}" in
+    arch)
+      PACKAGES_PACMAN+=("impala" "iwd")
+      ;;
+    fedora)
+      # Fedora ships NetworkManager by default which already handles Wi-Fi.
+      # We still pull in iwd so users who prefer the standalone wireless
+      # daemon can switch to it. impala is skipped (see comment above).
+      PACKAGES_DNF+=("iwd")
+      ;;
+    esac
     SYSTEMD_ENABLED_SERVICES+=("iwd.service")
 
     echo "Wi-Fi adapter found, iwd + impala packages will be installed"
@@ -1066,7 +1412,17 @@ detect_and_prepare_bluetooth() {
   fi
 
   if [ -d "/sys/class/bluetooth" ]; then
-    PACKAGES_PACMAN+=("bluetui" "bluez")
+    case "${OS_DISTRO}" in
+    arch)
+      PACKAGES_PACMAN+=("bluetui" "bluez")
+      ;;
+    fedora)
+      # bluez is in the official Fedora repos. bluetui is available on Fedora
+      # via cargo / COPR but for now we ship bluez only and document bluetui
+      # as a manual install in _docs/packages.md.
+      PACKAGES_DNF+=("bluez")
+      ;;
+    esac
     SYSTEMD_ENABLED_SERVICES+=("bluetooth.service")
 
     echo "Compatible adapter found, bluez + bluetui packages will be installed"
@@ -1337,11 +1693,13 @@ install_configs() {
   local config_install=()
   local config_install_gui_linux=()
   local config_install_arch=()
+  local config_install_fedora=()
   local config_install_wsl=()
 
   _skip_install_configs "CONFIG_INSTALL" "CONFIG_INSTALL_SKIP"
   _skip_install_configs "CONFIG_INSTALL_GUI_LINUX" "CONFIG_INSTALL_GUI_LINUX_SKIP"
   _skip_install_configs "CONFIG_INSTALL_ARCH" "CONFIG_INSTALL_ARCH_SKIP"
+  _skip_install_configs "CONFIG_INSTALL_FEDORA" "CONFIG_INSTALL_FEDORA_SKIP"
   _skip_install_configs "CONFIG_INSTALL_WSL" "CONFIG_INSTALL_WSL_SKIP"
 
   ((${#CONFIG_INSTALL[@]} > 0)) && config_install+=("${CONFIG_INSTALL[@]}")
@@ -1352,6 +1710,9 @@ install_configs() {
 
   ((${#CONFIG_INSTALL_ARCH[@]} > 0)) && config_install_arch+=("${CONFIG_INSTALL_ARCH[@]}")
   ((${#CONFIG_INSTALL_ARCH_EXTRAS[@]} > 0)) && config_install_arch+=("${CONFIG_INSTALL_ARCH_EXTRAS[@]}")
+
+  ((${#CONFIG_INSTALL_FEDORA[@]} > 0)) && config_install_fedora+=("${CONFIG_INSTALL_FEDORA[@]}")
+  ((${#CONFIG_INSTALL_FEDORA_EXTRAS[@]} > 0)) && config_install_fedora+=("${CONFIG_INSTALL_FEDORA_EXTRAS[@]}")
 
   ((${#CONFIG_INSTALL_WSL[@]} > 0)) && config_install_wsl+=("${CONFIG_INSTALL_WSL[@]}")
   ((${#CONFIG_INSTALL_WSL_EXTRAS[@]} > 0)) && config_install_wsl+=("${CONFIG_INSTALL_WSL_EXTRAS[@]}")
@@ -1396,6 +1757,21 @@ install_configs() {
     _config_install_display "Configs (Arch)" "${config_install_arch[@]}"
   fi
 
+  if [ "${OS_DISTRO}" == "fedora" ]; then
+    # The dnf config lives at /etc/dnf/dnf.conf on Fedora. On the first run we
+    # back up the existing real file (if present and not already a symlink)
+    # the same way the pacman-contrib config is handled on Arch.
+    local dnf_conf_path="/etc/dnf/dnf.conf"
+
+    if [[ "${DOTFRIEDRICE_FIRST_RUN}" == "1" && -f "${dnf_conf_path}" && ! -L "${dnf_conf_path}" ]]; then
+      sudo mv "${dnf_conf_path}" "${dnf_conf_path}.bak"
+    fi
+
+    sudo mkdir -p "$(dirname "${dnf_conf_path}")"
+
+    _config_install_display "Configs (Fedora)" "${config_install_fedora[@]}"
+  fi
+
   # Nested helper function.
   _activate_configs() {
     # Avoid using ln -T flag since it doesn't exist on macOS. We're being
@@ -1408,6 +1784,7 @@ install_configs() {
     [ "${GUI_ENABLED}" == "1" ] && _config_install "${config_install_gui_linux[@]}"
     [ "${OS_IN_WSL}" == "1" ] && _config_install "%WindowsUser" "${windows_user}" "${config_install_wsl[@]}"
     [ "${OS_DISTRO}" == "arch" ] && _config_install "${config_install_arch[@]}"
+    [ "${OS_DISTRO}" == "fedora" ] && _config_install "${config_install_fedora[@]}"
 
     return 0
   }
@@ -1472,10 +1849,13 @@ install_packages() {
   _skip_packages "PACKAGES_AUR" "PACKAGES_AUR_SKIP"
   _skip_packages "PACKAGES_AUR_GUI" "PACKAGES_AUR_GUI_SKIP"
   _skip_packages "PACKAGES_APT" "PACKAGES_APT_SKIP"
+  _skip_packages "PACKAGES_DNF" "PACKAGES_DNF_SKIP"
+  _skip_packages "PACKAGES_DNF_GUI" "PACKAGES_DNF_GUI_SKIP"
   _skip_packages "PACKAGES_BREW" "PACKAGES_BREW_SKIP"
   _skip_packages "PACKAGES_BREW_CASK" "PACKAGES_BREW_CASK_SKIP"
   _skip_packages "MISE_ARCH" "MISE_ARCH_SKIP"
   _skip_packages "MISE_DEBIAN" "MISE_DEBIAN_SKIP"
+  _skip_packages "MISE_FEDORA" "MISE_FEDORA_SKIP"
   _skip_packages "MISE_DARWIN" "MISE_DARWIN_SKIP"
 
   # On the first run, there will be a number of prompts to contend with, if
@@ -1517,6 +1897,8 @@ EOF
       _install_packages_arch
     elif [ "${OS_DISTRO}" == "debian" ]; then
       _install_packages_debian
+    elif [ "${OS_DISTRO}" == "fedora" ]; then
+      _install_packages_fedora
     fi
   else
     _install_packages_macos
@@ -1797,7 +2179,24 @@ configure_systemd_services() {
     flags=("${@}")
 
     # Ensure Docker isn't started if Docker Desktop is installed.
-    if [[ " ${service} " == *" docker.service "* ]] && pacman -Qeq "docker-desktop" >/dev/null 2>&1; then
+    # The docker-desktop package check is distro aware: pacman on Arch, rpm on
+    # Fedora. On Debian / macOS this block is a no-op since docker.service isn't
+    # in their systemd_services list.
+    _docker_desktop_installed() {
+      case "${OS_DISTRO}" in
+      arch)
+        pacman -Qeq "docker-desktop" >/dev/null 2>&1
+        ;;
+      fedora)
+        rpm -q docker-desktop >/dev/null 2>&1
+        ;;
+      *)
+        return 1
+        ;;
+      esac
+    }
+
+    if [[ " ${service} " == *" docker.service "* ]] && _docker_desktop_installed; then
       if sudo systemctl --quiet is-enabled "${service}"; then
         sudo systemctl disable --now docker.service docker.socket containerd.service 1>/dev/null
         echo "'${service}' has been disabled since Docker Desktop is installed"
@@ -1828,7 +2227,20 @@ configure_groups() {
   _info "CONFIGURE GROUPS"
 
   if [ "${GUI_ENABLED}" == "1" ]; then
-    local packages=("${PACKAGES_PACMAN_GUI[@]}" "${PACKAGES_PACMAN_GUI_EXTRAS[@]}")
+    # Build the GUI package list based on the active distro so the group check
+    # below works on Arch (pacman), Fedora (dnf) and any future distro that
+    # uses the same _GUI variable naming scheme.
+    case "${OS_DISTRO}" in
+    arch)
+      local packages=("${PACKAGES_PACMAN_GUI[@]}" "${PACKAGES_PACMAN_GUI_EXTRAS[@]}")
+      ;;
+    fedora)
+      local packages=("${PACKAGES_DNF_GUI[@]}" "${PACKAGES_DNF_GUI_EXTRAS[@]}")
+      ;;
+    *)
+      local packages=()
+      ;;
+    esac
 
     for group in docker libvirt; do
       if [[ " ${packages[*]} " == *" ${group} "* ]] &&
@@ -1997,6 +2409,20 @@ configure_gui_app_themes() {
     _skipping "Only runs on Linux when GUI_LINUX=1 is set"
     return
   fi
+  
+  # Build the GUI package list based on the active distro so the firefox / gimp
+  # detection below works regardless of whether pacman or dnf was used.
+  case "${OS_DISTRO}" in
+  arch)
+    local packages=("${PACKAGES_PACMAN_GUI[@]}" "${PACKAGES_PACMAN_GUI_EXTRAS[@]}")
+    ;;
+  fedora)
+    local packages=("${PACKAGES_DNF_GUI[@]}" "${PACKAGES_DNF_GUI_EXTRAS[@]}")
+    ;;
+  *)
+    local packages=()
+    ;;
+  esac
 
   if [[ " ${PACKAGES_PACMAN_GUI[*]} " == *" firefox "* ]]; then
     local firefox_config_base_dir=
@@ -2048,7 +2474,7 @@ configure_gui_app_themes() {
     sort --version-sort |
     tail -n 1 || true)
 
-  if [[ " ${PACKAGES_PACMAN_GUI[*]} " == *" gimp "* ]]; then
+  if [[ " ${packages[*]} " == *" gimp "* ]]; then
     local gimp_config="${XDG_CONFIG_HOME}/GIMP/${gimp_latest_version}/gimprc"
 
     if [ -f "${gimp_config}" ]; then
