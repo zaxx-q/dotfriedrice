@@ -362,5 +362,5 @@ binds {
 // Theme and personalized configs
 // ----------------------------------------------------------------------------
 
-include "theme.kdl"
-include "config.kdl.local"
+include optional=true "theme.kdl"
+include optional=true "config.kdl.local"

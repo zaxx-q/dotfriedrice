@@ -18,6 +18,12 @@ set -o nounset
 # shellcheck disable=SC1091
 . "${DOTFRIEDRICE_PATH}/dotfriedrice"
 
+if [ "${THEME_SYSTEM:-1}" != "1" ]; then
+  echo "Theme system is disabled (THEME_SYSTEM=0 in dotfriedrice-config)."
+  echo "Set THEME_SYSTEM=\"1\" to enable theme management."
+  exit
+fi
+
 mapfile -t ALL_THEMES < <(find "${DOTFRIEDRICE_PATH}/_themes" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)
 
 ARG="${1:-}"
