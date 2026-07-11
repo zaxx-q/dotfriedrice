@@ -43,6 +43,13 @@ export PASSWORD_STORE_DIR="${XDG_CONFIG_HOME}/password-store"
 # https://dandavison.github.io/delta/environment-variables.html
 export DELTA_FEATURES="diff-so-fancy"
 
+# Setup Compose Key
+export XCOMPOSEFILE="${XDG_CONFIG_HOME}/XCompose"
+# export GTK_IM_MODULE="xim"
+# export GTK_IM_MODULE="gtk-im-context-simple"
+export GTK_IM_MODULE="simple"
+export QT_IM_MODULE="xim"
+
 # Load local settings if they exist.
 # shellcheck disable=SC1091
 if [ -f "${XDG_CONFIG_HOME}/zsh/.zprofile.local" ]; then . "${XDG_CONFIG_HOME}/zsh/.zprofile.local"; fi

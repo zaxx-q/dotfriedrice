@@ -1,0 +1,15 @@
+# Include the default system rules so you don't lose the standard shortcuts
+include "%L"
+
+# Custom Arrows
+<Multi_key> <minus> <greater> : "→"
+<Multi_key> <less> <minus> : "←"
+<Multi_key> <equal> <equal> : "≡"
+
+# Math Symbols
+<Multi_key> <p> <i> : "π"
+
+# Fun / Emojis
+<Multi_key> <l> <o> <v> <e> : "❤️"
+<Multi_key> <f> <a} <c> <e> : "ツ"
+<Multi_key> <s} <h} <r> <u> <g> : "¯\_(ツ)_/¯"
