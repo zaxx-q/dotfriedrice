@@ -569,8 +569,7 @@ binds {
     Mod+Alt+Return           hotkey-overlay-title="Terminal (floating)" { spawn "ghostty" "--class=dfr.floating.ghostty"; }
     Mod+G                    hotkey-overlay-title="File manager" { spawn "thunar"; }
     Mod+Alt+G                hotkey-overlay-title="File manager (floating)" { spawn "dbus-run-session" "thunar" "--name=dfr.floating.thunar" "downloads"; }
-    Alt+Z                    hotkey-overlay-title="File manager (zoxide)" { spawn "ghostty" "--background-opacity=0.7" "--class=dfr.floating.ghostty" "-e" "bash" "-c" "choice=$(zoxide query -i); if [ -n \"$choice\" ]; then thunar \"$choice\"; fi"; }
-
+    Alt+Z                    hotkey-overlay-title="File manager (zoxide)" { spawn "ghostty" "--background-opacity=0.7" "--class=dfr.floating.ghostty" "-e" "bash" "-c" "choice=$(zoxide query -i); if [ -n \"$choice\" ]; then zoxide add \"$choice\"; niri msg action spawn -- thunar \"$choice\"; fi"; }
     Mod+Alt+N                hotkey-overlay-title="Notes" { spawn "dfr-launch-or-focus-tui" "notes"; }
     Mod+Alt+Ctrl+N           hotkey-overlay-title="Notes (directory)" { spawn-sh "dfr-launch-or-focus-tui ${EDITOR} ${NOTES_DIRECTORY}"; }
  // Mod+Alt+P                hotkey-overlay-title="Passwords" { spawn "dfr-launch-or-focus" "keepassxc"; }
