@@ -199,7 +199,7 @@ binds {
     Mod+Alt+T            hotkey-overlay-title="Terminal" { spawn "ghostty"; }
     Mod+Alt+Shift+T      hotkey-overlay-title="Terminal (floating)" { spawn "ghostty" "--class=dfr.floating.ghostty"; }
     Mod+Alt+F            hotkey-overlay-title="File manager" { spawn "thunar"; }
-    Mod+Alt+Shift+F      hotkey-overlay-title="File manager (floating)" { spawn "thunar" "--name=dfr.floating.thunar"; }
+    Mod+Alt+Shift+F      hotkey-overlay-title="File manager (floating)" { spawn "dbus-run-session" "thunar" "--name=dfr.floating.thunar"; }
     Mod+Alt+N            hotkey-overlay-title="Notes" { spawn "dfr-launch-or-focus-tui" "notes"; }
     Mod+Alt+Shift+N      hotkey-overlay-title="Notes (directory)" { spawn-sh "dfr-launch-or-focus-tui ${EDITOR} ${NOTES_DIRECTORY}"; }
     Mod+Alt+P            hotkey-overlay-title="Passwords" { spawn "dfr-launch-or-focus" "keepassxc"; }
