@@ -210,7 +210,7 @@ EOF
     [[ -f "/.dockerenv" || -f "/run/.containerenv" ]] && OS_IN_CONTAINER="1"
 
     # Can we install and configure a window manager and GUI tools?
-    if [[ "${OS_DISTRO}" = "arch" && "${OS_IN_WSL}" != "1" && "${OS_IN_CONTAINER}" != "1" ]]; then
+    if [[ "${OS_DISTRO_LIKE}" = "arch" && "${OS_IN_WSL}" != "1" && "${OS_IN_CONTAINER}" != "1" ]]; then
       GUI_ELIGIBLE="1"
     fi
 
