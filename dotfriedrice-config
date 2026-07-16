@@ -313,11 +313,13 @@ export CONFIG_INSTALL_AUTO_CONFIRM="0"
 # Configs defined here will get created in all OS / environments.
 export CONFIG_INSTALL=()
 export CONFIG_INSTALL_EXTRAS=(
-  sudo ln -s $(which bun) ~/.local/bin/local/node
-  sudo ln -s $(which bun) ~/.local/bin/local/npm
-  sudo ln -s $(which bun) ~/.local/bin/local/pnpm
-  sudo ln -s $(which bun) ~/.local/bin/local/yarn
-  sudo ln -s $(which bunx) ~/.local/bin/local/npx
+  "ln -fns ~/.local/share/mise/installs/bun/latest/bin/bun ~/.local/bin/local/node"
+  "ln -fns ~/.local/share/mise/installs/bun/latest/bin/bun ~/.local/bin/local/npm"
+  "ln -fns ~/.local/share/mise/installs/bun/latest/bin/bun ~/.local/bin/local/pnpm"
+  "ln -fns ~/.local/share/mise/installs/bun/latest/bin/bun ~/.local/bin/local/yarn"
+  "ln -fns ~/.local/share/mise/installs/bun/latest/bin/bunx ~/.local/bin/local/npx"
+  "sudo systemctl disable NetworkManager-wait-online.service"
+  "sudo systemctl mask NetworkManager-wait-online.service"
 )
 export CONFIG_INSTALL_SKIP=(
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/fastfetch/config.jsonc\" \"\${XDG_CONFIG_HOME}/fastfetch/config.jsonc\""
@@ -335,6 +337,7 @@ export CONFIG_INSTALL_GUI_LINUX_SKIP=(
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/swaylock/config\" \"\${XDG_CONFIG_HOME}/swaylock/config\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/waybar/config.jsonc\" \"\${XDG_CONFIG_HOME}/waybar/config.jsonc\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/waybar/style.css\" \"\${XDG_CONFIG_HOME}/waybar/style.css\""
+  "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/systemd/system/systemd-networkd-wait-online.service.d/99-network-timeout.conf\" \"/etc/systemd/system/systemd-networkd-wait-online.service.d/99-network-timeout.conf"\"
 )
 
 # Configs defined here only get created when on Arch Linux.
