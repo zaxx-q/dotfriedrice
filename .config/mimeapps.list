@@ -62,16 +62,16 @@ audio/x-vorbis+ogg=mpv.desktop;
 audio/x-wav=mpv.desktop;
 audio/x-wavpack=mpv.desktop;
 
-image/avif=mpv.desktop;
-image/bmp=mpv.desktop;
-image/gif=mpv.desktop;
-image/heic=mpv.desktop;
-image/heif=mpv.desktop;
-image/jpeg=mpv.desktop;
-image/png=mpv.desktop;
-image/svg+xml=mpv.desktop;
-image/tiff=mpv.desktop;
-image/webp=mpv.desktop;
+image/avif=imv-dir.desktop;
+image/bmp=imv-dir.desktop;
+image/gif=imv-dir.desktop;
+image/heic=imv-dir.desktop;
+image/heif=imv-dir.desktop;
+image/jpeg=imv-dir.desktop;
+image/png=imv-dir.desktop;
+image/svg+xml=imv-dir.desktop;
+image/tiff=imv-dir.desktop;
+image/webp=imv-dir.desktop;
 
 application/javascript=dev.zed.Zed.desktop;
 application/json=dev.zed.Zed.desktop;
