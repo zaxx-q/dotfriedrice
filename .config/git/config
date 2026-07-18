@@ -2,6 +2,7 @@
   editor = zed --wait
   pager = delta
   symlinks = true
+  autocrlf = input
 [delta]
   navigate = true
 
