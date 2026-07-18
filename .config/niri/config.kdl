@@ -342,17 +342,16 @@ window-rule {
     match app-id=r#"^gimp$"# title=r#"Preferences"#
     match app-id=r#"^mpv$"#
     match app-id=r#"^soffice$"# title=r#"^Text Import"#
-    match app-id=r#"^thunar$"# title=r#"^Rename "#
+    match app-id=r#"^[tT]hunar$"# title=r#"^(Rename |File Operation )"#
     match app-id=r#"^virt-manager$"# title=r#" - Connection Details"#
     match app-id=r#"^wev$"#
     match app-id=r#"^xarchiver$"#
+    match app-id=r#"^zenity$"#
+    match app-id=r#"^com-abdownloadmanager-desktop-AppKt$"#
     match app-id=r#"zen$"# title=r#"^(Picture-in-Picture|Library|About Mozilla Firefox|Firefox - Choose a profile)$"#
     match app-id="zoom"
-    // match app-id=r#"^org\.gnome\.Calculator$"#
-    // match app-id=r#"^gnome-calculator$"#
     // match app-id=r#"^galculator$"#
     // match app-id=r#"^blueman-manager$"#
-    // match app-id=r#"^org\.gnome\.Nautilus$"#
     match app-id=r#"^xdg-desktop-portal$"#
     match app-id=r#"^exo-desktop-item-edit$"#
     open-floating true
@@ -442,6 +441,7 @@ window-rule {
 
 // ----------------------------------------------------------------------------
 // Key binds
+// Available hotkeys: Mod + U I O H J
 // ----------------------------------------------------------------------------
 
 binds {
@@ -617,7 +617,7 @@ binds {
     Mod+Alt+C                hotkey-overlay-title="Center all visible columns" { center-visible-columns; }
 
     Mod+Z                    repeat=false hotkey-overlay-title="Toggle floating window" { toggle-window-floating; }
-    Mod+I                    hotkey-overlay-title="Switch focus between floating and tiling"{ switch-focus-between-floating-and-tiling; }
+    Mod+Alt+F                hotkey-overlay-title="Switch focus between floating and tiling"{ switch-focus-between-floating-and-tiling; }
 
     Mod+T                    hotkey-overlay-title="Toggle tabbed column" { toggle-column-tabbed-display; }
 
@@ -630,7 +630,7 @@ binds {
     Mod+F                    hotkey-overlay-title="Maximize column" { maximize-column; }
     Mod+Ctrl+F               hotkey-overlay-title="Full screen window" { fullscreen-window; }
     Mod+Ctrl+Shift+F         hotkey-overlay-title="Windowed (fake/detached) fullscreen" { toggle-windowed-fullscreen; }
-    Mod+Alt+F                hotkey-overlay-title="Fill empty column space" { expand-column-to-available-width; }
+ // Mod+Alt+F                hotkey-overlay-title="Fill empty column space" { expand-column-to-available-width; }
 
     Mod+R                    hotkey-overlay-title="Cycle preset widths" { switch-preset-column-width; }
     Mod+Alt+R                hotkey-overlay-title="Cycle preset heights" { switch-preset-window-height; }
