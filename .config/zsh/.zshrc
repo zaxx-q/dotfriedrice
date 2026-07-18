@@ -139,6 +139,11 @@ zstyle ":fzf-tab:*" use-fzf-default-opts yes
 # Preview file contents when tab completing directories.
 zstyle ":fzf-tab:complete:cd:*" fzf-preview "ls --color=always \${realpath}"
 
+# Use the local ripgrep default command config if it exists.
+if [[ -f "${XDG_CONFIG_HOME}/ripgrep/ripgreprc" ]]; then
+  export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgrep/ripgreprc"
+fi
+
 # Load aliases if they exist.
 # shellcheck disable=SC1091
 [ -f "${XDG_CONFIG_HOME}/zsh/.aliases" ] && . "${XDG_CONFIG_HOME}/zsh/.aliases"
