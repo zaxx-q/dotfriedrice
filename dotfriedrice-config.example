@@ -155,6 +155,9 @@ declare -A MISE_LANGUAGES_EXTRAS=()
 export MISE_LANGUAGES
 export MISE_LANGUAGES_EXTRAS
 
+# For each item, supply just the language name (key), such as "node".
+export MISE_LANGUAGES_SKIP=()
+
 # -----------------------------------------------------------------------------
 # External scripts
 # -----------------------------------------------------------------------------
@@ -246,6 +249,9 @@ declare -A SUDOERS_ENTRIES_EXTRAS=()
 export SUDOERS_ENTRIES
 export SUDOERS_ENTRIES_EXTRAS
 
+# For each item, supply just the rule name (key), such as "dfr-timedatectl".
+export SUDOERS_ENTRIES_SKIP=()
+
 # -----------------------------------------------------------------------------
 # Udev rules
 # -----------------------------------------------------------------------------
@@ -270,6 +276,9 @@ declare -A UDEV_RULES=()
 export UDEV_RULES
 export UDEV_RULES_EXTRAS
 
+# For each item, supply just the rule name (key), such as "99-my-custom-rule".
+export UDEV_RULES_SKIP=()
+
 # -----------------------------------------------------------------------------
 # Enabled systemd services
 # -----------------------------------------------------------------------------
@@ -278,8 +287,11 @@ export UDEV_RULES_EXTRAS
 # You can find the defaults in _install/default/systemd_services.
 
 # Services in this list will start on boot if they exist, for example
-# SYSTEMD_ENABLED_SERVICES_EXTRAS=("docker.service") is enabled by default.
+# SYSTEMD_ENABLED_SERVICES=("docker.service") is enabled by default.
 # Use "myservice.service --user" to have it enabled with --user, likewise you
 # can use "myservice.service --now" and combine these flags as needed.
+#
+# For each skipped item, supply just the service name such as "docker.service".
 export SYSTEMD_ENABLED_SERVICES=()
 export SYSTEMD_ENABLED_SERVICES_EXTRAS=()
+export SYSTEMD_ENABLED_SERVICES_SKIP=()
