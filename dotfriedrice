@@ -1266,7 +1266,6 @@ create_initial_dirs() {
       "${XDG_CONFIG_HOME}/fontconfig" \
       "${XDG_CONFIG_HOME}/gtk-3.0" \
       "${XDG_CONFIG_HOME}/gtk-4.0" \
-      "${XDG_CONFIG_HOME}/hypr" \
       "${XDG_CONFIG_HOME}/wallpaper" \
       "${XDG_DATA_HOME}/applications" \
       "${XDG_DATA_HOME}/themes" \
@@ -1952,6 +1951,13 @@ configure_home_configs() {
 EOF
         echo "'${wm_config}' has been created"
       fi
+    fi
+
+    # Link .desktop files only for packages that will be installed.
+    # When adding a new .desktop file to .local/share/applications/, add a
+    # corresponding _has_package check here.
+    if _has_package "rmpc"; then
+      ln -fns "${DOTFRIEDRICE_PATH}/.local/share/applications/rmpc.desktop" "${XDG_DATA_HOME}/applications/rmpc.desktop"
     fi
 
     local packages=("${PACKAGES_AUR_GUI[@]}" "${PACKAGES_AUR_GUI_EXTRAS[@]}")
