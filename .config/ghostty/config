@@ -44,6 +44,10 @@ keybind = alt+right=unbind
 keybind = alt+up=unbind
 keybind = alt+down=unbind
 
+# Drop back to standard legacy xterm sequences so that left/right arrow keys register as tab switch in some apps.
+keybind = left=text:\x1b[D
+keybind = right=text:\x1b[C
+
 # Material 3 UI elements
 unfocused-split-opacity = 0.7
 unfocused-split-fill = #44464f
