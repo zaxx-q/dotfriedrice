@@ -1360,7 +1360,7 @@ install_configs() {
   _config_install_display "Configs" "${config_install[@]}"
 
   if [ "${GUI_ENABLED}" == "1" ]; then
-    sudo mkdir -p "/etc/systemd/system/systemd-networkd-wait-online.service.d"
+    sudo mkdir -p "/etc/systemd/system/systemd-networkd-wait-online.service.d" "/usr/share/wayland-sessions"
     _config_install_display "Configs (GUI)" "${config_install_gui_linux[@]}"
   fi
 
@@ -2152,8 +2152,10 @@ EOF
 
     # Is a Linux GUI supported?
     if [ "${GUI_ENABLED}" == "1" ]; then
-      if ! grep -q "^if uwsm check may-start.*$" "${zprofile_path}" 2>/dev/null; then
-        printf "\n# Start niri after logging in.\nif uwsm check may-start; then exec uwsm start -- niri.desktop; fi\n" >>"${zprofile_path}"
+      if [ "${THEME_SYSTEM}" == "1" ]; then
+        if ! grep -q "^if uwsm check may-start.*$" "${zprofile_path}" 2>/dev/null; then
+          printf "\n# Start niri after logging in.\nif uwsm check may-start; then exec uwsm start -- niri.desktop; fi\n" >>"${zprofile_path}"
+        fi
       fi
     # Are we in WSL 2?
     elif [ "${OS_IN_WSL}" == "1" ]; then
