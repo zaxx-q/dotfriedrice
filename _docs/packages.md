@@ -6,13 +6,13 @@ DotFriedRice but you can modify the list.
 On Arch Linux you can run `pkg list` to see a list of top level packages you
 have installed.
 
-*Similar packages exist for Debian and macOS but not all packages below are
-installed in these environments.*
+_Similar packages exist for Debian, Fedora and macOS but not all packages below
+are installed in these environments._
 
 # System / Service
 
 | Package        | Description                                                   |
-|:---------------|:--------------------------------------------------------------|
+| :------------- | :------------------------------------------------------------ |
 | base           | Minimal package set to define a basic Arch Linux installation |
 | base-devel     | Basic tools to build Arch Linux packages                      |
 | bluez          | Daemons for the bluetooth protocol stack                      |
@@ -28,7 +28,7 @@ installed in these environments.*
 | pipewire-alsa  | PipeWire ALSA configuration                                   |
 | pipewire-jack  | PipeWire JACK replacement                                     |
 | pipewire-pulse | PipeWire PulseAudio replacement                               |
-| qemu-desktop   |  A QEMU setup for desktop environments                        |
+| qemu-desktop   | A QEMU setup for desktop environments                         |
 | wireplumber    | Session and policy manager for PipeWire                       |
 
 ## Linux Kernel
@@ -44,7 +44,7 @@ If needed, these get automatically installed for you by DotFriedRice.
 # CLI
 
 | Package                    | Description                                                                       |
-|:---------------------------|:----------------------------------------------------------------------------------|
+| :------------------------- | :-------------------------------------------------------------------------------- |
 | aspell                     | General purpose spell checker                                                     |
 | bat                        | Cat clone with syntax highlighting and git integration                            |
 | bc                         | An arbitrary precision calculator language                                        |
@@ -53,7 +53,7 @@ If needed, these get automatically installed for you by DotFriedRice.
 | docker                     | Pack, ship and run any application as a lightweight container                     |
 | docker-buildx              | Docker CLI plugin for extended build capabilities with BuildKit                   |
 | docker-compose             | Fast, isolated development environments using Docker                              |
-| dust                       | A more intuitive version of du in rust                              |
+| dust                       | A more intuitive version of du in rust                                            |
 | eza                        | A modern replacement for ls (community fork of exa)                               |
 | fastfetch                  | A feature-rich and performance oriented neofetch-like system information tool     |
 | fd                         | Simple, fast and user-friendly alternative to find                                |
@@ -91,7 +91,7 @@ If needed, these get automatically installed for you by DotFriedRice.
 # TUI
 
 | Package               | Description                                                      |
-|:--------------------- |:-----------------------------------------------------------------|
+| :-------------------- | :--------------------------------------------------------------- |
 | bluetui               | Manage Bluetooth devices                                         |
 | btop                  | A monitor of system resources                                    |
 | fzf                   | Command-line fuzzy finder                                        |
@@ -108,7 +108,7 @@ If needed, these get automatically installed for you by DotFriedRice.
 ## Desktop Environment
 
 | Package                  | Description                                             |
-|:-------------------------|:--------------------------------------------------------|
+| :----------------------- | :------------------------------------------------------ |
 | mako                     | Lightweight notification daemon for Wayland             |
 | niri                     | A scrollable-tiling Wayland compositor                  |
 | swaybg                   | Wallpaper tool for Wayland compositors                  |
@@ -116,7 +116,7 @@ If needed, these get automatically installed for you by DotFriedRice.
 | swaylock                 | Screen locker for Wayland                               |
 | uwsm                     | Standalone Wayland session manager                      |
 | waybar                   | Highly customizable Wayland bar for wlroots compositors |
-| wlrctl *(AUR)*           | Utility for miscellaneous wlroots extensions            |
+| wlrctl _(AUR)_           | Utility for miscellaneous wlroots extensions            |
 | xdg-desktop-portal-gnome | GNOME backend for xdg-desktop-portal                    |
 | xdg-desktop-portal-gtk   | GTK backend for xdg-desktop-portal                      |
 | xdg-utils                | Assist applications with desktop integration tasks      |
@@ -125,26 +125,26 @@ If needed, these get automatically installed for you by DotFriedRice.
 ## Launcher
 
 | Package                                  | Description                                |
-|:-----------------------------------------|:-------------------------------------------|
-| walker-bin *(AUR)*                       | Wayland application runner                 |
-| elephant-bin *(AUR)*                     | General purpose datasource and executor    |
-| elephant-calc-bin *(AUR)*                | Calc provider for elephant                 |
-| elephant-clipboard-bin *(AUR)*           | Clipboard provider for elephant            |
-| elephant-desktopapplications-bin *(AUR)* | Desktop applications provider for elephant |
-| elephant-files-bin *(AUR)*               | Files provider for elephant                |
-| elephant-menus-bin *(AUR)*               | Menus provider for elephant                |
-| elephant-niriactions-bin *(AUR)*         | niriactions provider for elephant          |
-| elephant-providerlist-bin *(AUR)*        | Providerlist provider for elephant         |
-| elephant-runner-bin *(AUR)*              | Runner provider for elephant               |
-| elephant-symbols-bin *(AUR)*             | Symbols provider for elephant              |
-| elephant-unicode-bin *(AUR)*             | Unicode provider for elephant              |
-| elephant-websearch-bin *(AUR)*           | Websearch provider for elephant            |
-| elephant-windows-bin *(AUR)*             | Windows provider for elephant              |
+| :--------------------------------------- | :----------------------------------------- |
+| walker-bin _(AUR)_                       | Wayland application runner                 |
+| elephant-bin _(AUR)_                     | General purpose datasource and executor    |
+| elephant-calc-bin _(AUR)_                | Calc provider for elephant                 |
+| elephant-clipboard-bin _(AUR)_           | Clipboard provider for elephant            |
+| elephant-desktopapplications-bin _(AUR)_ | Desktop applications provider for elephant |
+| elephant-files-bin _(AUR)_               | Files provider for elephant                |
+| elephant-menus-bin _(AUR)_               | Menus provider for elephant                |
+| elephant-niriactions-bin _(AUR)_         | niriactions provider for elephant          |
+| elephant-providerlist-bin _(AUR)_        | Providerlist provider for elephant         |
+| elephant-runner-bin _(AUR)_              | Runner provider for elephant               |
+| elephant-symbols-bin _(AUR)_             | Symbols provider for elephant              |
+| elephant-unicode-bin _(AUR)_             | Unicode provider for elephant              |
+| elephant-websearch-bin _(AUR)_           | Websearch provider for elephant            |
+| elephant-windows-bin _(AUR)_             | Windows provider for elephant              |
 
 ## File manager
 
 | Package               | Description                                                                 |
-|:----------------------|:----------------------------------------------------------------------------|
+| :-------------------- | :-------------------------------------------------------------------------- |
 | thunar                | Modern, fast and easy-to-use file manager for Xfce                          |
 | ffmpegthumbnailer     | Lightweight video thumbnailer that can be used by file managers             |
 | thunar-archive-plugin | Adds archive operations to Thunar context menus                             |
@@ -153,34 +153,83 @@ If needed, these get automatically installed for you by DotFriedRice.
 
 ## Capture
 
-| Package       | Description                                                        |
-|:--------------|:-------------------------------------------------------------------|
-| grim          | Screenshot utility for Wayland                                     |
-| satty         | Modern screenshot annotation tool inspired by Swappy and Flameshot |
-| slurp         | Select a region in a Wayland compositor                            |
-| hyprpicker    | A wlroots-compatible Wayland color picker that does not suck       |
+| Package    | Description                                                        |
+| :--------- | :----------------------------------------------------------------- |
+| grim       | Screenshot utility for Wayland                                     |
+| satty      | Modern screenshot annotation tool inspired by Swappy and Flameshot |
+| slurp      | Select a region in a Wayland compositor                            |
+| hyprpicker | A wlroots-compatible Wayland color picker that does not suck       |
 
 ## Fonts
 
 | Package          | Description                             |
-|:-----------------|:----------------------------------------|
+| :--------------- | :-------------------------------------- |
 | gnu-free-fonts   | A free family of scalable outline fonts |
 | noto-fonts-emoji | Google Noto Color Emoji font            |
 
 ## Apps
 
-| Package            | Description                                                          |
-|:-------------------|:---------------------------------------------------------------------|
-| chromium           | A web browser built for speed, simplicity, and security              |
-| firefox            | Fast, Private & Safe Web Browser                                     |
-| ghostty            | Fast, native, feature-rich terminal emulator pushing modern features |
-| gimp               | GNU Image Manipulation Program                                       |
-| kdenlive           | A non-linear video editor for Linux using the MLT video framework    |
-| keepassxc          | Cross-platform community-driven port of Keepass password manager     |
-| libreoffice-fresh  | LibreOffice branch containing new features and enhancements          |
-| mpv                | Free, open source, cross-platform media player                       |
-| obs-studio         | Free, open source software for live streaming and recording          |
-| zathura            | Minimalistic document viewer                                         |
-| zathura-djvu       | DjVu support for Zathura                                             |
-| zathura-pdf-mupdf  | Supports PDF, ePub, and OpenXPS for Zathura                          |
-| virt-manager       | Desktop user interface for managing virtual machines                 |
+| Package           | Description                                                          |
+| :---------------- | :------------------------------------------------------------------- |
+| chromium          | A web browser built for speed, simplicity, and security              |
+| firefox           | Fast, Private & Safe Web Browser                                     |
+| ghostty           | Fast, native, feature-rich terminal emulator pushing modern features |
+| gimp              | GNU Image Manipulation Program                                       |
+| kdenlive          | A non-linear video editor for Linux using the MLT video framework    |
+| keepassxc         | Cross-platform community-driven port of Keepass password manager     |
+| libreoffice-fresh | LibreOffice branch containing new features and enhancements          |
+| mpv               | Free, open source, cross-platform media player                       |
+| obs-studio        | Free, open source software for live streaming and recording          |
+| zathura           | Minimalistic document viewer                                         |
+| zathura-djvu      | DjVu support for Zathura                                             |
+| zathura-pdf-mupdf | Supports PDF, ePub, and OpenXPS for Zathura                          |
+| virt-manager      | Desktop user interface for managing virtual machines                 |
+
+# Fedora notes
+
+Fedora uses `dnf` and the package names below are mostly identical to Arch's,
+with a few renames (`dnsutils` -> `bind-utils`, `go-yq` -> `yq`,
+`imagemagick` -> `ImageMagick`, `openbsd-netcat` ->
+`nmap-ncat`, `fd` -> `fd-find`, `shellcheck` -> `ShellCheck`, `git` -> `git-core`,
+`noto-fonts-emoji` -> `google-noto-color-emoji-fonts`, `tesseract-data-eng` ->
+`tesseract` + `tesseract-langpack-eng`, `ttf-freefont` ->
+`gnu-free-*-fonts`, `qemu-desktop` -> `@virtualization` group,
+`pipewire-jack` -> `pipewire-jack-audio-connection-kit`,
+`qt6-multimedia-ffmpeg` -> `qt6-qtmultimedia`)
+
+On Fedora, `base-devel` (Arch) / `build-essential` (Debian) is **skipped** —
+Fedora's default install already includes the necessary compiler toolchain via
+the `@development-tools` group, and DotFriedRice does not install it
+explicitly.
+
+The following packages are not in the official Fedora repositories or COPR and get
+**skipped on Fedora**. They can be installed from the upstream
+GitHub releases if you want them:
+
+| Arch package      | How to get it on Fedora                                   |
+| :---------------- | :-------------------------------------------------------- |
+| `impala`          | GitHub binary release from `pythops/impala` or cargo      |
+| `bluetui`         | GitHub binary release from `pythops/bluetui` or cargo     |
+| `mpd-mpris`       | Compile with go or use mpdris2 or fork of it: mpd2mpris   |
+| `pacman-contrib`  | pacman-specific, not relevant on Fedora (use `dnf clean`) |
+| `yay-bin` _(AUR)_ | AUR helper, not needed on Fedora                          |
+
+The following packages are available on Fedora through additional repositories
+that DotFriedRice enables automatically:
+
+| Package    | Source                     |
+| :--------- | :------------------------- |
+| `walker`   | Terra repository           |
+| `elephant` | Terra repository           |
+| `ghostty`  | COPR `scottames/ghostty`   |
+| `niri`     | COPR `yalter/niri-git`     |
+| `lact`     | Terra repository           |
+| `satty`    | Terra repository           |
+| `rmpc`     | Terra repository           |
+| `wiremix`  | Official Fedora repository |
+
+RPM Fusion (free + nonfree) and the Terra repository are enabled automatically
+so that `ffmpeg`, `gimp` plugins, multimedia codecs, `lact`, `satty`, `rmpc`
+and the NVIDIA driver (`akmod-nvidia`) can be installed from dnf.
+
+> > > > > > > 2fe6c03 (Add Fedora support)

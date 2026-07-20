@@ -1,14 +1,14 @@
 # 🥡 DotFriedRice
 
-*An opinionated but customizable set of configs and scripts designed to help
+_An opinionated but customizable set of configs and scripts designed to help
 you quickly set up your system. It's aimed at anyone who deeply cares about how
-they use computers (developers, power users, etc.).*
+they use computers (developers, power users, etc.)._
 
 In 1 command and ~5 minutes you can get a new or existing system set up with
-terminal based tools and workflows on Arch / Debian based Linux distros (WSL 2
-included) and macOS.
+terminal based tools and workflows on Arch / Debian / Fedora based Linux distros
+(WSL 2 included) and macOS.
 
-If you're on an Arch based distro you can optionally add a complete
+If you're on an Arch or Fedora based distro you can optionally add a complete
 [niri](https://github.com/niri-wm/niri) based desktop environment in addition
 to having all of the command line tools.
 
@@ -37,10 +37,10 @@ Everyone is welcome here and you have full control.
 
 ### Command line
 
-🛟 *Supports **Arch Linux**, both vanilla and Arch based distros such as
+🛟 _Supports **Arch Linux**, both vanilla and Arch based distros such as
 **CachyOS**, etc.. It also supports **Debian**, **Ubuntu** (vanilla and all
-flavors), **macOS** and there's **WSL 2** support for any supported Linux
-distro.*
+flavors), **Fedora**, **macOS** and there's **WSL 2** support for any supported
+Linux distro._
 
 #### Highlights
 
@@ -52,12 +52,13 @@ distro.*
 
 ### (Optional) Scrolling / tiling desktop environment
 
-🛟 *Supports **Arch Linux**, both vanilla and Arch based distros such as **CachyOS**, etc.*
+🛟 _Supports **Arch Linux**, both vanilla and Arch based distros such as **CachyOS**, etc.,
+as well as **Fedora** (vanilla)._
 
 #### Highlights
 
 - ...includes everything in the command line version, plus:
-- niri *(Wayland compositor)*, Waybar *(status bar)*, Walker *(app launcher)* and friends
+- niri _(Wayland compositor)_, Waybar _(status bar)_, Walker _(app launcher)_ and friends
 - Hotkey focused but tons of mouse / trackpad support
 - Prefer TUI (Terminal User Interface) apps over GUI apps when possible
 - Development / media creation focused apps are ready to go
@@ -70,7 +71,7 @@ integrates awesomely with multiple monitors, actively developed, well thought
 out, has great documentation and the author is very helpful.
 
 niri feels like a perfect match and I wanted to make a special call out because
-it's *that* good. I'm the "I was there 3,000 years ago" meme from Windows 2000,
+it's _that_ good. I'm the "I was there 3,000 years ago" meme from Windows 2000,
 XP, 7, 10 and also macOS on company issued laptops. Nothing I have ever used in
 ~25 years has approached how I feel using this set up. It's not even close (yes
 I tried Hyprland too).
@@ -143,7 +144,7 @@ to source new theme related configs.
 
 ### Wallpapers
 
-*Only available when the desktop environment is set up.*
+_Only available when the desktop environment is set up._
 
 ```sh
 # Get a full list of wallpapers by running: dfr-theme-set-bg --list
@@ -189,14 +190,16 @@ If you're on macOS, you're good to go and don't need to do anything extra.
 
 If you're on an Arch based distro, you're good to go and don't need to do anything extra.
 
+If you're on Fedora, you're good to go and don't need to do anything extra.
+
 If you're on Debian / Ubuntu the only thing you need installed ahead of time is
 `curl` which you can do with `apt-get update && apt-get install --yes
 --no-install-recommends curl`.
 
-**For the desktop environment** on Arch based distros, DotFriedRice won't modify
-other environments you have. It will install everything and configure your
-user's shell to launch niri after logging in. It won't interfere with a login
-manager if you have one.
+**For the desktop environment** on Arch or Fedora based distros, DotFriedRice
+won't modify other environments you have. It will install everything and
+configure your user's shell to launch niri after logging in. It won't interfere
+with a login manager if you have one.
 
 With that said, if you plan to go all-in with the desktop environment it's
 worth considering [backing up your files](https://github.com/nickjj/bmsu) and
@@ -213,17 +216,20 @@ bash <(curl -fsSL https://raw.githubusercontent.com/nickjj/dotfriedrice/master/b
 
 You'll be presented with a y/n prompt before installing anything of substance.
 
-*If you're not comfortable blindly running a script on the internet, that's no
+_If you're not comfortable blindly running a script on the internet, that's no
 problem. You can view the [bootstrap script](./bootstrap) to see exactly what
 it does. The bottom of the file is a good place to start. Alternatively you can
 look around this repo and reference the config files directly without using any
-script.*
+script._
 
 🐳 **Try the command line version in Docker without modifying your system:**
 
 ```sh
 # Start a Debian container, we're passing OS_IN_CONTAINER to be explicit we're in a container.
 docker container run --rm -it -e "OS_IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
+
+# Or start a Fedora container:
+docker container run --rm -it -e "OS_IN_CONTAINER=1" -v "${PWD}:/app" -w /app fedora:latest bash
 
 # Copy / paste all 3 lines into the container's prompt and run it.
 #
@@ -234,9 +240,25 @@ apt-get update && apt-get install --yes --no-install-recommends curl ca-certific
   && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
 ```
 
-*Keep in mind with the Docker set up, unless your terminal is already
+_Keep in mind with the Docker set up, unless your terminal is already
 configured to use Tokyonight Moon then the colors may look off. That's because
-your local terminal's config will not get automatically updated.*
+your local terminal's config will not get automatically updated._
+
+### 🐧 Fedora notes
+
+Fedora is fully supported for both the command line and the niri based desktop
+environment. Most GUI packages are available through COPR repositories and the
+Terra repository which are enabled automatically. A few packages (`impala` and
+`bluetui`) are not available in the official Fedora repositories and are skipped
+on Fedora. See [_docs/packages.md](./_docs/packages.md) for the full list and
+how to install them manually.
+
+RPM Fusion (free and nonfree) and the Terra repository are enabled automatically
+so that `ffmpeg`, `gimp` plugins, multimedia codecs, `lact`, `satty`, `rmpc` and
+the NVIDIA driver (`akmod-nvidia`) can be installed. `mise` is installed via the
+official standalone install script (`https://mise.run`), mirroring how Debian
+handles it. Niri, Ghostty, Walker and Elephant are fully supported and will be
+installed via COPR repositories.
 
 **🚀 Keeping things up to date and tinkering**
 
@@ -310,12 +332,12 @@ We have a few reasonable options without custom branches or forking:
 - For minor changes like adjusting which packages get installed, the install config file lets you do that
 - For minor config changes some tools let you include config files, so any git ignored `.local` files you see is a way to customize them without needing to adjust the main config
 - For major config changes can configure the `CONFIG_INSTALL` commands
-to symlink other files and directories that are git ignored, this lets you keep
-your "real" files in the DotFriedRice repo with a different name or keep them in `~/.config` directly, it's up to you!
+  to symlink other files and directories that are git ignored, this lets you keep
+  your "real" files in the DotFriedRice repo with a different name or keep them in `~/.config` directly, it's up to you!
 
 If the above isn't enough, or maybe you want things more streamlined you can
 `git checkout -b personalized` and now you're free to make whatever changes you
-want on your custom  branch. When it comes time to pull down future updates you
+want on your custom branch. When it comes time to pull down future updates you
 can run a `git pull origin master` and then `git rebase master` to integrate
 any updates.
 
@@ -389,10 +411,10 @@ choose other options and have things work. The goal of this guide isn't to
 dictate what you do, it's to help you avoid analysis paralysis and see what's
 configurable before you do it.
 
-*Nothing you choose will happen immediately, you'll get to review everything at
+_Nothing you choose will happen immediately, you'll get to review everything at
 the end before anything happens. Generally speaking you'll be using enter to
 select options, escape to go back, the arrow keys to change selections and
-space to toggle checkboxes.*
+space to toggle checkboxes._
 
 - **Archinstall language**:
   - Pick what makes sense for your location
@@ -400,23 +422,23 @@ space to toggle checkboxes.*
   - Pick what makes sense to you for all of the sub-sections
 - **Mirrors**:
   - Select a region close to where your live
-  - *Optional repositories*:
+  - _Optional repositories_:
     - You can skip this unless you have reasons otherwise
 - **Disk configuration**:
   - If you go with the default "best effort" it will wipe your full drive:
-    - This is reasonable if you're *not* dual booting, if you dual boot you'll want to manually set this up
+    - This is reasonable if you're _not_ dual booting, if you dual boot you'll want to manually set this up
     - Make sure the correct drive you want wiped is selected!
     - For the file system type, I went with `ext4` given how mature it is but `btrfs` is also mostly ok, if you're not sure or don't know what's different just choose `ext4`
     - Now it asks if you want a separate partition for your home directory, I chose no because I always end up wanting to adjust the size later and prefer skipping LVM but it's up to you of course
     - Review the info, you should see `/boot` and `/` (root) partitions at the very least
-  - *Disk encryption*:
-      - It's up to you, I would, choose to encrypt all of your non-boot partitions and set a good password, then double confirm you can remember this password, it's very important
-      - After choosing LUKS as the type and your password, pick which partitions to wipe + encrypt, encrypt at least the root partition and skip the boot partition
+  - _Disk encryption_:
+    - It's up to you, I would, choose to encrypt all of your non-boot partitions and set a good password, then double confirm you can remember this password, it's very important
+    - After choosing LUKS as the type and your password, pick which partitions to wipe + encrypt, encrypt at least the root partition and skip the boot partition
 - **Swap**:
   - It's up to you, I kept it enabled with zram which was the default
 - **Bootloader**:
   - I rolled with `systemd-boot` which is the default
-  - *Unified kernel images*:
+  - _Unified kernel images_:
     - I left this turned off but I suggest reading up on this more if you're interested
 - **Kernels**:
   - The normal kernel is likely fine which is the default but feel free to choose otherwise
@@ -424,9 +446,9 @@ space to toggle checkboxes.*
   - Picking a cool name will probably be the [longest time](https://xkcd.com/910/) you spend in the installer
   - You can always change it afterwards, don't sweat it!
 - **Authentication**:
-  - *Root password*:
+  - _Root password_:
     - Definitely set a password and don't forget it
-  - *User account*:
+  - _User account_:
     - Create your main user and pick a password you won't forget
     - Allow this user to be a superuser (sudo) as well
     - You'll be logging in as this user, you can create more users later if needed
@@ -489,10 +511,10 @@ get a feel for what to do after a fresh install:
   - `Mod + <-      :: Scroll left`
   - `Mod + ->      :: Scroll right`
   - `Mod + /       :: View all key binds`
-- Connect to Wi-Fi *if needed* by clicking the Wi-Fi icon in the top right
+- Connect to Wi-Fi _if needed_ by clicking the Wi-Fi icon in the top right
   - Alternatively you can run `impala` from a terminal
   - If your system has no Wi-Fi adapter this tool won't be installed
-- Connect Bluetooth devices *if needed* by clicking the Bluetooth icon in the top right
+- Connect Bluetooth devices _if needed_ by clicking the Bluetooth icon in the top right
   - Alternatively you can run `bluetui` from a terminal
   - If your system has no Bluetooth adapter this tool won't be installed
 - Verify your sound works by visiting YouTube or some site with audio
@@ -500,7 +522,7 @@ get a feel for what to do after a fresh install:
   - Alternatively you can run `wiremix` from a terminal
 - Open a terminal and run `dfr` to switch to the DotFriedRice repo and open it in Neovim
   - Explore `.config/niri/config.kdl` for a complete list of key binds
-- Have fun with *your* new system!
+- Have fun with _your_ new system!
 
 ### How much resources does the desktop environment use?
 
@@ -563,9 +585,9 @@ Open PowerShell as an administrator and then run:
 wsl --install archlinux
 ```
 
-*If you choose to install Ubuntu, the commands below aren't necessary as it
+_If you choose to install Ubuntu, the commands below aren't necessary as it
 will prompt you for a user to create along with a password and then set that as
-the default. After that you can skip to "Configuring Windows" below.*
+the default. After that you can skip to "Configuring Windows" below._
 
 Let's configure a few things within Arch Linux. If you were to install native
 Arch Linux these steps would normally be done during the installation of Arch

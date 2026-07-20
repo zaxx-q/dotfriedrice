@@ -57,6 +57,15 @@ export DEFAULT_CONFIG_INSTALL_ARCH=(
   "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/conf.d/pacman-contrib\" \"/etc/conf.d/pacman-contrib\""
 )
 
+# Configs that only get created when on Fedora Linux. The dnf.conf symlink lets
+# DotFriedRice manage DNF options (parallel downloads, fastest mirror, etc.)
+# the same way it manages /etc/pacman.d/ on Arch. The resolv.conf symlink points
+# at the systemd-resolved stub resolver which Fedora uses by default.
+export DEFAULT_CONFIG_INSTALL_FEDORA=(
+  "sudo ln -fns \"/run/systemd/resolve/stub-resolv.conf\" \"/etc/resolv.conf\""
+  "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/dnf/dnf.conf\" \"/etc/dnf/dnf.conf\""
+)
+
 export DEFAULT_CONFIG_INSTALL_WSL=(
   "cp \"\${DOTFRIEDRICE_PATH}/mnt/c/Users/Nick/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json\" \"/mnt/c/Users/%WindowsUser/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json\" || true"
   "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/wsl.conf\" \"/etc/wsl.conf\""
