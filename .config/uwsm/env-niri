@@ -1,0 +1,7 @@
+# compositor-agnostic
+
+export XCURSOR_SIZE=24
+export QT_QPA_PLATFORM=wayland
+export ELECTRON_OZONE_PLATFORM_HINT=auto
+export QT_QPA_PLATFORMTHEME=gtk3
+export QT_QPA_PLATFORMTHEME_QT6=gtk3

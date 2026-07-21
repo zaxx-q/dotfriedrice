@@ -1,55 +1,8 @@
 # shellcheck shell=bash
-
-# This file runs once at login.
-
 # shellcheck disable=SC1091
-. "${XDG_CONFIG_HOME:-"${HOME}/.config"}/zsh/.xdg.local"
 
-# Add all local binaries to the system path and make sure they are first.
-export PATH="${HOME}/.local/bin/local:${HOME}/.local/bin:${PATH}"
-
-# Confiure Mise (programming language run-time manager).
-export PATH="${XDG_DATA_HOME}/mise/shims:${PATH}"
-
-# Additional paths.
-export PATH="${HOME}/.cache/.bun/bin:${PATH}"
-
-# Default programs to run.
-export EDITOR="zed --wait"
-export DIFFPROG="meld"
-
-# Add colors to the less command.
-export LESS="-R"
-export LESS_TERMCAP_mb=$'\e[1;31m'    # begin blinking
-export LESS_TERMCAP_md=$'\e[1;36m'    # begin bold
-export LESS_TERMCAP_us=$'\e[1;32m'    # begin underline
-export LESS_TERMCAP_so=$'\e[1;30;44m' # begin standout-mode - info box
-export LESS_TERMCAP_me=$'\e[0m'       # end mode
-export LESS_TERMCAP_ue=$'\e[0m'       # end underline
-export LESS_TERMCAP_se=$'\e[0m'       # end standout-mode
-
-# Use bat to color up the man pages.
-export MANROFFOPT="-c"
-export MANPAGER="sh -c 'col -bx | bat --language man --plain'"
-
-# Configure GPG.
-export GNUPGHOME="${XDG_CONFIG_HOME}/gnupg"
-
-# Configure pass, Docker Desktop on Linux uses this tool and while I have used
-# it for years in the past, I've moved to using KeePassXC.
-export PASSWORD_STORE_DIR="${XDG_CONFIG_HOME}/password-store"
-
-# Configure delta (diffs) defaults.
-# https://dandavison.github.io/delta/environment-variables.html
-export DELTA_FEATURES="diff-so-fancy"
-
-# Setup Compose Key
-export XCOMPOSEFILE="${XDG_CONFIG_HOME}/XCompose"
-# export GTK_IM_MODULE="xim"
-# export GTK_IM_MODULE="gtk-im-context-simple"
-export GTK_IM_MODULE="simple"
-export QT_IM_MODULE="xim"
+# This file runs once at login if something triggers it (like niri-session or in TTY)
+. "${HOME}/.config/zsh/env.sh"
 
 # Load local settings if they exist.
-# shellcheck disable=SC1091
-if [ -f "${XDG_CONFIG_HOME}/zsh/.zprofile.local" ]; then . "${XDG_CONFIG_HOME}/zsh/.zprofile.local"; fi
+if [ -f "${HOME}/.config/zsh/.zprofile.local" ]; then . "${HOME}/.config/zsh/.zprofile.local"; fi

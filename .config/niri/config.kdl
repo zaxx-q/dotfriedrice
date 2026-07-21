@@ -7,17 +7,11 @@
 // Launch at startup
 // ----------------------------------------------------------------------------
 
-environment {
-  // XDG_CURRENT_DESKTOP "niri"
-  QT_QPA_PLATFORM "wayland"
-  ELECTRON_OZONE_PLATFORM_HINT "auto"
-  QT_QPA_PLATFORMTHEME "gtk3"
-  QT_QPA_PLATFORMTHEME_QT6 "gtk3"
-}
+environment {}
 
 spawn-at-startup "dms" "run"
 // spawn-at-startup "swayidle" "-w"
-//spawn-at-startup "dfr-theme-set-bg" "--keep-current"
+// spawn-at-startup "dfr-theme-set-bg" "--keep-current"
 // spawn-at-startup "mako"
 // spawn-at-startup "waybar"
 spawn-at-startup "elephant"

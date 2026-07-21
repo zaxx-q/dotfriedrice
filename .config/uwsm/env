@@ -1,2 +1,1 @@
-# Configure the cursor.
-export XCURSOR_SIZE=24
+. "${HOME}/.config/zsh/env.sh"

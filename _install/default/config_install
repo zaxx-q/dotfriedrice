@@ -18,6 +18,7 @@ export DEFAULT_CONFIG_INSTALL=(
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/zsh/.zprofile\" \"\${XDG_CONFIG_HOME}/zsh/.zprofile\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/zsh/.zshenv\" \"\${HOME}/.zshenv\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/zsh/.zshrc\" \"\${XDG_CONFIG_HOME}/zsh/.zshrc\""
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/zsh/env.sh\" \"\${XDG_CONFIG_HOME}/zsh/env.sh\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.local/bin/\"* \"\${HOME}/.local/bin/\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/dotfriedrice\" \"\${HOME}/.local/bin/dotfriedrice\""
 )
@@ -37,6 +38,7 @@ export DEFAULT_CONFIG_INSTALL_GUI_LINUX=(
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/swaylock/config\" \"\${XDG_CONFIG_HOME}/swaylock/config\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/tumbler/tumbler.rc\" \"\${XDG_CONFIG_HOME}/tumbler/tumbler.rc\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/uwsm/env\" \"\${XDG_CONFIG_HOME}/uwsm/env\""
+  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/uwsm/env-niri\" \"\${XDG_CONFIG_HOME}/uwsm/env-niri\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/walker/config.toml\" \"\${XDG_CONFIG_HOME}/walker/config.toml\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/walker/themes/base/style.css\" \"\${XDG_CONFIG_HOME}/walker/themes/base/style.css\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/waybar/config.jsonc\" \"\${XDG_CONFIG_HOME}/waybar/config.jsonc\""
