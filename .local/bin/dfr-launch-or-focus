@@ -36,7 +36,7 @@ if [ "${APP_ID}" == "null" ]; then
   # so let's extract the last segment using . to split on.
   SPAWN_APP="${APP##*.}"
 
-  niri msg action spawn -- "${SPAWN_APP}" "$@"
+  uwsm-app -- "${SPAWN_APP}" "$@"
 else
   niri msg action focus-window --id "${APP_ID}"
 fi
