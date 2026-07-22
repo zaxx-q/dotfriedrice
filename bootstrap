@@ -222,7 +222,6 @@ EOF
 
     # Can we install and configure a window manager and GUI tools?
     if [[ "${OS_DISTRO_LIKE}" =~ ^(arch|fedora)$ && "${OS_IN_WSL}" != "1" && "${OS_IN_CONTAINER}" != "1" ]]; then
-
       GUI_ELIGIBLE="1"
     fi
 

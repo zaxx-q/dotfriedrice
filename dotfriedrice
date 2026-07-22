@@ -853,10 +853,13 @@ _build_effective_packages() {
   _skip_packages "PACKAGES_AUR" "PACKAGES_AUR_SKIP"
   _skip_packages "PACKAGES_AUR_GUI" "PACKAGES_AUR_GUI_SKIP"
   _skip_packages "PACKAGES_APT" "PACKAGES_APT_SKIP"
+  _skip_packages "PACKAGES_DNF" "PACKAGES_DNF_SKIP"
+  _skip_packages "PACKAGES_DNF_GUI" "PACKAGES_DNF_GUI_SKIP"
   _skip_packages "PACKAGES_BREW" "PACKAGES_BREW_SKIP"
   _skip_packages "PACKAGES_BREW_CASK" "PACKAGES_BREW_CASK_SKIP"
   _skip_packages "MISE_ARCH" "MISE_ARCH_SKIP"
   _skip_packages "MISE_DEBIAN" "MISE_DEBIAN_SKIP"
+  _skip_packages "MISE_FEDORA" "MISE_FEDORA_SKIP"
   _skip_packages "MISE_DARWIN" "MISE_DARWIN_SKIP"
 
   # Build the effective package set for the current distro.
@@ -877,6 +880,18 @@ _build_effective_packages() {
     ;;
   debian)
     _pkgs+=("${PACKAGES_APT[@]}" "${PACKAGES_APT_EXTRAS[@]}")
+    ;;
+    ;;
+  fedora)
+    _pkgs+=(
+      "${PACKAGES_DNF[@]}" "${PACKAGES_DNF_EXTRAS[@]}"
+    )
+    if [ "${GUI_ENABLED}" == "1" ]; then
+      _pkgs+=(
+        "${PACKAGES_DNF_GUI[@]}" "${PACKAGES_DNF_GUI_EXTRAS[@]}"
+      )
+    fi
+>>>>>>> fedora
     ;;
   darwin)
     _pkgs+=(
@@ -2497,11 +2512,6 @@ configure_gui_app_themes() {
     local packages=()
     ;;
   esac
-
-  if [ "${THEME_SYSTEM}" != "1" ]; then
-    _skipping "Theme system is disabled (THEME_SYSTEM=0)"
-    return
-  fi
 
   if [ "${THEME_SYSTEM}" != "1" ]; then
     _skipping "Theme system is disabled (THEME_SYSTEM=0)"
