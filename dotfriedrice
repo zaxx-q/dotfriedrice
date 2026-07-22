@@ -28,6 +28,8 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # shellcheck disable=SC1091
   . "${DOTFRIEDRICE_PATH}/_install/default/scripts"
   # shellcheck disable=SC1091
+  . "${DOTFRIEDRICE_PATH}/_install/default/fonts"
+  # shellcheck disable=SC1091
   . "${DOTFRIEDRICE_PATH}/_install/default/config_install"
   # shellcheck disable=SC1091
   . "${DOTFRIEDRICE_PATH}/_install/default/sudoers_entries"
@@ -270,6 +272,24 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     [ -z "${SCRIPTS_INSTALL_SKIP}" ] && SCRIPTS_INSTALL_SKIP=()
   else
     SCRIPTS_INSTALL_SKIP=()
+  fi
+
+  if [[ "${FONTS_INSTALL+x}" ]]; then
+    [ -z "${FONTS_INSTALL}" ] && FONTS_INSTALL=()
+  else
+    FONTS_INSTALL=("${DEFAULT_FONTS_INSTALL[@]}")
+  fi
+
+  if [[ "${FONTS_INSTALL_EXTRAS+x}" ]]; then
+    [ -z "${FONTS_INSTALL_EXTRAS}" ] && FONTS_INSTALL_EXTRAS=()
+  else
+    FONTS_INSTALL_EXTRAS=()
+  fi
+
+  if [[ "${FONTS_INSTALL_SKIP+x}" ]]; then
+    [ -z "${FONTS_INSTALL_SKIP}" ] && FONTS_INSTALL_SKIP=()
+  else
+    FONTS_INSTALL_SKIP=()
   fi
 
   if [[ "${CONFIG_INSTALL+x}" ]]; then
@@ -1526,61 +1546,122 @@ EOF
 install_fonts() {
   _info "INSTALL FONTS"
 
-  local font_url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Inconsolata.zip"
-  local font_tmp="/tmp/inconsolata"
-  local font_zip="/tmp/inconsolata.zip"
-  local font_filename="InconsolataNerdFontMono-Regular.ttf"
+  local fonts_install=()
+  local fonts_install_filtered=()
+
+  ((${#FONTS_INSTALL[@]} > 0)) && fonts_install+=("${FONTS_INSTALL[@]}")
+  ((${#FONTS_INSTALL_EXTRAS[@]} > 0)) && fonts_install+=("${FONTS_INSTALL_EXTRAS[@]}")
+
+  # Filter out skipped fonts.
+  for item in "${fonts_install[@]}"; do
+    for skip_pattern in "${FONTS_INSTALL_SKIP[@]}"; do
+      if [[ "${item}" == *"${skip_pattern}"* ]]; then
+        continue 2
+      fi
+    done
+    fonts_install_filtered+=("${item}")
+  done
+
+  if [ ${#fonts_install_filtered[@]} -eq 0 ]; then
+    _skipping "No fonts to install"
+    return
+  fi
+
   local windows_font_path="/mnt/c/Windows/Fonts"
   local macos_font_path="${HOME}/Library/Fonts"
   local linux_font_path="${XDG_DATA_HOME}/fonts"
   local font_path=
-  local font_is_installed=
 
   if [ "${OS_TYPE}" = "linux" ]; then
     font_path="${linux_font_path}"
-
-    if [ "${OS_IN_WSL}" == "1" ]; then
-      font_path="${windows_font_path}"
-    fi
+    [ "${OS_IN_WSL}" == "1" ] && font_path="${windows_font_path}"
   else
     font_path="${macos_font_path}"
   fi
 
-  [ -f "${font_path}/${font_filename}" ] && font_is_installed=1
+  # Clean up staging directory at start to prevent stale WSL detection.
+  local font_staging_base="/tmp/dfr-fonts"
+  rm -rf "${font_staging_base}"
 
-  if [ -n "${font_is_installed}" ]; then
-    _skipping "'${font_path}' already contains installable fonts"
-  else
-    rm -rf "${font_zip}" "${font_tmp}"
-    _curl "${font_url}" -o "${font_zip}"
-    unzip "${font_zip}" -d "${font_tmp}"
+  local any_font_installed=0
+  local wsl_staged=0
+
+  for item in "${fonts_install_filtered[@]}"; do
+    local font_url="${item%|*}"
+    local check_filename="${item#*|}"
+
+    # Check if font is already installed.
+    if [ -f "${font_path}/${check_filename}" ]; then
+      _skipping "'${font_path}' already contains '${check_filename}'"
+      continue
+    fi
+
+    # Strip query parameters for extension matching and filename calculation.
+    local clean_url="${font_url%%\?*}"
+    local font_filename="${clean_url##*/}"
+    local font_name="${font_filename%.*}"
+
+    local font_tmp="${font_staging_base}/${font_name}"
+    local font_archive="/tmp/dfr-font-${font_name}.tmp"
+
+    rm -rf "${font_tmp}" "${font_archive}"
+    mkdir -p "${font_tmp}"
+
+    _curl "${font_url}" -o "${font_archive}"
+
+    # Extract based on file type.
+    case "${clean_url}" in
+    *.zip)
+      unzip -q -j "${font_archive}" -d "${font_tmp}"
+      ;;
+    *.tar.gz | *.tgz | *.tar.xz)
+      tar -xf "${font_archive}" -C "${font_tmp}"
+      ;;
+    *.ttf | *.otf)
+      cp "${font_archive}" "${font_tmp}/${font_filename}"
+      ;;
+    *)
+      _warning "Unsupported font archive format for '${font_url}'"
+      rm -rf "${font_tmp}" "${font_archive}"
+      continue
+      ;;
+    esac
+
+    rm -f "${font_archive}"
 
     if [ "${OS_IN_WSL}" == "1" ]; then
-      cat <<EOF
+      wsl_staged=1
+      echo "Staged '${font_name}' for manual installation on Windows"
+    else
+      # Copy only system font files (.ttf, .otf) into the target font directory.
+      find "${font_tmp}" -type f \( -name "*.ttf" -o -name "*.otf" \) -exec cp {} "${font_path}/" \;
+      any_font_installed=1
+      rm -rf "${font_tmp}"
+      echo "'${font_name}' installed to '${font_path}'"
+    fi
+  done
+
+  # On WSL 2, show manual installation steps if any font was staged.
+  if [ "${OS_IN_WSL}" == "1" ] && [ "${wsl_staged}" == "1" ]; then
+    cat <<EOF
 
 Since we're in WSL 2 and we need to install Windows fonts, please do it manually.
 
 Most of it has been automated for you, from within WSL 2 perform these steps:
 
-1. cd ${font_tmp}
+1. cd ${font_staging_base}
 2. explorer.exe .
-3. Right click the fonts and INSTALL FOR ALL USERS
-4. rm -rf "${font_zip}" "${font_tmp}"
+3. Select all fonts, right click and INSTALL FOR ALL USERS
+4. rm -rf "${font_staging_base}"
 
 It's important step 3 is for all users not your personal user. It's also
-important step 4 is executed so this script doesn't always download the font's
-zip file and extract it to step 1.
+important step 4 is executed so this script doesn't always stage fonts.
 EOF
+  fi
 
-      return 0
-    fi
-
-    cp "${font_tmp}"/InconsolataNerdFont*.ttf "${font_path}"
-
-    # Update font cache on native Linux.
-    [[ "${OS_TYPE}" = "linux" ]] && fc-cache -fv
-
-    rm -rf "${font_zip}" "${font_tmp}"
+  # Update font cache on native Linux if fonts were installed.
+  if [[ "${OS_TYPE}" = "linux" && "${OS_IN_WSL}" != "1" && "${any_font_installed}" == "1" ]]; then
+    fc-cache -fv
   fi
 }
 
@@ -2475,7 +2556,7 @@ You can safely close this terminal.
 The next time you open your terminal everything will be ready to go!
 EOF
 
-  if [[ "${OS_IN_WSL}" == "1" && -f "/tmp/inconsolata.zip" ]]; then
+  if [[ "${OS_IN_WSL}" == "1" && -d "/tmp/dfr-fonts" ]]; then
     cat <<EOF
 
 P.S.,
