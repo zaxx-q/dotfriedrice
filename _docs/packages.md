@@ -171,6 +171,7 @@ If needed, these get automatically installed for you by DotFriedRice.
 
 | Package            | Description                                                          |
 |:-------------------|:---------------------------------------------------------------------|
+| chromium           | A web browser built for speed, simplicity, and security              |
 | firefox            | Fast, Private & Safe Web Browser                                     |
 | ghostty            | Fast, native, feature-rich terminal emulator pushing modern features |
 | gimp               | GNU Image Manipulation Program                                       |

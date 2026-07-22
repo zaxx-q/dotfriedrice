@@ -1998,7 +1998,9 @@ configure_gui_app_themes() {
     return
   fi
 
-  if [[ " ${PACKAGES_PACMAN_GUI[*]} " == *" firefox "* ]]; then
+  local packages=("${PACKAGES_PACMAN_GUI[@]}" "${PACKAGES_PACMAN_GUI_EXTRAS[@]}")
+
+  if [[ " ${packages[*]} " == *" firefox "* ]]; then
     local firefox_config_base_dir=
     local firefox_modified="0"
 
@@ -2040,6 +2042,28 @@ configure_gui_app_themes() {
     _skipping "Firefox is not installed"
   fi
 
+  if [[ " ${packages[*]} " == *" chromium "* ]]; then
+    local chromium_config="${XDG_CONFIG_HOME}/chromium/Default/Preferences"
+    local chromium_modified="0"
+
+    if [ -f "${chromium_config}" ]; then
+      if grep --fixed-strings --quiet '"system_theme":0' "${chromium_config}"; then
+        sed -i 's/"system_theme":0/"system_theme":1/g' "${chromium_config}"
+        chromium_modified="1"
+      fi
+
+      if [ "${chromium_modified}" == "1" ]; then
+        echo "'${chromium_config}' updated to use the system theme"
+      else
+        _skipping "'${chromium_config}' already set to the system theme"
+      fi
+    else
+      _warning "Chromium was never run manually, cannot modify user config, launch + close Chromium then re-run dotfriedrice"
+    fi
+  else
+    _skipping "Chromium is not installed"
+  fi
+
   local gimp_latest_version=
   local gimp_modified="0"
 
@@ -2048,7 +2072,7 @@ configure_gui_app_themes() {
     sort --version-sort |
     tail -n 1 || true)
 
-  if [[ " ${PACKAGES_PACMAN_GUI[*]} " == *" gimp "* ]]; then
+  if [[ " ${packages[*]} " == *" gimp "* ]]; then
     local gimp_config="${XDG_CONFIG_HOME}/GIMP/${gimp_latest_version}/gimprc"
 
     if [ -f "${gimp_config}" ]; then
