@@ -237,7 +237,7 @@ export SCRIPTS_INSTALL_SKIP=()
 # -----------------------------------------------------------------------------
 
 # The same rules apply as system packages for how to define these.
-# You can find the defaults in _install/default/install_configs.
+# You can find the defaults in _install/default/config_install.
 
 # When set to "1", even if there's files not managed by DotFriedRice they
 # will get overwritten without showing you a prompt to confirm. This could
@@ -259,6 +259,10 @@ export CONFIG_INSTALL_AUTO_CONFIRM="0"
 #
 # For skipping, you can copy the exact full item from the defaults in
 # _install/default/config_install into the associated variable below.
+#
+# The default entries are organized into categories:
+#   Shell, Editor, Terminal, CLI tools, CLI bins (in CONFIG_INSTALL)
+#   Desktop environment, GUI apps, GUI data files, GUI bins (in CONFIG_INSTALL_GUI_LINUX)
 
 # Configs defined here will get created in all OS / environments.
 export CONFIG_INSTALL=()
