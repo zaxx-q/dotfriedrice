@@ -911,28 +911,6 @@ _build_effective_packages() {
       )
     fi
     ;;
-  _skip_packages "MISE_DARWIN" "MISE_DARWIN_SKIP"
-
-  # Build the effective package set for the current distro.
-  local _pkgs=()
-
-  case "${OS_DISTRO}" in
-  arch)
-    _pkgs+=(
-      "${PACKAGES_PACMAN[@]}" "${PACKAGES_PACMAN_EXTRAS[@]}"
-      "${PACKAGES_AUR[@]}" "${PACKAGES_AUR_EXTRAS[@]}"
-    )
-    if [ "${GUI_ENABLED}" == "1" ]; then
-      _pkgs+=(
-        "${PACKAGES_PACMAN_GUI[@]}" "${PACKAGES_PACMAN_GUI_EXTRAS[@]}"
-        "${PACKAGES_AUR_GUI[@]}" "${PACKAGES_AUR_GUI_EXTRAS[@]}"
-      )
-    fi
-    ;;
-  debian)
-    _pkgs+=("${PACKAGES_APT[@]}" "${PACKAGES_APT_EXTRAS[@]}")
->>>>>>> conditional-configs
-    ;;
   darwin)
     _pkgs+=(
       "${PACKAGES_BREW[@]}" "${PACKAGES_BREW_EXTRAS[@]}"
@@ -2617,8 +2595,6 @@ configure_gui_app_themes() {
     _skipping "Theme system is disabled (THEME_SYSTEM=0)"
     return
   fi
-
-  local packages=("${PACKAGES_PACMAN_GUI[@]}" "${PACKAGES_PACMAN_GUI_EXTRAS[@]}")
 
   if [[ " ${packages[*]} " == *" firefox "* ]]; then
     local firefox_config_base_dir=

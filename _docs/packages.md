@@ -233,15 +233,3 @@ that DotFriedRice enables automatically:
 RPM Fusion (free + nonfree) and the Terra repository are enabled automatically
 so that `ffmpeg`, `gimp` plugins, multimedia codecs, `lact`, `satty`, `rmpc`
 and the NVIDIA driver (`akmod-nvidia`) can be installed from dnf.
-
-> > > > > > > | keepassxc | Cross-platform community-driven port of Keepass password manager |
-> > > > > > > | libreoffice-fresh | LibreOffice branch containing new features and enhancements |
-> > > > > > > | mpv | Free, open source, cross-platform media player |
-> > > > > > > | obs-studio | Free, open source software for live streaming and recording |
-> > > > > > > | zathura | Minimalistic document viewer |
-> > > > > > > | zathura-djvu | DjVu support for Zathura |
-> > > > > > > | zathura-pdf-mupdf | Supports PDF, ePub, and OpenXPS for Zathura |
-> > > > > > > | virt-manager | Desktop user interface for managing virtual machines |
-
-> > > > > > > 870cc17 (Add support for custom fonts configuration)
-> > > > > > > custom-fonts
