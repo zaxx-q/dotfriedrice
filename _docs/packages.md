@@ -173,6 +173,7 @@ Custom fonts (such as Nerd Fonts) are managed via `FONTS_INSTALL`, `FONTS_INSTAL
 
 | Package           | Description                                                          |
 | :---------------- | :------------------------------------------------------------------- |
+| chromium          | A web browser built for speed, simplicity, and security              |
 | firefox           | Fast, Private & Safe Web Browser                                     |
 | ghostty           | Fast, native, feature-rich terminal emulator pushing modern features |
 | gimp              | GNU Image Manipulation Program                                       |
@@ -232,3 +233,37 @@ that DotFriedRice enables automatically:
 RPM Fusion (free + nonfree) and the Terra repository are enabled automatically
 so that `ffmpeg`, `gimp` plugins, multimedia codecs, `lact`, `satty`, `rmpc`
 and the NVIDIA driver (`akmod-nvidia`) can be installed from dnf.
+||||||| 998b045
+
+| Package              | Description                                                            |
+| :------------------- | :--------------------------------------------------------------------- |
+| firefox              | Fast, Private & Safe Web Browser                                       |
+| ghostty              | Fast, native, feature-rich terminal emulator pushing modern features   |
+| gimp                 | GNU Image Manipulation Program                                         |
+| kdenlive             | A non-linear video editor for Linux using the MLT video framework      |
+| keepassxc            | Cross-platform community-driven port of Keepass password manager       |
+| libreoffice-fresh    | LibreOffice branch containing new features and enhancements            |
+| mpv                  | Free, open source, cross-platform media player                         |
+| obs-studio           | Free, open source software for live streaming and recording            |
+| zathura              | Minimalistic document viewer                                           |
+| zathura-djvu         | DjVu support for Zathura                                               |
+| zathura-pdf-mupdf    | Supports PDF, ePub, and OpenXPS for Zathura                            |
+| virt-manager         | Desktop user interface for managing virtual machines                   |
+| =======              |
+| Package              | Description                                                            |
+| :------------------- | :--------------------------------------------------------------------- |
+| chromium             | A web browser built for speed, simplicity, and security                |
+| firefox              | Fast, Private & Safe Web Browser                                       |
+| ghostty              | Fast, native, feature-rich terminal emulator pushing modern features   |
+| gimp                 | GNU Image Manipulation Program                                         |
+| kdenlive             | A non-linear video editor for Linux using the MLT video framework      |
+| keepassxc            | Cross-platform community-driven port of Keepass password manager       |
+| libreoffice-fresh    | LibreOffice branch containing new features and enhancements            |
+| mpv                  | Free, open source, cross-platform media player                         |
+| obs-studio           | Free, open source software for live streaming and recording            |
+| zathura              | Minimalistic document viewer                                           |
+| zathura-djvu         | DjVu support for Zathura                                               |
+| zathura-pdf-mupdf    | Supports PDF, ePub, and OpenXPS for Zathura                            |
+| virt-manager         | Desktop user interface for managing virtual machines                   |
+
+> > > > > > > master
