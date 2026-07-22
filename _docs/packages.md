@@ -167,6 +167,8 @@ If needed, these get automatically installed for you by DotFriedRice.
 | gnu-free-fonts   | A free family of scalable outline fonts |
 | noto-fonts-emoji | Google Noto Color Emoji font            |
 
+Custom fonts (such as Nerd Fonts) are managed via `FONTS_INSTALL`, `FONTS_INSTALL_EXTRAS`, and `FONTS_INSTALL_SKIP` in `dotfriedrice-config`. See `_install/default/fonts` for default font definitions.
+
 ## Apps
 
 | Package           | Description                                                          |
@@ -216,16 +218,16 @@ GitHub releases if you want them:
 The following packages are available on Fedora through additional repositories
 that DotFriedRice enables automatically:
 
-| Package    | Source                        |
-| :--------- | :---------------------------- |
-| `walker`   | Terra repository              |
-| `elephant` | Terra repository              |
-| `ghostty`  | COPR `scottames/ghostty`      |
-| `niri`     | COPR `yalter/niri-git`        |
-| `lact`     | Terra repository              |
-| `satty`    | Terra repository              |
-| `rmpc`     | Terra repository              |
-| `wiremix`  | Official Fedora repository    |
+| Package    | Source                     |
+| :--------- | :------------------------- |
+| `walker`   | Terra repository           |
+| `elephant` | Terra repository           |
+| `ghostty`  | COPR `scottames/ghostty`   |
+| `niri`     | COPR `yalter/niri-git`     |
+| `lact`     | Terra repository           |
+| `satty`    | Terra repository           |
+| `rmpc`     | Terra repository           |
+| `wiremix`  | Official Fedora repository |
 
 RPM Fusion (free + nonfree) and the Terra repository are enabled automatically
 so that `ffmpeg`, `gimp` plugins, multimedia codecs, `lact`, `satty`, `rmpc`

@@ -233,6 +233,22 @@ export SCRIPTS_INSTALL_EXTRAS=()
 export SCRIPTS_INSTALL_SKIP=()
 
 # -----------------------------------------------------------------------------
+# Fonts
+# -----------------------------------------------------------------------------
+
+# The same rules apply as system packages for how to define these.
+#
+# For skipping, supply the check filename or font name (e.g. "InconsolataNerdFontMono-Regular.ttf").
+# For adding fonts, supply "DOWNLOAD_URL|CHECK_FILENAME", example:
+#   "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip|JetBrainsMonoNerdFont-Regular.ttf"
+#
+# You can find the defaults in _install/default/fonts.
+
+export FONTS_INSTALL=()
+export FONTS_INSTALL_EXTRAS=()
+export FONTS_INSTALL_SKIP=()
+
+# -----------------------------------------------------------------------------
 # Install configs
 # -----------------------------------------------------------------------------
 
