@@ -580,6 +580,21 @@ binds {
  // Mod+Alt+Shift+B      hotkey-overlay-title="Browser (private)" { spawn "firefox" "-private-window"; }
  // Mod+Alt+Ctrl+Shift+B hotkey-overlay-title="Browser (isolated profile)" { spawn-sh "firefox -P ${BROWSER_ISOLATED_PROFILE:-isolated}"; }
 
+ // Apps.
+ // Mod+Alt+H            hotkey-overlay-title="System health" { spawn "dfr-launch-or-focus-tui" "monitor"; }
+ // Mod+Alt+T            hotkey-overlay-title="Terminal" { spawn "ghostty"; }
+ // Mod+Alt+Shift+T      hotkey-overlay-title="Terminal (floating)" { spawn "ghostty" "--class=dfr.floating.ghostty"; }
+ // Mod+Alt+F            hotkey-overlay-title="File manager" { spawn "thunar"; }
+ // Mod+Alt+Shift+F      hotkey-overlay-title="File manager (floating)" { spawn "dbus-run-session" "thunar" "--name=dfr.floating.thunar"; }
+ // Mod+Alt+N            hotkey-overlay-title="Notes" { spawn "dfr-launch-or-focus-tui" "notes"; }
+ // Mod+Alt+Shift+N      hotkey-overlay-title="Notes (directory)" { spawn-sh "dfr-launch-or-focus-tui ${EDITOR} ${NOTES_DIRECTORY}"; }
+ // Mod+Alt+P            hotkey-overlay-title="Passwords" { spawn "dfr-launch-or-focus" "keepassxc"; }
+ // Mod+Alt+Shift+P      hotkey-overlay-title="Generate random password to clipboard" { spawn "pw"; }
+ // Mod+Alt+M            hotkey-overlay-title="Music" { spawn "dfr-launch-or-focus-tui" "rmpc"; }
+ // Mod+Alt+B            hotkey-overlay-title="Browser" { spawn "firefox"; }
+ // Mod+Alt+Shift+B      hotkey-overlay-title="Browser (private)" { spawn "firefox" "-private-window"; }
+ // Mod+Alt+Ctrl+Shift+B hotkey-overlay-title="Browser (isolated profile)" { spawn-sh "firefox -P ${BROWSER_ISOLATED_PROFILE:-isolated}"; }
+
  // XF86AudioPlay            allow-when-locked=true hotkey-overlay-title="Play / pause track" { spawn "playerctl" "play-pause"; }
  // XF86AudioStop            allow-when-locked=true hotkey-overlay-title="Stop track" { spawn "playerctl" "stop"; }
  // XF86AudioPrev            allow-when-locked=true hotkey-overlay-title="Previous track" { spawn "playerctl" "previous"; }
