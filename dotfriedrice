@@ -901,7 +901,6 @@ _build_effective_packages() {
   debian)
     _pkgs+=("${PACKAGES_APT[@]}" "${PACKAGES_APT_EXTRAS[@]}")
     ;;
-    ;;
   fedora)
     _pkgs+=(
       "${PACKAGES_DNF[@]}" "${PACKAGES_DNF_EXTRAS[@]}"
@@ -911,7 +910,6 @@ _build_effective_packages() {
         "${PACKAGES_DNF_GUI[@]}" "${PACKAGES_DNF_GUI_EXTRAS[@]}"
       )
     fi
->>>>>>> fedora
     ;;
   darwin)
     _pkgs+=(
@@ -2469,7 +2467,6 @@ EOF
     # corresponding _has_package check here.
     if _has_package "rmpc"; then
       ln -fns "${DOTFRIEDRICE_PATH}/.local/share/applications/rmpc.desktop" "${XDG_DATA_HOME}/applications/rmpc.desktop"
-    fi
     fi
 
     local packages=("${PACKAGES_AUR_GUI[@]}" "${PACKAGES_AUR_GUI_EXTRAS[@]}")
