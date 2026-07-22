@@ -2500,6 +2500,377 @@ EOF
   fi
 }
 
+_dfr_append_config_entry() {
+  local entry="${1}"
+  local use_default="${2}"
+
+  if [[ "${use_default}" == "1" ]]; then
+    # Append to DEFAULT_CONFIG_INSTALL in _install/default/config_install.
+    local config_file="${DOTFRIEDRICE_PATH}/_install/default/config_install"
+
+    # Check if entry already exists.
+    if grep -qF "${entry}" "${config_file}"; then
+      _skipping "Entry already exists in '${config_file}'"
+      return
+    fi
+
+    # Insert the new entry before the closing ")" of DEFAULT_CONFIG_INSTALL.
+    # The array ends with a line containing just ")".
+    #
+    # Find the line number of the closing paren of DEFAULT_CONFIG_INSTALL.
+    # Strategy: find "export DEFAULT_CONFIG_INSTALL=(" then find its closing ")".
+    local tmp_file
+    tmp_file="$(mktemp)"
+
+    local in_array=0
+    local inserted=0
+
+    while IFS= read -r line; do
+      # Detect start of DEFAULT_CONFIG_INSTALL array.
+      if [[ "${line}" == *"DEFAULT_CONFIG_INSTALL=("* && "${line}" != *"DEFAULT_CONFIG_INSTALL_"* ]]; then
+        in_array=1
+      fi
+
+      # If we're in the array and hit the closing paren, insert before it.
+      if [[ "${in_array}" == "1" && "${line}" == ")" ]]; then
+        printf '  "%s"\n' "${entry}" >> "${tmp_file}"
+        in_array=0
+        inserted=1
+      fi
+
+      printf '%s\n' "${line}" >> "${tmp_file}"
+    done < "${config_file}"
+
+    if [[ "${inserted}" == "1" ]]; then
+      mv "${tmp_file}" "${config_file}"
+    else
+      rm -f "${tmp_file}"
+      _error "Could not find DEFAULT_CONFIG_INSTALL array in '${config_file}'"
+    fi
+  else
+    # Append to CONFIG_INSTALL_EXTRAS in dotfriedrice-config.
+    local config_file="${DOTFRIEDRICE_PATH}/dotfriedrice-config"
+
+    if [[ ! -f "${config_file}" ]]; then
+      _error "'${config_file}' does not exist, run dotfriedrice first"
+    fi
+
+    # Check if entry already exists.
+    if grep -qF "${entry}" "${config_file}"; then
+      _skipping "Entry already exists in '${config_file}'"
+      return
+    fi
+
+    # Find the CONFIG_INSTALL_EXTRAS=() line and transform it.
+    # Two cases:
+    #   1. CONFIG_INSTALL_EXTRAS=() — empty, single line → convert to multi-line
+    #   2. CONFIG_INSTALL_EXTRAS=(\n...\n) — already has entries → append before ")"
+
+    if grep -q '^export CONFIG_INSTALL_EXTRAS=()' "${config_file}"; then
+      # Case 1: Empty array on one line. Replace with multi-line containing entry.
+      local escaped_entry
+      escaped_entry="$(printf '%s' "${entry}" | sed 's/[&/\]/\\&/g')"
+      sed -i "s|^export CONFIG_INSTALL_EXTRAS=()|export CONFIG_INSTALL_EXTRAS=(\n  \"${escaped_entry}\"\n)|" "${config_file}"
+    elif grep -q '^export CONFIG_INSTALL_EXTRAS=(' "${config_file}"; then
+      # Case 2: Multi-line array. Find the closing ")" after CONFIG_INSTALL_EXTRAS.
+      local tmp_file
+      tmp_file="$(mktemp)"
+
+      local in_array=0
+      local inserted=0
+
+      while IFS= read -r line; do
+        if [[ "${line}" == "export CONFIG_INSTALL_EXTRAS=("* ]]; then
+          in_array=1
+        fi
+
+        if [[ "${in_array}" == "1" && "${line}" == ")" ]]; then
+          printf '  "%s"\n' "${entry}" >> "${tmp_file}"
+          in_array=0
+          inserted=1
+        fi
+
+        printf '%s\n' "${line}" >> "${tmp_file}"
+      done < "${config_file}"
+
+      if [[ "${inserted}" == "1" ]]; then
+        mv "${tmp_file}" "${config_file}"
+      else
+        rm -f "${tmp_file}"
+        _error "Could not find closing ')' for CONFIG_INSTALL_EXTRAS in '${config_file}'"
+      fi
+    else
+      _error "CONFIG_INSTALL_EXTRAS not found in '${config_file}'. Add it manually."
+    fi
+  fi
+}
+
+_dfr_add() {
+  local excludes=()
+  local paths=()
+
+  # Parse arguments.
+  while [[ $# -gt 0 ]]; do
+    case "${1}" in
+    --exclude)
+      shift
+      [[ $# -eq 0 ]] && _error "'--exclude' requires a value"
+      excludes+=("${1}")
+      shift
+      ;;
+    -*)
+      _error "Unknown flag '${1}' for add command"
+      ;;
+    *)
+      paths+=("${1}")
+      shift
+      ;;
+    esac
+  done
+
+  if ((${#paths[@]} == 0)); then
+    _error "Usage: dotfriedrice add <path> [--exclude <pattern>] ..."
+  fi
+
+  for source_path in "${paths[@]}"; do
+    # Resolve relative paths against original working directory.
+    local abs_path
+    if [[ "${source_path}" != /* ]]; then
+      abs_path="$(realpath "${DOTFRIEDRICE_ORIGINAL_PWD:-${PWD}}/${source_path}" 2>/dev/null || true)"
+    else
+      abs_path="$(realpath "${source_path}" 2>/dev/null || true)"
+    fi
+
+    if [[ -z "${abs_path}" || ! -e "${abs_path}" ]]; then
+      _error "'${source_path}' does not exist"
+    fi
+
+    # Ensure the path is under $HOME so we can compute a relative path.
+    if [[ "${abs_path}" != "${HOME}/"* ]]; then
+      _error "'${abs_path}' is not under '${HOME}', cannot determine relative path"
+    fi
+
+    local rel_path="${abs_path#"${HOME}"/}"
+    local dest_path="${DOTFRIEDRICE_PATH}/${rel_path}"
+
+    # Check if destination already exists.
+    if [[ -e "${dest_path}" ]]; then
+      _warning "'${dest_path}' already exists in the repo, it will be overwritten"
+    fi
+
+    # Build rsync exclude args.
+    local rsync_excludes=()
+    for pattern in "${excludes[@]}"; do
+      rsync_excludes+=("--exclude" "${pattern}")
+    done
+
+    # Also respect the repo's .gitignore for filtering.
+    rsync_excludes+=("--filter" ":- .gitignore")
+
+    if [[ -d "${abs_path}" ]]; then
+      # Directory: recursive copy.
+      mkdir -p "${dest_path}"
+      rsync -a --delete "${rsync_excludes[@]}" "${abs_path}/" "${dest_path}/"
+      echo "Added directory '${rel_path}' to DotFriedRice"
+    else
+      # File: single copy.
+      mkdir -p "$(dirname "${dest_path}")"
+      cp -f "${abs_path}" "${dest_path}"
+      echo "Added file '${rel_path}' to DotFriedRice"
+    fi
+  done
+}
+
+# TODO: Future enhancement — add --gui, --arch, --wsl flags to target
+# variant-specific arrays:
+#   --gui  → CONFIG_INSTALL_GUI_LINUX_EXTRAS
+#   --arch → CONFIG_INSTALL_ARCH_EXTRAS
+#   --wsl  → CONFIG_INSTALL_WSL_EXTRAS
+
+_dfr_add_config() {
+  local use_default=0
+  local paths=()
+
+  # Parse arguments.
+  while [[ $# -gt 0 ]]; do
+    case "${1}" in
+    --default)
+      use_default=1
+      shift
+      ;;
+    -*)
+      _error "Unknown flag '${1}' for add-config command"
+      ;;
+    *)
+      paths+=("${1}")
+      shift
+      ;;
+    esac
+  done
+
+  if ((${#paths[@]} == 0)); then
+    _error "Usage: dotfriedrice add-config <path> [--default]"
+  fi
+
+  for target_path in "${paths[@]}"; do
+    # Resolve relative paths against original working directory.
+    local abs_path
+    if [[ "${target_path}" != /* ]]; then
+      abs_path="$(realpath -m "${DOTFRIEDRICE_ORIGINAL_PWD:-${PWD}}/${target_path}" 2>/dev/null || readlink -f "${DOTFRIEDRICE_ORIGINAL_PWD:-${PWD}}/${target_path}" 2>/dev/null || echo "${DOTFRIEDRICE_ORIGINAL_PWD:-${PWD}}/${target_path}")"
+    else
+      abs_path="$(realpath -m "${target_path}" 2>/dev/null || readlink -f "${target_path}" 2>/dev/null || echo "${target_path}")"
+    fi
+
+    # Determine the symlink source (what goes in the repo) and destination
+    # (where the symlink points in $HOME).
+
+    local symlink_source=""
+    local symlink_dest=""
+
+    # Detect if the path is inside the dotfriedrice directory.
+    if [[ "${abs_path}" == "${DOTFRIEDRICE_PATH}/"* ]]; then
+      # Path is inside dotfriedrice — use it as the source.
+      local rel_to_repo="${abs_path#"${DOTFRIEDRICE_PATH}"/}"
+      symlink_source="\${DOTFRIEDRICE_PATH}/${rel_to_repo}"
+
+      # Infer the destination from the relative path.
+      # Most configs are under .config/ or .local/ which map to $HOME/.config/ etc.
+      if [[ "${rel_to_repo}" == ".config/"* ]]; then
+        local config_rel="${rel_to_repo#.config/}"
+        symlink_dest="\${XDG_CONFIG_HOME}/${config_rel}"
+      elif [[ "${rel_to_repo}" == ".local/bin/"* ]]; then
+        symlink_dest="\${HOME}/.local/bin/${rel_to_repo#.local/bin/}"
+      elif [[ "${rel_to_repo}" == ".local/share/"* ]]; then
+        local share_rel="${rel_to_repo#.local/share/}"
+        symlink_dest="\${XDG_DATA_HOME}/${share_rel}"
+      else
+        symlink_dest="\${HOME}/${rel_to_repo}"
+      fi
+    elif [[ "${abs_path}" == "${HOME}/"* ]]; then
+      # Path is under $HOME but not in the repo — assume file exists in repo
+      # at the mirrored path.
+      local rel_path="${abs_path#"${HOME}"/}"
+      symlink_source="\${DOTFRIEDRICE_PATH}/${rel_path}"
+
+      if [[ "${rel_path}" == ".config/"* ]]; then
+        local config_rel="${rel_path#.config/}"
+        symlink_dest="\${XDG_CONFIG_HOME}/${config_rel}"
+      elif [[ "${rel_path}" == ".local/bin/"* ]]; then
+        symlink_dest="\${HOME}/.local/bin/${rel_path#.local/bin/}"
+      elif [[ "${rel_path}" == ".local/share/"* ]]; then
+        local share_rel="${rel_path#.local/share/}"
+        symlink_dest="\${XDG_DATA_HOME}/${share_rel}"
+      else
+        symlink_dest="\${HOME}/${rel_path}"
+      fi
+    elif [[ "${abs_path}" == /etc/* || "${abs_path}" == /mnt/* ]]; then
+      # System path — needs sudo.
+      local rel_path="${abs_path#/}"
+      symlink_source="\${DOTFRIEDRICE_PATH}/${rel_path}"
+      symlink_dest="\"/${rel_path}\""
+
+      # Build the command with sudo for system paths.
+      local symlink_cmd="sudo ln -fns \"${symlink_source}\" ${symlink_dest}"
+      _dfr_append_config_entry "${symlink_cmd}" "${use_default}"
+      echo "Added config entry: ${symlink_cmd}"
+      continue
+    else
+      _error "'${abs_path}' is not under '${HOME}' or a recognized system path"
+    fi
+
+    # Determine if it's a directory (use glob pattern like existing bin/* entries).
+    local symlink_cmd=""
+    if [[ -d "${abs_path}" ]]; then
+      # For directories, symlink the directory itself.
+      symlink_cmd="ln -fns \"${symlink_source}\" \"${symlink_dest}\""
+    else
+      symlink_cmd="ln -fns \"${symlink_source}\" \"${symlink_dest}\""
+    fi
+
+    _dfr_append_config_entry "${symlink_cmd}" "${use_default}"
+    echo "Added config entry: ${symlink_cmd}"
+  done
+}
+
+_dfr_adopt() {
+  local use_default=0
+  local excludes=()
+  local paths=()
+
+  # Parse arguments.
+  while [[ $# -gt 0 ]]; do
+    case "${1}" in
+    --default)
+      use_default=1
+      shift
+      ;;
+    --exclude)
+      shift
+      [[ $# -eq 0 ]] && _error "'--exclude' requires a value"
+      excludes+=("${1}")
+      shift
+      ;;
+    -*)
+      _error "Unknown flag '${1}' for adopt command"
+      ;;
+    *)
+      paths+=("${1}")
+      shift
+      ;;
+    esac
+  done
+
+  if ((${#paths[@]} == 0)); then
+    _error "Usage: dotfriedrice adopt <path> [--default] [--exclude <pattern>] ..."
+  fi
+
+  for source_path in "${paths[@]}"; do
+    # Resolve relative paths against original working directory.
+    local abs_path
+    if [[ "${source_path}" != /* ]]; then
+      abs_path="$(realpath "${DOTFRIEDRICE_ORIGINAL_PWD:-${PWD}}/${source_path}" 2>/dev/null || true)"
+    else
+      abs_path="$(realpath "${source_path}" 2>/dev/null || true)"
+    fi
+
+    if [[ -z "${abs_path}" || ! -e "${abs_path}" ]]; then
+      _error "'${source_path}' does not exist"
+    fi
+
+    # Must be under $HOME.
+    if [[ "${abs_path}" != "${HOME}/"* ]]; then
+      _error "'${abs_path}' is not under '${HOME}', cannot determine relative path"
+    fi
+
+    local rel_path="${abs_path#"${HOME}"/}"
+    local dest_path="${DOTFRIEDRICE_PATH}/${rel_path}"
+
+    # Step 1: Copy the file/directory into the repo (using add logic).
+    local exclude_args=()
+    for pattern in "${excludes[@]}"; do
+      exclude_args+=("--exclude" "${pattern}")
+    done
+
+    _dfr_add "${exclude_args[@]}" "${abs_path}"
+
+    # Step 2: Remove the original and replace with nothing for now.
+    # The symlink will be created when dotfriedrice runs.
+    if [[ -d "${abs_path}" ]]; then
+      rm -rf "${abs_path}"
+    else
+      rm -f "${abs_path}"
+    fi
+
+    # Step 3: Add the config entry.
+    local default_flag=""
+    [[ "${use_default}" == "1" ]] && default_flag="--default"
+
+    _dfr_add_config ${default_flag} "${abs_path}"
+
+    echo "Adopted '${rel_path}' — original removed, symlink will be created on next dotfriedrice run"
+  done
+}
+
 parse_args() {
   case "${1:-}" in
   diff-config)
@@ -2624,6 +2995,21 @@ EOF
 
     exit
     ;;
+  add)
+    shift
+    _dfr_add "${@}"
+    exit
+    ;;
+  add-config)
+    shift
+    _dfr_add_config "${@}"
+    exit
+    ;;
+  adopt)
+    shift
+    _dfr_adopt "${@}"
+    exit
+    ;;
   help | --help | -h)
     cat <<EOF
 ${C_BLUE}-------------------------------------------------------------------------------
@@ -2645,6 +3031,23 @@ ${C_GREEN}dotfriedrice pull ${C_CYAN}[BRANCH]
 
 ${C_WHITE}# The same as pull but also runs dotfriedrice afterwards to install.
 ${C_GREEN}dotfriedrice update ${C_CYAN}[BRANCH]
+
+${C_BLUE}-------------------------------------------------------------------------------
+MANAGING CONFIGS
+-------------------------------------------------------------------------------${C_RESET}
+
+${C_WHITE}# Add a file or directory from its real location into the DotFriedRice repo.
+# The path structure is mirrored relative to \$HOME.
+${C_GREEN}dotfriedrice add ${C_CYAN}<path> [--exclude <pattern>] ...${C_RESET}
+
+${C_WHITE}# Add a symlink command to your dotfriedrice-config (CONFIG_INSTALL_EXTRAS).
+# Use --default to write to _install/default/config_install instead.
+# Paths inside the DotFriedRice directory are auto-detected and stripped.
+${C_GREEN}dotfriedrice add-config ${C_CYAN}<path> [--default]${C_RESET}
+
+${C_WHITE}# Move a file/directory into the repo AND add its symlink command.
+# Combines 'add' + 'add-config' in one step. The original is removed.
+${C_GREEN}dotfriedrice adopt ${C_CYAN}<path> [--default] [--exclude <pattern>] ...${C_RESET}
 
 ${C_BLUE}-------------------------------------------------------------------------------
 WHAT'S DIFFERENT
@@ -2711,6 +3114,7 @@ EOF
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # Execute everything in the context of this directory since it's possible to
   # call dotfriedrice from anywhere.
+  DOTFRIEDRICE_ORIGINAL_PWD="${PWD}"
   cd "${DOTFRIEDRICE_PATH}"
 
   parse_args "${@}"
