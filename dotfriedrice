@@ -2511,7 +2511,7 @@ _dfr_append_config_entry() {
     # Check if entry already exists.
     if grep -qF "${entry}" "${config_file}"; then
       _skipping "Entry already exists in '${config_file}'"
-      return
+      return 1
     fi
 
     # Insert the new entry before the closing ")" of DEFAULT_CONFIG_INSTALL.
@@ -2558,48 +2558,47 @@ _dfr_append_config_entry() {
     # Check if entry already exists.
     if grep -qF "${entry}" "${config_file}"; then
       _skipping "Entry already exists in '${config_file}'"
-      return
+      return 1
     fi
 
-    # Find the CONFIG_INSTALL_EXTRAS=() line and transform it.
-    # Two cases:
-    #   1. CONFIG_INSTALL_EXTRAS=() — empty, single line → convert to multi-line
-    #   2. CONFIG_INSTALL_EXTRAS=(\n...\n) — already has entries → append before ")"
+    # Use a unified while-read approach for both empty and non-empty arrays.
+    local tmp_file
+    tmp_file="$(mktemp)"
 
-    if grep -q '^export CONFIG_INSTALL_EXTRAS=()' "${config_file}"; then
-      # Case 1: Empty array on one line. Replace with multi-line containing entry.
-      local escaped_entry
-      escaped_entry="$(printf '%s' "${entry}" | sed 's/[&/\]/\\&/g')"
-      sed -i "s|^export CONFIG_INSTALL_EXTRAS=()|export CONFIG_INSTALL_EXTRAS=(\n  \"${escaped_entry}\"\n)|" "${config_file}"
-    elif grep -q '^export CONFIG_INSTALL_EXTRAS=(' "${config_file}"; then
-      # Case 2: Multi-line array. Find the closing ")" after CONFIG_INSTALL_EXTRAS.
-      local tmp_file
-      tmp_file="$(mktemp)"
+    local in_array=0
+    local inserted=0
 
-      local in_array=0
-      local inserted=0
-
-      while IFS= read -r line; do
-        if [[ "${line}" == "export CONFIG_INSTALL_EXTRAS=("* ]]; then
-          in_array=1
-        fi
-
-        if [[ "${in_array}" == "1" && "${line}" == ")" ]]; then
-          printf '  "%s"\n' "${entry}" >> "${tmp_file}"
-          in_array=0
-          inserted=1
-        fi
-
-        printf '%s\n' "${line}" >> "${tmp_file}"
-      done < "${config_file}"
-
-      if [[ "${inserted}" == "1" ]]; then
-        mv "${tmp_file}" "${config_file}"
-      else
-        rm -f "${tmp_file}"
-        _error "Could not find closing ')' for CONFIG_INSTALL_EXTRAS in '${config_file}'"
+    while IFS= read -r line; do
+      # Handle empty single-line array: export CONFIG_INSTALL_EXTRAS=()
+      if [[ "${line}" == "export CONFIG_INSTALL_EXTRAS=()" ]]; then
+        {
+          printf 'export CONFIG_INSTALL_EXTRAS=(\n'
+          printf '  "%s"\n' "${entry}"
+          printf ')\n'
+        } >> "${tmp_file}"
+        inserted=1
+        continue
       fi
+
+      # Handle multi-line array start.
+      if [[ "${line}" == "export CONFIG_INSTALL_EXTRAS=("* ]]; then
+        in_array=1
+      fi
+
+      # If we're in the array and hit the closing paren, insert before it.
+      if [[ "${in_array}" == "1" && "${line}" == ")" ]]; then
+        printf '  "%s"\n' "${entry}" >> "${tmp_file}"
+        in_array=0
+        inserted=1
+      fi
+
+      printf '%s\n' "${line}" >> "${tmp_file}"
+    done < "${config_file}"
+
+    if [[ "${inserted}" == "1" ]]; then
+      mv "${tmp_file}" "${config_file}"
     else
+      rm -f "${tmp_file}"
       _error "CONFIG_INSTALL_EXTRAS not found in '${config_file}'. Add it manually."
     fi
   fi
@@ -2645,17 +2644,36 @@ _dfr_add() {
       _error "'${source_path}' does not exist"
     fi
 
-    # Ensure the path is under $HOME so we can compute a relative path.
-    if [[ "${abs_path}" != "${HOME}/"* ]]; then
-      _error "'${abs_path}' is not under '${HOME}', cannot determine relative path"
-    fi
+    local rel_path=""
+    local dest_path=""
+    local needs_sudo=0
 
-    local rel_path="${abs_path#"${HOME}"/}"
-    local dest_path="${DOTFRIEDRICE_PATH}/${rel_path}"
+    if [[ "${abs_path}" == "${HOME}/"* ]]; then
+      rel_path="${abs_path#"${HOME}"/}"
+      dest_path="${DOTFRIEDRICE_PATH}/${rel_path}"
+    elif [[ "${abs_path}" == /etc/* || "${abs_path}" == /usr/* || "${abs_path}" == /mnt/* || "${abs_path}" == /opt/* || "${abs_path}" == /var/* ]]; then
+      rel_path="${abs_path#/}"
+      dest_path="${DOTFRIEDRICE_PATH}/${rel_path}"
+      needs_sudo=1
+    else
+      _error "'${abs_path}' is not under '${HOME}' or a recognized system path (etc/, usr/, mnt/, opt/, var/)"
+    fi
 
     # Check if destination already exists.
     if [[ -e "${dest_path}" ]]; then
-      _warning "'${dest_path}' already exists in the repo, it will be overwritten"
+      _warning "'${dest_path}' already exists in the repo"
+
+      while true; do
+        read -rp "Do you want to overwrite it? (y/n) " yn
+        case "${yn}" in
+        [Yy]*) break ;;
+        [Nn]*)
+          _skipping "'${source_path}'"
+          continue 2
+          ;;
+        *) _error "Please answer y or n" "" ;;
+        esac
+      done
     fi
 
     # Build rsync exclude args.
@@ -2670,12 +2688,20 @@ _dfr_add() {
     if [[ -d "${abs_path}" ]]; then
       # Directory: recursive copy.
       mkdir -p "${dest_path}"
-      rsync -a --delete "${rsync_excludes[@]}" "${abs_path}/" "${dest_path}/"
+      if [[ "${needs_sudo}" == "1" ]]; then
+        sudo rsync -a --delete "${rsync_excludes[@]}" "${abs_path}/" "${dest_path}/"
+      else
+        rsync -a --delete "${rsync_excludes[@]}" "${abs_path}/" "${dest_path}/"
+      fi
       echo "Added directory '${rel_path}' to DotFriedRice"
     else
       # File: single copy.
       mkdir -p "$(dirname "${dest_path}")"
-      cp -f "${abs_path}" "${dest_path}"
+      if [[ "${needs_sudo}" == "1" ]]; then
+        sudo cp -f "${abs_path}" "${dest_path}"
+      else
+        cp -f "${abs_path}" "${dest_path}"
+      fi
       echo "Added file '${rel_path}' to DotFriedRice"
     fi
   done
@@ -2687,6 +2713,7 @@ _dfr_add() {
 #   --arch → CONFIG_INSTALL_ARCH_EXTRAS
 #   --wsl  → CONFIG_INSTALL_WSL_EXTRAS
 
+# shellcheck disable=SC2016
 _dfr_add_config() {
   local use_default=0
   local paths=()
@@ -2721,74 +2748,55 @@ _dfr_add_config() {
       abs_path="$(realpath -m "${target_path}" 2>/dev/null || readlink -f "${target_path}" 2>/dev/null || echo "${target_path}")"
     fi
 
-    # Determine the symlink source (what goes in the repo) and destination
-    # (where the symlink points in $HOME).
-
-    local symlink_source=""
-    local symlink_dest=""
+    local symlink_cmd=""
 
     # Detect if the path is inside the dotfriedrice directory.
     if [[ "${abs_path}" == "${DOTFRIEDRICE_PATH}/"* ]]; then
-      # Path is inside dotfriedrice — use it as the source.
       local rel_to_repo="${abs_path#"${DOTFRIEDRICE_PATH}"/}"
-      symlink_source="\${DOTFRIEDRICE_PATH}/${rel_to_repo}"
 
-      # Infer the destination from the relative path.
-      # Most configs are under .config/ or .local/ which map to $HOME/.config/ etc.
-      if [[ "${rel_to_repo}" == ".config/"* ]]; then
+      # System paths inside the repo (etc/, usr/, mnt/, opt/, var/).
+      if [[ "${rel_to_repo}" == etc/* || "${rel_to_repo}" == usr/* || "${rel_to_repo}" == mnt/* || "${rel_to_repo}" == opt/* || "${rel_to_repo}" == var/* ]]; then
+        symlink_cmd='sudo ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_to_repo}"'\" \"/'"${rel_to_repo}"'\"'
+      elif [[ "${rel_to_repo}" == ".config/"* ]]; then
         local config_rel="${rel_to_repo#.config/}"
-        symlink_dest="\${XDG_CONFIG_HOME}/${config_rel}"
+        symlink_cmd='ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_to_repo}"'\" \"\${XDG_CONFIG_HOME}/'"${config_rel}"'\"'
       elif [[ "${rel_to_repo}" == ".local/bin/"* ]]; then
-        symlink_dest="\${HOME}/.local/bin/${rel_to_repo#.local/bin/}"
+        local bin_rel="${rel_to_repo#.local/bin/}"
+        symlink_cmd='ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_to_repo}"'\" \"\${HOME}/.local/bin/'"${bin_rel}"'\"'
       elif [[ "${rel_to_repo}" == ".local/share/"* ]]; then
         local share_rel="${rel_to_repo#.local/share/}"
-        symlink_dest="\${XDG_DATA_HOME}/${share_rel}"
+        symlink_cmd='ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_to_repo}"'\" \"\${XDG_DATA_HOME}/'"${share_rel}"'\"'
       else
-        symlink_dest="\${HOME}/${rel_to_repo}"
+        symlink_cmd='ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_to_repo}"'\" \"\${HOME}/'"${rel_to_repo}"'\"'
       fi
+
     elif [[ "${abs_path}" == "${HOME}/"* ]]; then
-      # Path is under $HOME but not in the repo — assume file exists in repo
-      # at the mirrored path.
       local rel_path="${abs_path#"${HOME}"/}"
-      symlink_source="\${DOTFRIEDRICE_PATH}/${rel_path}"
 
       if [[ "${rel_path}" == ".config/"* ]]; then
         local config_rel="${rel_path#.config/}"
-        symlink_dest="\${XDG_CONFIG_HOME}/${config_rel}"
+        symlink_cmd='ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_path}"'\" \"\${XDG_CONFIG_HOME}/'"${config_rel}"'\"'
       elif [[ "${rel_path}" == ".local/bin/"* ]]; then
-        symlink_dest="\${HOME}/.local/bin/${rel_path#.local/bin/}"
+        local bin_rel="${rel_path#.local/bin/}"
+        symlink_cmd='ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_path}"'\" \"\${HOME}/.local/bin/'"${bin_rel}"'\"'
       elif [[ "${rel_path}" == ".local/share/"* ]]; then
         local share_rel="${rel_path#.local/share/}"
-        symlink_dest="\${XDG_DATA_HOME}/${share_rel}"
+        symlink_cmd='ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_path}"'\" \"\${XDG_DATA_HOME}/'"${share_rel}"'\"'
       else
-        symlink_dest="\${HOME}/${rel_path}"
+        symlink_cmd='ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_path}"'\" \"\${HOME}/'"${rel_path}"'\"'
       fi
-    elif [[ "${abs_path}" == /etc/* || "${abs_path}" == /mnt/* ]]; then
-      # System path — needs sudo.
-      local rel_path="${abs_path#/}"
-      symlink_source="\${DOTFRIEDRICE_PATH}/${rel_path}"
-      symlink_dest="\"/${rel_path}\""
 
-      # Build the command with sudo for system paths.
-      local symlink_cmd="sudo ln -fns \"${symlink_source}\" ${symlink_dest}"
-      _dfr_append_config_entry "${symlink_cmd}" "${use_default}"
-      echo "Added config entry: ${symlink_cmd}"
-      continue
+    elif [[ "${abs_path}" == /etc/* || "${abs_path}" == /usr/* || "${abs_path}" == /mnt/* || "${abs_path}" == /opt/* || "${abs_path}" == /var/* ]]; then
+      local rel_path="${abs_path#/}"
+      symlink_cmd='sudo ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_path}"'\" \"/'"${rel_path}"'\"'
+
     else
       _error "'${abs_path}' is not under '${HOME}' or a recognized system path"
     fi
 
-    # Determine if it's a directory (use glob pattern like existing bin/* entries).
-    local symlink_cmd=""
-    if [[ -d "${abs_path}" ]]; then
-      # For directories, symlink the directory itself.
-      symlink_cmd="ln -fns \"${symlink_source}\" \"${symlink_dest}\""
-    else
-      symlink_cmd="ln -fns \"${symlink_source}\" \"${symlink_dest}\""
+    if _dfr_append_config_entry "${symlink_cmd}" "${use_default}"; then
+      echo "Added config entry: ${symlink_cmd}"
     fi
-
-    _dfr_append_config_entry "${symlink_cmd}" "${use_default}"
-    echo "Added config entry: ${symlink_cmd}"
   done
 }
 
@@ -2839,7 +2847,7 @@ _dfr_adopt() {
 
     # Must be under $HOME.
     if [[ "${abs_path}" != "${HOME}/"* ]]; then
-      _error "'${abs_path}' is not under '${HOME}', cannot determine relative path"
+      _error "'${abs_path}' is not under '${HOME}'. For system paths, use 'add' + 'add-config' separately"
     fi
 
     local rel_path="${abs_path#"${HOME}"/}"
@@ -2867,7 +2875,7 @@ _dfr_adopt() {
 
     _dfr_add_config ${default_flag} "${abs_path}"
 
-    echo "Adopted '${rel_path}' — original removed, symlink will be created on next dotfriedrice run"
+    echo "Adopted '${rel_path}' into DotFriedRice"
   done
 }
 
@@ -3037,12 +3045,14 @@ MANAGING CONFIGS
 -------------------------------------------------------------------------------${C_RESET}
 
 ${C_WHITE}# Add a file or directory from its real location into the DotFriedRice repo.
-# The path structure is mirrored relative to \$HOME.
+# The path structure is mirrored relative to \$HOME or / for system paths.
+# Supports \$HOME paths and system paths (etc/, usr/, mnt/, opt/, var/).
 ${C_GREEN}dotfriedrice add ${C_CYAN}<path> [--exclude <pattern>] ...${C_RESET}
 
 ${C_WHITE}# Add a symlink command to your dotfriedrice-config (CONFIG_INSTALL_EXTRAS).
 # Use --default to write to _install/default/config_install instead.
 # Paths inside the DotFriedRice directory are auto-detected and stripped.
+# System paths (etc/, usr/, etc.) automatically use sudo for the symlink.
 ${C_GREEN}dotfriedrice add-config ${C_CYAN}<path> [--default]${C_RESET}
 
 ${C_WHITE}# Move a file/directory into the repo AND add its symlink command.
