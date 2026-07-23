@@ -611,9 +611,9 @@ binds {
     Mod+Alt+C                hotkey-overlay-title="Center all visible columns" { center-visible-columns; }
 
     Mod+Z                    repeat=false hotkey-overlay-title="Toggle floating window" { toggle-window-floating; }
-    Mod+Alt+F                hotkey-overlay-title="Switch focus between floating and tiling"{ switch-focus-between-floating-and-tiling; }
+    Mod+T                    hotkey-overlay-title="Switch focus between floating and tiling"{ switch-focus-between-floating-and-tiling; }
 
-    Mod+T                    hotkey-overlay-title="Toggle tabbed column" { toggle-column-tabbed-display; }
+    Mod+Alt+T                hotkey-overlay-title="Toggle tabbed column" { toggle-column-tabbed-display; }
 
     Mod+BracketLeft          hotkey-overlay-title="Move focused window in and out of column to the left" { consume-or-expel-window-left; }
     Mod+BracketRight         hotkey-overlay-title="Move focused window in and out of column to the right" { consume-or-expel-window-right; }
