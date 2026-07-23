@@ -6,12 +6,12 @@
 
 # Provide a different repo to use. This could be useful if you've forked the
 # project into your account.
-export DOTFRIEDRICE_CLONE_URL="${DOTFRIEDRICE_CLONE_URL:-https://github.com/nickjj/dotfriedrice}"
+export DOTFRIEDRICE_CLONE_URL="https://github.com/zaxx-q/dotfriedrice"
 export DOTFRIEDRICE_UPSTREAM_URL="${DOTFRIEDRICE_UPSTREAM_URL:-https://github.com/nickjj/dotfriedrice}"
 
 # Provide a different remote branch. This branch will be merged into your
 # current locally checked out branch when pulling in updates.
-export DOTFRIEDRICE_BRANCH="${DOTFRIEDRICE_BRANCH:-master}"
+export DOTFRIEDRICE_BRANCH="main"
 
 # -----------------------------------------------------------------------------
 # Personalization
