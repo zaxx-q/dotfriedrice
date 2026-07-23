@@ -141,12 +141,8 @@ export PACKAGES_DNF_SKIP=(
 # Packages defined here only get installed when GUI_LINUX=1 is set on Fedora.
 export PACKAGES_DNF_GUI=()
 export PACKAGES_DNF_GUI_EXTRAS=()
-# CHANGED: Skip packages we don't need.
 # - Desktop suite already provides: brightnessctl, grim, hyprpicker, mako,
 #   satty, slurp, swaybg, swayidle, swaylock, waybar
-# - Explicit exclusions: docker-buildx, firefox, kdenlive, keepassxc,
-#   libreoffice, tesseract, tesseract-langpack-eng, timidity++, zathura-djvu,
-#   qt6-qtmultimedia
 export PACKAGES_DNF_GUI_SKIP=(
   "brightnessctl"
   "docker"
@@ -242,12 +238,11 @@ declare -A MISE_LANGUAGES_EXTRAS=()
 # the value is what you would pass into Mise to install it.
 MISE_LANGUAGES_EXTRAS["bun"]="bun@latest"
 
-# To skip a default language, supply its key name, for example:
-#MISE_LANGUAGES_SKIP=("node")
-export MISE_LANGUAGES_SKIP=("node" "python")
-
 export MISE_LANGUAGES
 export MISE_LANGUAGES_EXTRAS
+
+# For each item, supply just the language name (key), such as "node".
+export MISE_LANGUAGES_SKIP=("node" "python")
 
 # -----------------------------------------------------------------------------
 # External scripts
@@ -283,11 +278,27 @@ export SCRIPTS_INSTALL_SKIP=(
 )
 
 # -----------------------------------------------------------------------------
+# Fonts
+# -----------------------------------------------------------------------------
+
+# The same rules apply as system packages for how to define these.
+#
+# For skipping, supply the check filename or font name (e.g. "InconsolataNerdFontMono-Regular.ttf").
+# For adding fonts, supply "DOWNLOAD_URL|CHECK_FILENAME", example:
+#   "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip|JetBrainsMonoNerdFont-Regular.ttf"
+#
+# You can find the defaults in _install/default/fonts.
+
+export FONTS_INSTALL=()
+export FONTS_INSTALL_EXTRAS=()
+export FONTS_INSTALL_SKIP=()
+
+# -----------------------------------------------------------------------------
 # Install configs
 # -----------------------------------------------------------------------------
 
 # The same rules apply as system packages for how to define these.
-# You can find the defaults in _install/default/install_configs.
+# You can find the defaults in _install/default/config_install.
 
 # When set to "1", even if there's files not managed by DotFriedRice they
 # will get overwritten without showing you a prompt to confirm. This could
@@ -309,6 +320,10 @@ export CONFIG_INSTALL_AUTO_CONFIRM="0"
 #
 # For skipping, you can copy the exact full item from the defaults in
 # _install/default/config_install into the associated variable below.
+#
+# The default entries are organized into categories:
+#   Shell, Editor, Terminal, CLI tools, CLI bins (in CONFIG_INSTALL)
+#   Desktop environment, GUI apps, GUI data files, GUI bins (in CONFIG_INSTALL_GUI_LINUX)
 
 # Configs defined here will get created in all OS / environments.
 export CONFIG_INSTALL=()
@@ -370,12 +385,11 @@ declare -A SUDOERS_ENTRIES_EXTRAS=()
 # the value is the line written to the file.
 #SUDOERS_ENTRIES_EXTRAS["dfr-whois"]="${USER} ALL=(ALL) NOPASSWD: /usr/bin/whoami"
 
-# To skip a default entry, supply its file name key, for example:
-#SUDOERS_ENTRIES_SKIP=("dfr-timedatectl")
-export SUDOERS_ENTRIES_SKIP=("dfr-timedatectl")
-
 export SUDOERS_ENTRIES
 export SUDOERS_ENTRIES_EXTRAS
+
+# For each item, supply just the rule name (key), such as "dfr-timedatectl".
+export SUDOERS_ENTRIES_SKIP=("dfr-timedatectl")
 
 # -----------------------------------------------------------------------------
 # Udev rules
@@ -398,12 +412,11 @@ declare -A UDEV_RULES=()
 #   ["99-my-custom-rule"]='ACTION="add" [ADD_YOUR_RULE]'
 # )
 
-# To skip a default rule, supply its file name key (without .rules), for example:
-#UDEV_RULES_SKIP=("99-my-custom-rule")
-export UDEV_RULES_SKIP=()
-
 export UDEV_RULES
 export UDEV_RULES_EXTRAS
+
+# For each item, supply just the rule name (key), such as "99-my-custom-rule".
+export UDEV_RULES_SKIP=()
 
 # -----------------------------------------------------------------------------
 # Enabled systemd services
@@ -413,17 +426,16 @@ export UDEV_RULES_EXTRAS
 # You can find the defaults in _install/default/systemd_services.
 
 # Services in this list will start on boot if they exist, for example
-# SYSTEMD_ENABLED_SERVICES_EXTRAS=("docker.service") is enabled by default.
+# SYSTEMD_ENABLED_SERVICES=("docker.service") is enabled by default.
 # Use "myservice.service --user" to have it enabled with --user, likewise you
 # can use "myservice.service --now" and combine these flags as needed.
+#
+# For each skipped item, supply just the service name such as "docker.service".
 export SYSTEMD_ENABLED_SERVICES=()
 export SYSTEMD_ENABLED_SERVICES_EXTRAS=(
   "hd-idle.service"
   "keyd.service"
 )
-
-# To skip a default service, simply supply its service name stripped off any flags, for example:
-#SYSTEMD_ENABLED_SERVICES_SKIP=("docker-desktop.service")
 export SYSTEMD_ENABLED_SERVICES_SKIP=(
   "lactd.service"
   "libvirtd.socket"

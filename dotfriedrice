@@ -2378,23 +2378,8 @@ configure_groups() {
   _info "CONFIGURE GROUPS"
 
   if [ "${GUI_ENABLED}" == "1" ]; then
-    # Build the GUI package list based on the active distro so the group check
-    # below works on Arch (pacman), Fedora (dnf) and any future distro that
-    # uses the same _GUI variable naming scheme.
-    case "${OS_DISTRO}" in
-    arch)
-      local packages=("${PACKAGES_PACMAN_GUI[@]}" "${PACKAGES_PACMAN_GUI_EXTRAS[@]}")
-      ;;
-    fedora)
-      local packages=("${PACKAGES_DNF_GUI[@]}" "${PACKAGES_DNF_GUI_EXTRAS[@]}")
-      ;;
-    *)
-      local packages=()
-      ;;
-    esac
-
     for group in docker libvirt; do
-      if [[ " ${packages[*]} " == *" ${group} "* ]] &&
+      if _has_package "${group}" &&
         ! id --name --groups "${USER}" | grep --quiet --word-regexp "${group}"; then
         sudo usermod -aG "${group}" "${USER}"
         echo "'${group}' has been associated with '${USER}' user"
@@ -2469,9 +2454,7 @@ EOF
       ln -fns "${DOTFRIEDRICE_PATH}/.local/share/applications/rmpc.desktop" "${XDG_DATA_HOME}/applications/rmpc.desktop"
     fi
 
-    local packages=("${PACKAGES_AUR_GUI[@]}" "${PACKAGES_AUR_GUI_EXTRAS[@]}")
-
-    if [[ " ${packages[*]} " == *" docker-desktop "* ]]; then
+    if _has_package "docker-desktop"; then
       if [ -f "${XDG_CONFIG_HOME}/password-store/.gpg-id" ]; then
         _skipping "'${XDG_CONFIG_HOME}/password-store' already exists for Docker Desktop"
       else
@@ -2576,27 +2559,13 @@ configure_gui_app_themes() {
     _skipping "Only runs on Linux when GUI_LINUX=1 is set"
     return
   fi
-  
-  # Build the GUI package list based on the active distro so the firefox / gimp
-  # detection below works regardless of whether pacman or dnf was used.
-  case "${OS_DISTRO}" in
-  arch)
-    local packages=("${PACKAGES_PACMAN_GUI[@]}" "${PACKAGES_PACMAN_GUI_EXTRAS[@]}")
-    ;;
-  fedora)
-    local packages=("${PACKAGES_DNF_GUI[@]}" "${PACKAGES_DNF_GUI_EXTRAS[@]}")
-    ;;
-  *)
-    local packages=()
-    ;;
-  esac
 
   if [ "${THEME_SYSTEM}" != "1" ]; then
     _skipping "Theme system is disabled (THEME_SYSTEM=0)"
     return
   fi
 
-  if [[ " ${packages[*]} " == *" firefox "* ]]; then
+  if _has_package "firefox"; then
     local firefox_config_base_dir=
     local firefox_modified="0"
 
@@ -2638,7 +2607,7 @@ configure_gui_app_themes() {
     _skipping "Firefox is not installed"
   fi
 
-  if [[ " ${packages[*]} " == *" chromium "* ]]; then
+  if _has_package "chromium"; then
     local chromium_config="${XDG_CONFIG_HOME}/chromium/Default/Preferences"
     local chromium_modified="0"
 
@@ -2668,7 +2637,7 @@ configure_gui_app_themes() {
     sort --version-sort |
     tail -n 1 || true)
 
-  if [[ " ${packages[*]} " == *" gimp "* ]]; then
+  if _has_package "gimp"; then
     local gimp_config="${XDG_CONFIG_HOME}/GIMP/${gimp_latest_version}/gimprc"
 
     if [ -f "${gimp_config}" ]; then

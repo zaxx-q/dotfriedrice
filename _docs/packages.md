@@ -86,6 +86,7 @@ If needed, these get automatically installed for you by DotFriedRice.
 | yay-bin (`yay`)            | Pacman wrapper and AUR helper written in Go (pre-compiled)                        |
 | yay-bin-debug              | Detached debugging symbols for yay-bin                                            |
 | zip                        | Compressor/archiver for creating and modifying zip files                          |
+| zoxide                     | A smarter cd command, inspired by z and autojump                                  |
 | zsh                        | Advanced and programmable UNIX shell                                              |
 
 # TUI
