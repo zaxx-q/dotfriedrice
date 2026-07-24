@@ -22,7 +22,6 @@ URL="${1:-}"
 # At the same time, let stderr get printed in real-time. If errors occur,
 # producee a final error message so folks know we cannot continue.
 args=(
-  "--silent"
   "--show-error"
   "--fail"
   "--location"
@@ -32,6 +31,12 @@ args=(
   "--speed-limit" "100"
   "--speed-time" "30"
 )
+
+if [ -t 2 ]; then
+  args+=("--progress-bar")
+else
+  args+=("--silent")
+fi
 
 args+=("${@}")
 
