@@ -338,7 +338,7 @@ export CONFIG_INSTALL_EXTRAS=(
   "ln -fns ~/.local/share/mise/installs/bun/latest/bin/bunx ~/.local/bin/local/npx"
   "sudo systemctl disable NetworkManager-wait-online.service"
   "sudo systemctl mask NetworkManager-wait-online.service"
-  "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/systemd/system/systemd-suspend.service.d/10-no-freeze-session.conf\" \"/etc/systemd/system/systemd-suspend.service.d/10-no-freeze-session.conf\""
+  "sudo install -Dm644 \"\${DOTFRIEDRICE_PATH}/etc/systemd/system/systemd-suspend.service.d/10-no-freeze-session.conf\" \"/etc/systemd/system/systemd-suspend.service.d/10-no-freeze-session.conf\""
   "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/keyd/default.conf\" \"/etc/keyd/default.conf\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/XCompose\" \"\${XDG_CONFIG_HOME}/XCompose\""
 )
