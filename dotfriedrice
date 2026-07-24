@@ -2610,10 +2610,15 @@ _dfr_append_config_entry() {
 _dfr_add() {
   local excludes=()
   local paths=()
+  local move_mode=0
 
   # Parse arguments.
   while [[ $# -gt 0 ]]; do
     case "${1}" in
+    --move)
+      move_mode=1
+      shift
+      ;;
     --exclude)
       shift
       [[ $# -eq 0 ]] && _error "'--exclude' requires a value"
@@ -2691,11 +2696,21 @@ _dfr_add() {
     if [[ -d "${abs_path}" ]]; then
       # Directory: recursive copy.
       mkdir -p "${dest_path}"
+
+      local rsync_flags=(-a --delete)
+      [[ "${move_mode}" == "1" ]] && rsync_flags+=(--remove-source-files)
+
       if [[ "${needs_sudo}" == "1" ]]; then
-        sudo rsync -a --delete "${rsync_excludes[@]}" "${abs_path}/" "${dest_path}/"
+        sudo rsync "${rsync_flags[@]}" "${rsync_excludes[@]}" "${abs_path}/" "${dest_path}/"
       else
-        rsync -a --delete "${rsync_excludes[@]}" "${abs_path}/" "${dest_path}/"
+        rsync "${rsync_flags[@]}" "${rsync_excludes[@]}" "${abs_path}/" "${dest_path}/"
       fi
+
+      # In move mode, clean up empty directories left behind by --remove-source-files.
+      if [[ "${move_mode}" == "1" && -d "${abs_path}" ]]; then
+        find "${abs_path}" -type d -empty -delete 2>/dev/null || true
+      fi
+
       echo "Added directory '${rel_path}' to DotFriedRice"
     else
       # File: single copy.
@@ -2705,6 +2720,12 @@ _dfr_add() {
       else
         cp -f "${abs_path}" "${dest_path}"
       fi
+
+      # In move mode, remove the source file.
+      if [[ "${move_mode}" == "1" ]]; then
+        rm -f "${abs_path}"
+      fi
+
       echo "Added file '${rel_path}' to DotFriedRice"
     fi
   done
@@ -2719,6 +2740,7 @@ _dfr_add() {
 # shellcheck disable=SC2016
 _dfr_add_config() {
   local use_default=0
+  local per_file=0
   local paths=()
 
   # Parse arguments.
@@ -2726,6 +2748,10 @@ _dfr_add_config() {
     case "${1}" in
     --default)
       use_default=1
+      shift
+      ;;
+    --per-file)
+      per_file=1
       shift
       ;;
     -*)
@@ -2739,7 +2765,7 @@ _dfr_add_config() {
   done
 
   if ((${#paths[@]} == 0)); then
-    _error "Usage: dotfriedrice add-config <path> [--default]"
+    _error "Usage: dotfriedrice add-config <path> [--default] [--per-file]"
   fi
 
   for target_path in "${paths[@]}"; do
@@ -2749,6 +2775,40 @@ _dfr_add_config() {
       abs_path="$(realpath -m "${DOTFRIEDRICE_ORIGINAL_PWD:-${PWD}}/${target_path}" 2>/dev/null || readlink -f "${DOTFRIEDRICE_ORIGINAL_PWD:-${PWD}}/${target_path}" 2>/dev/null || echo "${DOTFRIEDRICE_ORIGINAL_PWD:-${PWD}}/${target_path}")"
     else
       abs_path="$(realpath -m "${target_path}" 2>/dev/null || readlink -f "${target_path}" 2>/dev/null || echo "${target_path}")"
+    fi
+
+    # If --per-file and target is a directory, create individual entries.
+    if [[ "${per_file}" == "1" && -d "${abs_path}" ]]; then
+      local per_file_count=0
+      local search_dir="${abs_path}"
+
+      if [[ "${abs_path}" != "${DOTFRIEDRICE_PATH}/"* ]]; then
+        local rel_check=""
+        if [[ "${abs_path}" == "${HOME}/"* ]]; then
+          rel_check="${abs_path#"${HOME}"/}"
+        elif [[ "${abs_path}" == /etc/* || "${abs_path}" == /usr/* || "${abs_path}" == /mnt/* || "${abs_path}" == /opt/* || "${abs_path}" == /var/* ]]; then
+          rel_check="${abs_path#/}"
+        fi
+        if [[ -n "${rel_check}" && -d "${DOTFRIEDRICE_PATH}/${rel_check}" ]]; then
+          search_dir="${DOTFRIEDRICE_PATH}/${rel_check}"
+        fi
+      fi
+
+      while IFS= read -r -d '' file; do
+        # Re-run add-config for each file, without --per-file to avoid recursion.
+        if [[ "${use_default}" == "1" ]]; then
+          _dfr_add_config --default "${file}"
+        else
+          _dfr_add_config "${file}"
+        fi
+        ((per_file_count += 1))
+      done < <(find "${search_dir}" -type f -print0)
+
+      if ((per_file_count == 0)); then
+        _skipping "No files found in '${abs_path}'"
+      fi
+
+      continue
     fi
 
     local symlink_cmd=""
@@ -2814,6 +2874,7 @@ _dfr_add_config() {
 _dfr_adopt() {
   local use_default=0
   local do_link=0
+  local per_file=0
   local excludes=()
   local paths=()
 
@@ -2826,6 +2887,10 @@ _dfr_adopt() {
       ;;
     --link)
       do_link=1
+      shift
+      ;;
+    --per-file)
+      per_file=1
       shift
       ;;
     --exclude)
@@ -2845,7 +2910,7 @@ _dfr_adopt() {
   done
 
   if ((${#paths[@]} == 0)); then
-    _error "Usage: dotfriedrice adopt <path> [--default] [--link] [--exclude <pattern>] ..."
+    _error "Usage: dotfriedrice adopt <path> [--default] [--link] [--per-file] [--exclude <pattern>] ..."
   fi
 
   for source_path in "${paths[@]}"; do
@@ -2869,45 +2934,101 @@ _dfr_adopt() {
     local rel_path="${abs_path#"${HOME}"/}"
     local dest_path="${DOTFRIEDRICE_PATH}/${rel_path}"
 
-    # Step 1: Copy the file/directory into the repo (using add logic).
+    # Pre-flight: if --link is used with a directory, check for gitignored files
+    # that would prevent a clean directory-level symlink.
+    if [[ "${do_link}" == "1" && -d "${abs_path}" && "${per_file}" != "1" ]]; then
+      # Check if there are files that rsync would skip (gitignored/excluded).
+      local total_files
+      total_files="$(find "${abs_path}" -type f | wc -l)"
+
+      local rsync_preview_excludes=()
+      for pattern in "${excludes[@]}"; do
+        rsync_preview_excludes+=("--exclude" "${pattern}")
+      done
+      rsync_preview_excludes+=("--filter" ":- .gitignore")
+
+      local transferable_files
+      transferable_files="$(rsync -an --out-format='%n' "${rsync_preview_excludes[@]}" "${abs_path}/" "/tmp/__dfr_dry_run__/" 2>/dev/null | grep -cv '/$' || echo "0")"
+
+      if ((total_files > transferable_files)); then
+        cat <<EOF
+${C_RED}Error:${C_RESET} '${abs_path}' contains gitignored files that would be left behind.
+A directory-level symlink cannot replace a directory that still has files in it.
+
+Use ${C_GREEN}--per-file --link${C_RESET} to create individual symlinks for each adopted file,
+or omit ${C_GREEN}--link${C_RESET} and run ${C_GREEN}dotfriedrice -S${C_RESET} later.
+EOF
+        return 1
+      fi
+    fi
+
+    # Step 1: Copy/move the file/directory into the repo (using add logic with --move).
     local exclude_args=()
     for pattern in "${excludes[@]}"; do
       exclude_args+=("--exclude" "${pattern}")
     done
 
-    _dfr_add "${exclude_args[@]}" "${abs_path}"
+    _dfr_add --move "${exclude_args[@]}" "${abs_path}"
 
-    # Step 2: Remove the original and replace with nothing for now.
-    # The symlink will be created when dotfriedrice runs.
+    # Check if the original directory still has files (gitignored leftovers).
     if [[ -d "${abs_path}" ]]; then
-      rm -rf "${abs_path}"
-    else
-      rm -f "${abs_path}"
+      local leftover_count
+      leftover_count="$(find "${abs_path}" -type f 2>/dev/null | wc -l)"
+      if ((leftover_count > 0)); then
+        printf "\n%bThe following gitignored files were preserved at '%s':%b\n" "${C_WHITE}" "${abs_path}" "${C_RESET}"
+        find "${abs_path}" -type f -printf "  %P\n" 2>/dev/null
+        echo
+      fi
     fi
 
     # Step 3: Add the config entry.
-    local default_flag=""
-    [[ "${use_default}" == "1" ]] && default_flag="--default"
+    local add_config_flags=()
+    [[ "${use_default}" == "1" ]] && add_config_flags+=("--default")
+    [[ "${per_file}" == "1" ]] && add_config_flags+=("--per-file")
 
-    _dfr_add_config ${default_flag} "${abs_path}"
+    _dfr_add_config "${add_config_flags[@]}" "${abs_path}"
 
-    # Optionally execute the link command immediately.
+    # Optionally execute the link command(s) immediately.
     if [[ "${do_link}" == "1" ]]; then
-      local dest_link=""
+      if [[ "${per_file}" == "1" && -d "${DOTFRIEDRICE_PATH}/${rel_path}" ]]; then
+        # Create per-file symlinks.
+        while IFS= read -r -d '' file; do
+          local file_rel="${file#"${DOTFRIEDRICE_PATH}/"}"
+          local file_dest=""
 
-      if [[ "${rel_path}" == ".config/"* ]]; then
-        dest_link="${XDG_CONFIG_HOME:-${HOME}/.config}/${rel_path#.config/}"
-      elif [[ "${rel_path}" == ".local/bin/"* ]]; then
-        dest_link="${HOME}/.local/bin/${rel_path#.local/bin/}"
-      elif [[ "${rel_path}" == ".local/share/"* ]]; then
-        dest_link="${XDG_DATA_HOME:-${HOME}/.local/share}/${rel_path#.local/share/}"
+          if [[ "${file_rel}" == ".config/"* ]]; then
+            file_dest="${XDG_CONFIG_HOME:-${HOME}/.config}/${file_rel#.config/}"
+          elif [[ "${file_rel}" == ".local/bin/"* ]]; then
+            file_dest="${HOME}/.local/bin/${file_rel#.local/bin/}"
+          elif [[ "${file_rel}" == ".local/share/"* ]]; then
+            file_dest="${XDG_DATA_HOME:-${HOME}/.local/share}/${file_rel#.local/share/}"
+          else
+            file_dest="${HOME}/${file_rel}"
+          fi
+
+          mkdir -p "$(dirname "${file_dest}")"
+          ln -fns "${file}" "${file_dest}"
+        done < <(find "${DOTFRIEDRICE_PATH}/${rel_path}" -type f -print0)
+
+        echo "Linked individual files from '${rel_path}' back to their original locations"
       else
-        dest_link="${HOME}/${rel_path}"
-      fi
+        # Single file or directory-level symlink.
+        local dest_link=""
 
-      mkdir -p "$(dirname "${dest_link}")"
-      ln -fns "${DOTFRIEDRICE_PATH}/${rel_path}" "${dest_link}"
-      echo "Linked '${rel_path}' to '${dest_link}'"
+        if [[ "${rel_path}" == ".config/"* ]]; then
+          dest_link="${XDG_CONFIG_HOME:-${HOME}/.config}/${rel_path#.config/}"
+        elif [[ "${rel_path}" == ".local/bin/"* ]]; then
+          dest_link="${HOME}/.local/bin/${rel_path#.local/bin/}"
+        elif [[ "${rel_path}" == ".local/share/"* ]]; then
+          dest_link="${XDG_DATA_HOME:-${HOME}/.local/share}/${rel_path#.local/share/}"
+        else
+          dest_link="${HOME}/${rel_path}"
+        fi
+
+        mkdir -p "$(dirname "${dest_link}")"
+        ln -fns "${DOTFRIEDRICE_PATH}/${rel_path}" "${dest_link}"
+        echo "Linked '${rel_path}' to '${dest_link}'"
+      fi
     fi
 
     echo "Adopted '${rel_path}' into DotFriedRice"
@@ -3088,12 +3209,14 @@ ${C_WHITE}# Add a symlink command to your dotfriedrice-config (CONFIG_INSTALL_EX
 # Use --default to write to _install/default/config_install instead.
 # Paths inside the DotFriedRice directory are auto-detected and stripped.
 # System paths (etc/, usr/, etc.) automatically use sudo for the symlink.
-${C_GREEN}dotfriedrice add-config ${C_CYAN}<path> [--default]${C_RESET}
+# Use --per-file with directories to create individual entries per file.
+${C_GREEN}dotfriedrice add-config ${C_CYAN}<path> [--default] [--per-file]${C_RESET}
 
 ${C_WHITE}# Move a file/directory into the repo AND add its symlink command.
 # Combines 'add' + 'add-config' in one step. The original is removed.
 # Use --link to immediately create the symlink back to the original location.
-${C_GREEN}dotfriedrice adopt ${C_CYAN}<path> [--default] [--link] [--exclude <pattern>] ...${C_RESET}
+# Use --per-file with directories to create individual symlink entries per file.
+${C_GREEN}dotfriedrice adopt ${C_CYAN}<path> [--default] [--link] [--per-file] [--exclude <pattern>] ...${C_RESET}
 
 ${C_BLUE}-------------------------------------------------------------------------------
 WHAT'S DIFFERENT
