@@ -157,6 +157,18 @@ export MANPAGER="sh -c 'col -bx | bat --language man --plain'"
 # https://dandavison.github.io/delta/environment-variables.html
 export DELTA_FEATURES="diff-so-fancy"
 
+# Copy input to clipboard
+copy-buffer-to-clipboard() {
+  if command -v wl-copy >/dev/null 2>&1; then
+    print -rn -- "$BUFFER" | wl-copy
+    zle -M "Copied buffer to clipboard"
+  else
+    zle -M "wl-copy not found -- install wl-clipboard"
+  fi
+}
+zle -N copy-buffer-to-clipboard
+bindkey '^[o' copy-buffer-to-clipboard
+
 # Load aliases if they exist.
 # shellcheck disable=SC1091
 [ -f "${XDG_CONFIG_HOME}/zsh/.aliases" ] && . "${XDG_CONFIG_HOME}/zsh/.aliases"
