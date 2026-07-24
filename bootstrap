@@ -43,6 +43,14 @@ export DOTFRIEDRICE_BRANCH="${DOTFRIEDRICE_BRANCH:-master}"
 export DOTFRIEDRICE_CLONE_URL="${DOTFRIEDRICE_CLONE_URL:-https://github.com/nickjj/dotfriedrice}"
 export DOTFRIEDRICE_UPSTREAM_URL="${DOTFRIEDRICE_UPSTREAM_URL:-"${DOTFRIEDRICE_CLONE_URL}"}"
 
+if [ -n "${SUDO_PASS:-}" ] && [ -z "${SUDO_ASKPASS:-}" ]; then
+  _askpass_tmp="$(mktemp /tmp/dfr-askpass.XXXXXX)"
+  printf '#!/bin/sh\necho "%s"\n' "${SUDO_PASS}" > "${_askpass_tmp}"
+  chmod 700 "${_askpass_tmp}"
+  export SUDO_ASKPASS="${_askpass_tmp}"
+  trap 'rm -f "${_askpass_tmp:-}"' EXIT
+fi
+
 for arg in "${@}"; do
   case "${arg}" in
   --local)
