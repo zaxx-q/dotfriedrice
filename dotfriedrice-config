@@ -290,7 +290,10 @@ export SCRIPTS_INSTALL_SKIP=(
 # You can find the defaults in _install/default/fonts.
 
 export FONTS_INSTALL=()
-export FONTS_INSTALL_EXTRAS=()
+export FONTS_INSTALL_EXTRAS=(
+  "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip|InterVariable.ttf,InterVariable-Italic.ttf"
+  "https://github.com/tonsky/FiraCode/releases/download/6.2/Fira_Code_v6.2.zip|FiraCode-VF.ttf"
+)
 export FONTS_INSTALL_SKIP=()
 
 # -----------------------------------------------------------------------------
