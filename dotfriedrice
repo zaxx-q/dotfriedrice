@@ -1032,7 +1032,25 @@ _config_install() {
       [[ "${item}" == *"stub-resolv.conf"* ]] && continue
     fi
 
-    eval "${item//${str_find}/${str_replace}}"
+    local expanded_item="${item//${str_find}/${str_replace}}"
+
+    # If the destination is an existing real directory (not a symlink),
+    # remove it first so ln -fns creates the symlink AT destination,
+    # rather than creating a nested symlink INSIDE destination.
+    if [[ "${expanded_item}" == *"ln "* ]]; then
+      eval "set -- ${expanded_item}"
+      local destination="${*: -1}"
+
+      if [[ -d "${destination}" && ! -L "${destination}" ]]; then
+        if [[ "${expanded_item}" == "sudo "* ]]; then
+          sudo rm -rf "${destination}"
+        else
+          rm -rf "${destination}"
+        fi
+      fi
+    fi
+
+    eval "${expanded_item}"
   done
 }
 
