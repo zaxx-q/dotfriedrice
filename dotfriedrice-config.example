@@ -235,8 +235,8 @@ export SCRIPTS_INSTALL_SKIP=()
 # The same rules apply as system packages for how to define these.
 #
 # For skipping, supply the check filename or font name (e.g. "InconsolataNerdFontMono-Regular.ttf").
-# For adding fonts, supply "DOWNLOAD_URL|CHECK_FILENAME", example:
-#   "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip|JetBrainsMonoNerdFont-Regular.ttf"
+# For adding fonts, supply "DOWNLOAD_URL|FILENAME_1,FILENAME_2,...", example:
+#   "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip|InterVariable.ttf,InterVariable-Italic.ttf"
 #
 # You can find the defaults in _install/default/fonts.
 
