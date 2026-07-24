@@ -1,0 +1,9 @@
+[tools]
+biome = "latest"
+bun = "latest"
+uv = "latest"
+
+[settings]
+# Tells mise to automatically create and source
+# virtual environments using uv inside projects
+python.uv_venv_auto = "create|source"

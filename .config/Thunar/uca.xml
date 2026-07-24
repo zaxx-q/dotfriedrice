@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+<action>
+	<icon>utilities-terminal</icon>
+	<name>Open Terminal Here</name>
+	<submenu></submenu>
+	<unique-id>1781764519674275-1</unique-id>
+	<command>ghostty --gtk-single-instance=false --working-directory=%f</command>
+	<description>Example for a custom action</description>
+	<range></range>
+	<patterns>*</patterns>
+	<startup-notify/>
+	<directories/>
+</action>
+<action>
+	<icon>edit-copy</icon>
+	<name>Copy Path</name>
+	<submenu></submenu>
+	<unique-id>1782322031564567-1</unique-id>
+	<command>bash -c &apos;for f in %F; do echo &quot;$f&quot; | sed &quot;s|^$HOME|~|&quot;; done | wl-copy&apos;</command>
+	<description>Copy absolute file path to clipboard</description>
+	<range></range>
+	<patterns>*</patterns>
+	<directories/>
+	<audio-files/>
+	<image-files/>
+	<other-files/>
+	<text-files/>
+	<video-files/>
+</action>
+<action>
+	<icon>dev.zed.Zed</icon>
+	<name>Open in $EDITOR</name>
+	<submenu></submenu>
+	<unique-id>1782752327702618-1</unique-id>
+	<command>zed --wait %f</command>
+	<description></description>
+	<range></range>
+	<patterns>*</patterns>
+	<image-files/>
+	<other-files/>
+	<text-files/>
+</action>
+<action>
+	<icon>stock_folder-copy</icon>
+	<name>Compare File Hashes</name>
+	<submenu></submenu>
+	<unique-id>1782906810362187-1</unique-id>
+	<command>~/.local/bin/local/smart-compare %F</command>
+	<description></description>
+	<range>2-20</range>
+	<patterns>*</patterns>
+	<audio-files/>
+	<image-files/>
+	<other-files/>
+	<text-files/>
+	<video-files/>
+</action>
+<action>
+	<icon>org.gnome.Meld</icon>
+	<name>Compare with Meld</name>
+	<submenu></submenu>
+	<unique-id>1783582118273125-1</unique-id>
+	<command>meld %F</command>
+	<description>Compare selected files or directories</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<directories/>
+	<audio-files/>
+	<image-files/>
+	<other-files/>
+	<text-files/>
+	<video-files/>
+</action>
+<action>
+	<icon>address-book-new</icon>
+	<name>Add to zoxide or increase score</name>
+	<submenu></submenu>
+	<unique-id>1783849992215687-1</unique-id>
+	<command>zoxide add %f</command>
+	<description>Make sure to deselect everything first</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<directories/>
+</action>
+<action>
+	<icon></icon>
+	<name>Check Hard Link</name>
+	<submenu></submenu>
+	<unique-id>1784372785141578-1</unique-id>
+	<command>~/.local/bin/local/thunar-hardlink-check %F</command>
+	<description></description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<directories/>
+	<audio-files/>
+	<image-files/>
+	<other-files/>
+	<text-files/>
+	<video-files/>
+</action>
+</actions>

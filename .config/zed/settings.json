@@ -1,0 +1,67 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  "terminal": {
+    "font_family": ".ZedMono"
+  },
+  "agent_servers": {
+    
+  },
+  "minimap": {
+    "show": "always"
+  },
+  "diff_view_style": "unified",
+  "cli_default_open_behavior": "existing_window",
+  "indent_guides": {
+    "coloring": "indent_aware",
+  },
+  "project_panel": {
+    "hide_gitignore": false,
+    "dock": "left",
+  },
+  "outline_panel": {
+    "dock": "right",
+  },
+  "collaboration_panel": {
+    "dock": "right",
+  },
+  "agent": {
+    "terminal_init_command": "",
+    "sidebar_side": "right",
+    "dock": "right",
+    "favorite_models": [],
+    "model_parameters": [],
+  },
+  "git_panel": {
+    "tree_view": false,
+    "dock": "left",
+  },
+  "proxy": "",
+  "telemetry": {
+    "diagnostics": true,
+    "metrics": false,
+    "anthropic_retention": false,
+  },
+  "session": {
+    "trust_all_worktrees": true,
+  },
+  "base_keymap": "VSCode",
+  "icon_theme": {
+    "mode": "light",
+    "light": "Material Icon Theme",
+    "dark": "Material Icon Theme",
+  },
+  "ui_font_size": 16,
+  "buffer_font_size": 15,
+  "theme": {
+    "mode": "dark",
+    "light": "Gruvbox Light",
+    "dark": "Ayu Mirage",
+  },
+}
