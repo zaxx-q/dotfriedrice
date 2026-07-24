@@ -1632,7 +1632,7 @@ install_fonts() {
     # Extract based on file type into raw extraction directory.
     case "${clean_url}" in
     *.zip)
-      unzip -q -j "${font_archive}" -d "${font_tmp_extract}"
+      unzip -q -o "${font_archive}" -d "${font_tmp_extract}"
       ;;
     *.tar.gz | *.tgz | *.tar.xz)
       tar -xf "${font_archive}" -C "${font_tmp_extract}"
