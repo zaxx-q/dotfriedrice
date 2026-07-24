@@ -1257,7 +1257,9 @@ create_initial_dirs() {
     _mkdir_if_pkg() {
       local pkg="${1}"
       shift
-      _has_package "${pkg}" && mkdir -p "${@}"
+      if _has_package "${pkg}"; then
+        mkdir -p "${@}"
+      fi
     }
 
     # Directories that are always needed when GUI is enabled (not tied to a
