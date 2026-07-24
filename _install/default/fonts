@@ -2,5 +2,5 @@
 # Customize these in the config file instead of editing them here.
 
 export DEFAULT_FONTS_INSTALL=(
-  "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Inconsolata.zip|InconsolataNerdFontMono-Regular.ttf"
+  "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Inconsolata.zip|InconsolataNerdFont*.ttf"
 )
