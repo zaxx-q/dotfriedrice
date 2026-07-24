@@ -1108,10 +1108,14 @@ _config_install_display() {
       # If the target doesn't contain our path then we know it's not managed by
       # DotFriedRice which is grounds for a warning.
       if [[ "${target}" != *"${DOTFRIEDRICE_PATH}"* ]]; then
-        ((private_warning_count += 1))
-        ((warning_count += 1))
+        if [[ ! -L "${target_path}" && -f "${source}" && -f "${target_path}" ]] && cmp -s "${source}" "${target_path}" 2>/dev/null; then
+          :
+        else
+          ((private_warning_count += 1))
+          ((warning_count += 1))
 
-        _warning "'${target_path}' is not managed by DotFriedRice" "  - "
+          _warning "'${target_path}' is not managed by DotFriedRice" "  - "
+        fi
       fi
     done
 
