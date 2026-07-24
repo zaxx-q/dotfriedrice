@@ -1,13 +1,25 @@
 # Include the default system rules so you don't lose the standard shortcuts
 include "%L"
 
-# Custom
+# Math
+<Multi_key> <s> <u> <m> : "∑"
+<Multi_key> <c> <s> <i> <g> : "Σ"
+<Multi_key> <8> <8> : "∞"
+<Multi_key> <d> <e> <l> : "Δ"
+<Multi_key> <l> <a> <m> : "λ"
+<Multi_key> <p> <i> : "π"
 <Multi_key> <equal> <equal> : "≡"
 
-# Math Symbols
-<Multi_key> <p> <i> : "π"
+# Marks
+<Multi_key> <o> <k> : "✓"
+<Multi_key> <n> <o> : "✗"
+<Multi_key> <s> <t> <a> <r> : "★"
 
-# Fun / Emojis
+# Fun
+<Multi_key> <f> <l> <i> <p> : "(╯°□°)╯︵ ┻━┻"
+<Multi_key> <u> <n> <f> : "┬─┬ノ( º _ ºノ)"
+<Multi_key> <c> <u> <p> : "☕"
+<Multi_key> <plus> <1> : "👍"
 <Multi_key> <l> <o> <v> <e> : "❤️"
 <Multi_key> <f> <a> <c> <e> : "ツ"
-<Multi_key> <s> <h> <r> <u> <g> : "¯\_(ツ)_/¯"
+<Multi_key> <s> <h> <r> <u> <g> : "¯\\_(ツ)_/¯"
