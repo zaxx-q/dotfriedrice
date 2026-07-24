@@ -1,0 +1,151 @@
+{
+  "lastChangelogVersion": "0.82.0",
+  "npmCommand": [
+    "bun"
+  ],
+  "packages": [
+    {
+      "source": "npm:pi-free",
+      "extensions": [
+        "-index.ts"
+      ]
+    },
+    {
+      "source": "npm:@narumitw/pi-caffeinate",
+      "extensions": [
+        "-src/caffeinate.ts"
+      ]
+    },
+    "npm:@narumitw/pi-firecrawl",
+    "npm:pi-boomerang",
+    {
+      "source": "npm:pi-smart-fetch",
+      "extensions": [
+        "-dist/index.js"
+      ]
+    },
+    "npm:pi-btw",
+    {
+      "source": "npm:@ssweens/pi-dynamic-models",
+      "extensions": [
+        "-index.ts"
+      ]
+    },
+    "npm:pi-mono-multi-edit",
+    "npm:@dreki-gg/pi-modes",
+    "npm:pi-qq",
+    {
+      "source": "npm:@mrclrchtr/supi-ask-user",
+      "extensions": [
+        "+src/extension.ts"
+      ]
+    },
+    {
+      "source": "npm:@mrclrchtr/supi-bash-timeout",
+      "extensions": [
+        "-src/extension.ts"
+      ]
+    },
+    {
+      "source": "npm:@mrclrchtr/supi-claude-md",
+      "extensions": [
+        "-src/extension.ts"
+      ],
+      "skills": [
+        "+skills/claude-md-improver/SKILL.md",
+        "+skills/claude-md-revision/SKILL.md"
+      ]
+    },
+    "npm:@mrclrchtr/supi-context",
+    {
+      "source": "npm:@mrclrchtr/supi-review",
+      "extensions": [
+        "+src/extension.ts"
+      ]
+    },
+    {
+      "source": "npm:@jerryan/pi-todo-lite",
+      "extensions": [
+        "-extension.ts"
+      ]
+    },
+    {
+      "source": "npm:pi-image-tools",
+      "extensions": [
+        "+index.ts"
+      ]
+    },
+    {
+      "source": "npm:pi-hide-messages",
+      "extensions": [
+        "-index.ts"
+      ]
+    },
+    {
+      "source": "npm:pi-interactive-shell",
+      "skills": [
+        "-skills/pi-interactive-shell/SKILL.md"
+      ],
+      "extensions": [
+        "-index.ts"
+      ]
+    },
+    "npm:pi-invisible-continue",
+    {
+      "source": "npm:pi-lens",
+      "extensions": [
+        "-dist/index.js"
+      ]
+    },
+    "npm:@ff-labs/pi-fff",
+    "npm:@gotgenes/pi-permission-system",
+    {
+      "source": "npm:@tintinweb/pi-subagents",
+      "extensions": [
+        "-src/index.ts"
+      ]
+    },
+    {
+      "source": "npm:@gotgenes/pi-subagents",
+      "extensions": [
+        "-src/index.ts"
+      ]
+    },
+    "npm:@gotgenes/pi-autoformat",
+    {
+      "source": "npm:@gotgenes/pi-session-tools",
+      "extensions": [
+        "-src/index.ts"
+      ]
+    },
+    {
+      "source": "npm:@ayulab/pi-rewind",
+      "extensions": [
+        "-index.js"
+      ]
+    },
+    "npm:pi-rtk-optimizer",
+    "npm:@neilurk12/pi-lazygit",
+    "npm:pi-simplify",
+    "npm:pi-toggle-skills",
+    "npm:@narumitw/pi-starship"
+  ],
+  "theme": "dark",
+  "extensions": [
+    "-extensions/ephemeral/index.ts",
+    "-extensions/whimsical.ts",
+    "-extensions/custom-statusline.ts",
+    "-extensions/env-loader.ts",
+    "-extensions/todos/index.ts"
+  ],
+  "defaultProvider": "AGY",
+  "defaultModel": "gemini-3.6-flash-medium",
+  "defaultThinkingLevel": "high",
+  "compaction": {
+    "enabled": false
+  },
+  "terminal": {
+    "showTerminalProgress": true
+  },
+  "hideThinkingBlock": false
+}

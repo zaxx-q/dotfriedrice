@@ -1,0 +1,214 @@
+/**
+ * context-guard — keep the LLM context window lean.
+ *
+ * Intercepts tool calls before they execute and applies two guards:
+ *
+ * 1. `read` for a file already seen this session (mtime unchanged)
+ *    → blocks the call and returns a stub:
+ *      "File unchanged since last read — refer to the earlier result."
+ *      (~20 tokens vs re-sending the full content). Evicted when
+ *      multi-edit emits `context-guard:file-modified`.
+ *
+ * 2. `bash` using `rg` without any output-bounding operator
+ *    → appends `| head -N` so grep dumps don't fill the context window.
+ *
+ * All guards are enabled by default.
+ */
+
+import { stat } from "node:fs/promises";
+import { resolve } from "node:path";
+
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
+
+// ---------------------------------------------------------------------------
+// Defaults
+// ---------------------------------------------------------------------------
+
+const DEFAULTS = {
+	rgHeadLimit: 60,
+	dedupGuard: true,
+	rgGuard: true,
+};
+
+type Config = typeof DEFAULTS;
+
+// ---------------------------------------------------------------------------
+// Read dedup cache
+// ---------------------------------------------------------------------------
+
+/** What we remember about a past read. */
+type ReadEntry = {
+	/** mtime in milliseconds at the time of the read. */
+	mtimeMs: number;
+	/** offset used (undefined = start of file). */
+	offset: number | undefined;
+	/** limit used (undefined = whole file). */
+	limit: number | undefined;
+};
+
+const FILE_UNCHANGED_STUB =
+	"File unchanged since last read. The content from the earlier Read " +
+	"tool_result in this conversation is still current — refer to that " +
+	"instead of re-reading.";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function usesUnboundedRg(cmd: string): boolean {
+	if (!/(?:^|[|;&\s])rg\s/.test(cmd)) return false;
+	if (/\|\s*(?:head|tail|wc|less|more|grep\s+-c)/.test(cmd)) return false;
+	if (/\brg\b[^|]*\s(?:-l|--files-with-matches|-c|--count|--json)\b/.test(cmd)) return false;
+	return true;
+}
+
+function appendHead(cmd: string, n: number): string {
+	return `${cmd.trimEnd().replace(/;+$/, "").trimEnd()} | head -${n}`;
+}
+
+// ---------------------------------------------------------------------------
+// Extension
+// ---------------------------------------------------------------------------
+
+export default function (pi: ExtensionAPI): void {
+	const cfg: Config = { ...DEFAULTS };
+
+	/** Session-scoped read cache: absolute path → last-seen read metadata. */
+	const readCache = new Map<string, ReadEntry>();
+
+	// -------------------------------------------------------------------------
+	// Cache invalidation — fired by multi-edit after every real file write
+	// -------------------------------------------------------------------------
+	pi.events.on("context-guard:file-modified", (data: unknown) => {
+		const event = data as { path?: string };
+		if (event.path) {
+			readCache.delete(resolve(event.path));
+		}
+	});
+
+	// -------------------------------------------------------------------------
+	// Clear cache before compaction – file contents are lost but cache
+	// entries would still block re-reads with "File unchanged since last read".
+	// -------------------------------------------------------------------------
+	pi.on("session_before_compact", async () => {
+		readCache.clear();
+	});
+
+	// -------------------------------------------------------------------------
+	// Cache clear – allows external extensions to invalidate the dedup cache.
+	// Emitted via pi.events.emit("context-guard:clear-cache").
+	// -------------------------------------------------------------------------
+	pi.events.on("context-guard:clear-cache", () => {
+		readCache.clear();
+	});
+
+	// -------------------------------------------------------------------------
+	// Reset cache on new session
+	// -------------------------------------------------------------------------
+	pi.on("session_start", async () => {
+		readCache.clear();
+	});
+
+	// -------------------------------------------------------------------------
+	// Guard 1: read — dedup
+	// -------------------------------------------------------------------------
+	pi.on("tool_call", async (event, ctx) => {
+		if (!isToolCallEventType("read", event)) return;
+
+		// Guard 1: dedup — block if file is unchanged since last read
+		if (!cfg.dedupGuard) return;
+
+		const rawPath = event.input.path;
+		if (!rawPath) return;
+
+		// Normalise path the same way pi does (strip leading @, resolve relative)
+		const absolutePath = resolve(
+			ctx.cwd,
+			rawPath.startsWith("@") ? rawPath.slice(1) : rawPath,
+		);
+
+		const entry = readCache.get(absolutePath);
+		if (!entry) return;
+
+		// Only dedup exact range matches
+		const sameOffset = entry.offset === (event.input.offset ?? undefined);
+		const sameLimit  = entry.limit  === (event.input.limit  ?? undefined);
+		if (!sameOffset || !sameLimit) return;
+
+		// Check mtime — if the file changed on disk, let it through
+		try {
+			const { mtimeMs } = await stat(absolutePath);
+			if (mtimeMs !== entry.mtimeMs) {
+				readCache.delete(absolutePath);
+				return;
+			}
+		} catch {
+			// stat failed (file deleted, permission error, etc.) — let tool handle it
+			readCache.delete(absolutePath);
+			return;
+		}
+
+		// File is unchanged — block the call and return the stub
+		ctx.ui.notify(`[context-guard] read dedup: ${rawPath} unchanged`, "info");
+		return {
+			block: true,
+			reason: FILE_UNCHANGED_STUB,
+		};
+	});
+
+	// -------------------------------------------------------------------------
+	// Populate cache after a successful read
+	// -------------------------------------------------------------------------
+	pi.on("tool_result", async (event) => {
+		if (!cfg.dedupGuard) return;
+		if (event.toolName !== "read") return;
+		if (event.isError) return;
+
+		const rawPath = (event.input as { path?: string }).path;
+		if (!rawPath) return;
+
+		// Only cache full successful text reads (not images, PDFs, etc.)
+		const resultText = event.content
+			.filter((b): b is { type: "text"; text: string } => b.type === "text")
+			.map((b) => b.text)
+			.join("");
+
+		// Skip stubs injected by us — don't overwrite the real entry
+		if (resultText === FILE_UNCHANGED_STUB) return;
+
+		const absolutePath = resolve(
+			(event.input as { path?: string; cwd?: string }).cwd ?? "",
+			rawPath.startsWith("@") ? rawPath.slice(1) : rawPath,
+		);
+
+		try {
+			const { mtimeMs } = await stat(absolutePath);
+			readCache.set(absolutePath, {
+				mtimeMs,
+				offset: (event.input as { offset?: number }).offset ?? undefined,
+				limit:  (event.input as { limit?: number }).limit   ?? undefined,
+			});
+		} catch {
+			// best-effort only
+		}
+	});
+
+	// -------------------------------------------------------------------------
+	// Guard 2: bash — rg without head/tail/wc
+	// -------------------------------------------------------------------------
+	pi.on("tool_call", async (event, ctx) => {
+		if (!cfg.rgGuard) return;
+		if (!isToolCallEventType("bash", event)) return;
+
+		const cmd = event.input.command ?? "";
+		if (usesUnboundedRg(cmd)) {
+			event.input.command = appendHead(cmd, cfg.rgHeadLimit);
+			ctx.ui.notify(
+				`[context-guard] bash: appended | head -${cfg.rgHeadLimit} to rg`,
+				"info",
+			);
+		}
+	});
+
+}

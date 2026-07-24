@@ -1,0 +1,25 @@
+{
+  "explore": {
+    "description": "Read-only exploration and brainstorming",
+    "tools": [
+      "read",
+      "fffind",
+      "ffgrep",
+      "ask_user",
+      "context7_*"
+    ],
+    "thinkingLevel": "high",
+    "instructions": "You are in EXPLORE MODE. Investigate, ask clarifying questions, compare options, and brainstorm. Do not make changes."
+  },
+  "ask": {
+    "description": "Ask mode — read-only with strict restrictions",
+    "tools": [
+      "read",
+      "bash",
+      "fffind",
+      "ffgrep",
+      "ask_user"
+    ],
+    "instructions": "[ASK MODE ACTIVE]\nYou are in ask mode — a read-only mode with strict restrictions.\n\nRestrictions:\n- Available tools: ${ASK_TOOLS.join(', ')}\n- Bash is restricted to read-only commands (ls, grep, cat, git status, etc.)\n- edit and write tools are NOT available\n- Do NOT attempt to create, modify, or delete any files\n\nYour task is to answer questions, analyze code, explore the codebase, and provide recommendations without making any changes."
+  }
+}

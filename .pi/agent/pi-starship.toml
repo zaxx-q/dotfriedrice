@@ -1,0 +1,43 @@
+# Native Pi modules with Starship-compatible format and style syntax.
+format = """
+[\u2591\u2592\u2593](lead)\
+$brand\
+$provider\
+$model\
+$thinking\
+[\uE0B4](fg:header bg:directory)\
+$directory\
+[\uE0B4](fg:directory bg:git)\
+$git_worktree\
+$git_branch\
+$git_status\
+[\uE0B4](fg:git bg:runtime)\
+$activity\
+$context\
+$tokens\
+[\uE0B4](fg:runtime bg:meter)\
+$cost\
+$turn\
+[\uE0B4](fg:meter)\
+(\n$extension_status)"""
+palette = "tokyo-night"
+
+[palettes.tokyo-night]
+lead = "#a3aed2"
+header = "#a3aed2"
+header_fg = "#090c0c"
+directory = "#769ff0"
+directory_fg = "#e3e5e5"
+git = "#394260"
+git_fg = "#769ff0"
+runtime = "#212736"
+runtime_fg = "#769ff0"
+meter = "#1d2230"
+meter_fg = "#a0a9cb"
+extension = "#a0a9cb"
+
+[context]
+format = "[$symbol ctx $tokens/$window ]($style)"
+
+[time]
+disabled = true

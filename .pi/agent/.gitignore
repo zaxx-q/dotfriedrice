@@ -1,0 +1,7 @@
+.env
+sessions/
+npm/
+models*.json
+auth.json
+/settings/pi-dynamic-models.json
+/extensions/pi-permission-system/logs

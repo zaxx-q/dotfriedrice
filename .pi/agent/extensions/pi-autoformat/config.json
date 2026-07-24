@@ -1,0 +1,71 @@
+{
+	"$schema": "https://raw.githubusercontent.com/gotgenes/pi-autoformat/main/schemas/pi-autoformat.schema.json",
+	"commandTimeoutMs": 15000,
+	"formatterOutput": {
+		"onFailure": "stderr",
+		"maxBytes": 4096,
+		"maxLines": 40
+	},
+	"formatters": {
+		"biome": {
+			"command": ["mise", "exec", "--", "biome", "check", "--write", "--files-ignore-unknown=true"]
+		},
+		"prettier": {
+			"command": ["bunx", "prettier", "--write", "--log-level=warn"]
+		},
+		"ruff-check": {
+			"command": ["uvx", "ruff", "check", "--fix", "--exit-zero", "--quiet"]
+		},
+		"ruff-format": {
+			"command": ["uvx", "ruff", "format", "--quiet"]
+		}
+	},
+	"chains": {
+		".ts": [
+			{
+				"fallback": ["biome", "prettier"]
+			}
+		],
+		".tsx": [
+			{
+				"fallback": ["biome", "prettier"]
+			}
+		],
+		".js": [
+			{
+				"fallback": ["biome", "prettier"]
+			}
+		],
+		".jsx": [
+			{
+				"fallback": ["biome", "prettier"]
+			}
+		],
+		".mjs": [
+			{
+				"fallback": ["biome", "prettier"]
+			}
+		],
+		".cjs": [
+			{
+				"fallback": ["biome", "prettier"]
+			}
+		],
+		".json": [
+			{
+				"fallback": ["biome", "prettier"]
+			}
+		],
+		".py": ["ruff-check", "ruff-format"],
+		".md": ["prettier"],
+		".yml": ["prettier"],
+		".yaml": ["prettier"],
+		".css": [
+			{
+				"fallback": ["biome", "prettier"]
+			}
+		],
+		".scss": ["prettier"],
+		".html": ["prettier"]
+	}
+}
