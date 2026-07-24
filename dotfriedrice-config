@@ -341,6 +341,7 @@ export CONFIG_INSTALL_EXTRAS=(
   "sudo install -Dm644 \"\${DOTFRIEDRICE_PATH}/etc/systemd/system/systemd-suspend.service.d/10-no-freeze-session.conf\" \"/etc/systemd/system/systemd-suspend.service.d/10-no-freeze-session.conf\""
   "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/keyd/default.conf\" \"/etc/keyd/default.conf\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/XCompose\" \"\${XDG_CONFIG_HOME}/XCompose\""
+  "ln -fns \"\${XDG_CONFIG_HOME}/XCompose\" \"\${HOME}/.XCompose\""
 )
 export CONFIG_INSTALL_SKIP=(
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/fastfetch/config.jsonc\" \"\${XDG_CONFIG_HOME}/fastfetch/config.jsonc\""
