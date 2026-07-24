@@ -49,7 +49,7 @@ export DEFAULT_CONFIG_INSTALL_GUI_LINUX=(
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/zathura/zathurarc\" \"\${XDG_CONFIG_HOME}/zathura/zathurarc\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.local/share/applications/\"* \"\${XDG_DATA_HOME}/applications/\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.local/share/thumbnailers/mkv.thumbnailer\" \"\${XDG_DATA_HOME}/thumbnailers/mkv.thumbnailer\""
-  "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/systemd/system/systemd-networkd-wait-online.service.d/99-network-timeout.conf\" \"/etc/systemd/system/systemd-networkd-wait-online.service.d/99-network-timeout.conf"\"
+  "sudo install -Dm644 \"\${DOTFRIEDRICE_PATH}/etc/systemd/system/systemd-networkd-wait-online.service.d/99-network-timeout.conf\" \"/etc/systemd/system/systemd-networkd-wait-online.service.d/99-network-timeout.conf\""
 )
 
 export DEFAULT_CONFIG_INSTALL_ARCH=(

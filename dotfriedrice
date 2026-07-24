@@ -1359,7 +1359,6 @@ install_configs() {
   _config_install_display "Configs" "${config_install[@]}"
 
   if [ "${GUI_ENABLED}" == "1" ]; then
-    sudo mkdir -p "/etc/systemd/system/systemd-networkd-wait-online.service.d"
     _config_install_display "Configs (GUI)" "${config_install_gui_linux[@]}"
   fi
 
@@ -2756,7 +2755,11 @@ _dfr_add_config() {
 
       # System paths inside the repo (etc/, usr/, mnt/, opt/, var/).
       if [[ "${rel_to_repo}" == etc/* || "${rel_to_repo}" == usr/* || "${rel_to_repo}" == mnt/* || "${rel_to_repo}" == opt/* || "${rel_to_repo}" == var/* ]]; then
-        symlink_cmd='sudo ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_to_repo}"'\" \"/'"${rel_to_repo}"'\"'
+        if [[ "${rel_to_repo}" == etc/systemd/* ]]; then
+          symlink_cmd='sudo install -Dm644 \"\${DOTFRIEDRICE_PATH}/'"${rel_to_repo}"'\" \"/'"${rel_to_repo}"'\"'
+        else
+          symlink_cmd='sudo ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_to_repo}"'\" \"/'"${rel_to_repo}"'\"'
+        fi
       elif [[ "${rel_to_repo}" == ".config/"* ]]; then
         local config_rel="${rel_to_repo#.config/}"
         symlink_cmd='ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_to_repo}"'\" \"\${XDG_CONFIG_HOME}/'"${config_rel}"'\"'
@@ -2788,7 +2791,11 @@ _dfr_add_config() {
 
     elif [[ "${abs_path}" == /etc/* || "${abs_path}" == /usr/* || "${abs_path}" == /mnt/* || "${abs_path}" == /opt/* || "${abs_path}" == /var/* ]]; then
       local rel_path="${abs_path#/}"
-      symlink_cmd='sudo ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_path}"'\" \"/'"${rel_path}"'\"'
+      if [[ "${rel_path}" == etc/systemd/* ]]; then
+        symlink_cmd='sudo install -Dm644 \"\${DOTFRIEDRICE_PATH}/'"${rel_path}"'\" \"/'"${rel_path}"'\"'
+      else
+        symlink_cmd='sudo ln -fns \"\${DOTFRIEDRICE_PATH}/'"${rel_path}"'\" \"/'"${rel_path}"'\"'
+      fi
 
     else
       _error "'${abs_path}' is not under '${HOME}' or a recognized system path"
