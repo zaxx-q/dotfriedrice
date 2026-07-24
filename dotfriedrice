@@ -2813,6 +2813,7 @@ _dfr_add_config() {
 
 _dfr_adopt() {
   local use_default=0
+  local do_link=0
   local excludes=()
   local paths=()
 
@@ -2821,6 +2822,10 @@ _dfr_adopt() {
     case "${1}" in
     --default)
       use_default=1
+      shift
+      ;;
+    --link)
+      do_link=1
       shift
       ;;
     --exclude)
@@ -2840,7 +2845,7 @@ _dfr_adopt() {
   done
 
   if ((${#paths[@]} == 0)); then
-    _error "Usage: dotfriedrice adopt <path> [--default] [--exclude <pattern>] ..."
+    _error "Usage: dotfriedrice adopt <path> [--default] [--link] [--exclude <pattern>] ..."
   fi
 
   for source_path in "${paths[@]}"; do
@@ -2885,6 +2890,25 @@ _dfr_adopt() {
     [[ "${use_default}" == "1" ]] && default_flag="--default"
 
     _dfr_add_config ${default_flag} "${abs_path}"
+
+    # Optionally execute the link command immediately.
+    if [[ "${do_link}" == "1" ]]; then
+      local dest_link=""
+
+      if [[ "${rel_path}" == ".config/"* ]]; then
+        dest_link="${XDG_CONFIG_HOME:-${HOME}/.config}/${rel_path#.config/}"
+      elif [[ "${rel_path}" == ".local/bin/"* ]]; then
+        dest_link="${HOME}/.local/bin/${rel_path#.local/bin/}"
+      elif [[ "${rel_path}" == ".local/share/"* ]]; then
+        dest_link="${XDG_DATA_HOME:-${HOME}/.local/share}/${rel_path#.local/share/}"
+      else
+        dest_link="${HOME}/${rel_path}"
+      fi
+
+      mkdir -p "$(dirname "${dest_link}")"
+      ln -fns "${DOTFRIEDRICE_PATH}/${rel_path}" "${dest_link}"
+      echo "Linked '${rel_path}' to '${dest_link}'"
+    fi
 
     echo "Adopted '${rel_path}' into DotFriedRice"
   done
@@ -3068,7 +3092,8 @@ ${C_GREEN}dotfriedrice add-config ${C_CYAN}<path> [--default]${C_RESET}
 
 ${C_WHITE}# Move a file/directory into the repo AND add its symlink command.
 # Combines 'add' + 'add-config' in one step. The original is removed.
-${C_GREEN}dotfriedrice adopt ${C_CYAN}<path> [--default] [--exclude <pattern>] ...${C_RESET}
+# Use --link to immediately create the symlink back to the original location.
+${C_GREEN}dotfriedrice adopt ${C_CYAN}<path> [--default] [--link] [--exclude <pattern>] ...${C_RESET}
 
 ${C_BLUE}-------------------------------------------------------------------------------
 WHAT'S DIFFERENT
