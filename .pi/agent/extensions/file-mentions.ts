@@ -5,15 +5,17 @@
  * - Files: Type `@` to fuzzy-search project files, with optional line ranges
  * - Folders: Mention directories to include tree listing + file contents
  * - Commits: Mention git commit hashes to include diff and metadata
+ * - Diff: Mention @diff to include full diff of uncommitted changes
  *
  * Supports:
  * - File line ranges: @src/index.ts:10-50
  * - Folder mentions: @src/utils  (shows tree + reads immediate files)
  * - Commit mentions: @abc1234   (shows commit info + diff)
+ * - Diff mention:    @diff      (shows staged + unstaged + untracked)
  * - Quoted paths: @"path with spaces":10-50
  *
  * Modifiers (placed immediately after @):
- *   For files & commits:
+ *   For files, commits & diff:
  *     @!path   or  @+path   — inject in full (no truncation / size limit)
  *   For directories:
  *     @!dir    — no size limit on individual files (but still shallow)
@@ -138,7 +140,12 @@ interface CommitMention {
 	full?: boolean;
 }
 
-type Mention = FileMention | FolderMention | CommitMention;
+interface DiffMention {
+	type: "diff";
+	full?: boolean;
+}
+
+type Mention = FileMention | FolderMention | CommitMention | DiffMention;
 
 interface CommitInfo {
 	hash: string;
@@ -364,7 +371,17 @@ function processInput(
 				// not an existing file
 			}
 
-			// ── Priority 3: git commit hash (7-40 hex chars) ─────────
+			// ── Priority 3: uncommitted diff keyword ─────────────
+			if (normalized === "diff") {
+				const key = `diff:${isFull ? "full" : "trunc"}`;
+				if (!seen.has(key)) {
+					seen.add(key);
+					mentions.push({ type: "diff", full: isFull });
+				}
+				return `uncommitted changes diff (see below)`;
+			}
+
+			// ── Priority 4: git commit hash (7-40 hex chars) ─────────
 			if (COMMIT_HASH_RE.test(normalized) && lineStart === undefined) {
 				const key = `commit:${normalized}:${isFull ? "full" : "trunc"}`;
 				if (!seen.has(key)) {
@@ -671,6 +688,95 @@ async function getCommitInfo(
 	return truncateGitOutput(output, GIT_OUTPUT_LINE_LIMIT);
 }
 
+// ── Uncommitted diff ───────────────────────────────────────────────────
+
+async function getDiffInfo(
+	pi: ExtensionAPI,
+	cwd: string,
+	full = false,
+): Promise<string> {
+	const checkResult = await pi.exec("git", ["rev-parse", "--git-dir"], {
+		cwd,
+		timeout: 3_000,
+	});
+	if (checkResult.code !== 0) return "Not a git repository";
+
+	const parts: string[] = [];
+
+	// Staged changes
+	const stagedResult = await pi.exec("git", ["diff", "--cached"], {
+		cwd,
+		timeout: 10_000,
+	});
+	if (stagedResult.code === 0 && stagedResult.stdout.trim()) {
+		parts.push("=== Staged Changes ===\n" + stagedResult.stdout.trim());
+	}
+
+	// Unstaged changes
+	const unstagedResult = await pi.exec("git", ["diff"], {
+		cwd,
+		timeout: 10_000,
+	});
+	if (unstagedResult.code === 0 && unstagedResult.stdout.trim()) {
+		parts.push("=== Unstaged Changes ===\n" + unstagedResult.stdout.trim());
+	}
+
+	// Untracked files
+	const untrackedResult = await pi.exec(
+		"git",
+		["ls-files", "--others", "--exclude-standard"],
+		{ cwd, timeout: 5_000 },
+	);
+	if (untrackedResult.code === 0 && untrackedResult.stdout.trim()) {
+		const untrackedFiles = untrackedResult.stdout
+			.trim()
+			.split("\n")
+			.filter(Boolean);
+		if (untrackedFiles.length > 0) {
+			const fileParts: string[] = [];
+			for (const file of untrackedFiles) {
+				if (isBinaryPath(file)) {
+					fileParts.push(
+						`diff --git a/${file} b/${file}\nBinary file (not shown)`,
+					);
+					continue;
+				}
+				try {
+					const absPath = path.resolve(cwd, file);
+					const content = fs.readFileSync(absPath, "utf8");
+					const byteSize = Buffer.byteLength(content, "utf8");
+					if (!full && byteSize > MAX_BYTES) {
+						fileParts.push(
+							`diff --git a/${file} b/${file}\nnew file (${Math.round(byteSize / 1024)}KB, too large to show)`,
+						);
+						continue;
+					}
+					const lines = content.split("\n");
+					const diffLines = lines.map((l) => `+${l}`).join("\n");
+					fileParts.push(
+						`diff --git a/${file} b/${file}\nnew file\n--- /dev/null\n+++ b/${file}\n@@ -0,0 +1,${lines.length} @@\n${diffLines}`,
+					);
+				} catch {
+					fileParts.push(
+						`diff --git a/${file} b/${file}\n(cannot read file)`,
+					);
+				}
+			}
+			if (fileParts.length > 0) {
+				parts.push(
+					"=== Untracked Files ===\n" + fileParts.join("\n\n"),
+				);
+			}
+		}
+	}
+
+	if (parts.length === 0) return "No uncommitted changes found.";
+
+	const output = parts.join("\n\n");
+	if (full) return output;
+	return truncateGitOutput(output, GIT_OUTPUT_LINE_LIMIT);
+}
+
 // ── Autocomplete provider ──────────────────────────────────────────────
 
 function extractMentionToken(textBeforeCursor: string): string | undefined {
@@ -742,7 +848,13 @@ function createMentionAutocompleteProvider(
 						description: "file",
 					}));
 
-				items = [...commitItems, ...folderItems, ...fileItems];
+				const diffItem: AutocompleteItem = {
+					value: `@${prefixSymbol}diff`,
+					label: `@${prefixSymbol}diff`,
+					description:
+						"uncommitted changes (staged + unstaged + untracked)",
+				};
+				items = [diffItem, ...commitItems, ...folderItems, ...fileItems];
 			} else if (COMMIT_HASH_RE.test(query)) {
 				// ── Hex-like query — show matching commits first, then paths ──
 				const lowerToken = query.toLowerCase();
@@ -797,7 +909,18 @@ function createMentionAutocompleteProvider(
 						description: `${c.subject.slice(0, 50)} (${c.author}, ${c.date})`,
 					}));
 
-				items = [...pathItems, ...commitItems];
+				const diffItems: AutocompleteItem[] =
+					"diff".startsWith(query.toLowerCase())
+						? [
+								{
+									value: `@${prefixSymbol}diff`,
+									label: `@${prefixSymbol}diff`,
+									description:
+										"uncommitted changes (staged + unstaged + untracked)",
+								},
+							]
+						: [];
+				items = [...diffItems, ...pathItems, ...commitItems];
 			}
 
 			if (items.length === 0) {
@@ -942,6 +1065,15 @@ export default function fileMentionsExtension(pi: ExtensionAPI) {
 					contentBlocks.push({
 						type: "text",
 						text: `<git_commit hash="${m.hash}">\n${info}\n</git_commit>`,
+					});
+					break;
+				}
+
+				case "diff": {
+					const info = await getDiffInfo(pi, ctx.cwd, m.full);
+					contentBlocks.push({
+						type: "text",
+						text: `<uncommitted_diff>\n${info}\n</uncommitted_diff>`,
 					});
 					break;
 				}

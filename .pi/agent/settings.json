@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.82.0",
+  "lastChangelogVersion": "0.82.1",
   "npmCommand": [
     "bun"
   ],
@@ -57,12 +57,6 @@
       ]
     },
     "npm:@mrclrchtr/supi-context",
-    {
-      "source": "npm:@mrclrchtr/supi-review",
-      "extensions": [
-        "+src/extension.ts"
-      ]
-    },
     {
       "source": "npm:@jerryan/pi-todo-lite",
       "extensions": [
@@ -136,10 +130,11 @@
     "-extensions/whimsical.ts",
     "-extensions/custom-statusline.ts",
     "-extensions/env-loader.ts",
-    "-extensions/todos/index.ts"
+    "-extensions/todos/index.ts",
+    "extensions/review.ts"
   ],
-  "defaultProvider": "AGY",
-  "defaultModel": "gemini-3.6-flash-medium",
+  "defaultProvider": "AGY-claude",
+  "defaultModel": "claude-opus-4-6-thinking",
   "defaultThinkingLevel": "high",
   "compaction": {
     "enabled": false
@@ -147,5 +142,11 @@
   "terminal": {
     "showTerminalProgress": true
   },
-  "hideThinkingBlock": false
+  "hideThinkingBlock": false,
+  "enabledModels": [
+    "AGY/gemini-3.6-flash-high",
+    "AGY/gemini-3.6-flash-medium",
+    "AGY-claude/claude-sonnet-4-6",
+    "AGY-claude/claude-opus-4-6-thinking"
+  ]
 }
