@@ -7,9 +7,23 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
-  "terminal": {
-    "font_family": ".ZedMono"
+  "node": {
+    "ignore_system_version": false,
+    "path": "/home/zaxx/.local/bin/local/node",
+    "npm_path": "/home/zaxx/.local/bin/local/npm"
   },
+  "formatter": "none",
+  "diagnostics": {
+    "lsp_pull_diagnostics": {
+      "enabled": false
+    }
+  },
+  "completions": {
+    "lsp": false
+  },
+  "enable_language_server": false,
+  "languages": {},
+  "terminal": {},
   "agent_servers": {
     
   },
@@ -44,7 +58,7 @@
   },
   "proxy": "",
   "telemetry": {
-    "diagnostics": true,
+    "diagnostics": false,
     "metrics": false,
     "anthropic_retention": false,
   },
