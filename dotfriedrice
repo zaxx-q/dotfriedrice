@@ -697,18 +697,33 @@ _config_install() {
 
     local expanded_item="${item//${str_find}/${str_replace}}"
 
+    # Extract the destination (last argument).
+    eval "set -- ${expanded_item}"
+    local destination="${*: -1}"
+
     # If the destination is an existing real directory (not a symlink),
     # remove it first so ln -fns creates the symlink AT destination,
     # rather than creating a nested symlink INSIDE destination.
     if [[ "${expanded_item}" == *"ln "* ]]; then
-      eval "set -- ${expanded_item}"
-      local destination="${*: -1}"
-
       if [[ -d "${destination}" && ! -L "${destination}" ]]; then
         if [[ "${expanded_item}" == "sudo "* ]]; then
           sudo rm -rf "${destination}"
         else
           rm -rf "${destination}"
+        fi
+      fi
+    fi
+
+    # Ensure parent directory of destination exists before running command.
+    if [[ -n "${destination}" ]]; then
+      local dest_dir
+      dest_dir="$(dirname "${destination}")"
+
+      if [[ ! -d "${dest_dir}" ]]; then
+        if [[ "${expanded_item}" == "sudo "* ]]; then
+          sudo mkdir -p "${dest_dir}"
+        else
+          mkdir -p "${dest_dir}"
         fi
       fi
     fi
