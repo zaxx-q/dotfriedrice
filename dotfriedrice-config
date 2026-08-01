@@ -354,7 +354,7 @@ export CONFIG_INSTALL_EXTRAS=(
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/code-flags.conf\" \"\${XDG_CONFIG_HOME}/code-flags.conf\""
   "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/dracut.conf.d/nvidia.conf\" \"/etc/dracut.conf.d/nvidia.conf\""
   "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/modprobe.d/nvidia.conf\" \"/etc/modprobe.d/nvidia.conf\""
-  "sudo install -m 755 \"\${DOTFRIEDRICE_PATH}/etc/systemd/system-sleep/suspend-guard.sh\" \"/etc/systemd/system-sleep/suspend-guard.sh\""
+  "sudo install -m 755 \"\${DOTFRIEDRICE_PATH}/usr/lib/systemd/system-sleep/suspend-guard.sh\" \"/usr/lib/systemd/system-sleep/suspend-guard.sh\""
   "sudo ln -fns \"\${DOTFRIEDRICE_PATH}/etc/suspend-guard/apps.conf\" \"/etc/suspend-guard/apps.conf\""
 )
 export CONFIG_INSTALL_SKIP=(
