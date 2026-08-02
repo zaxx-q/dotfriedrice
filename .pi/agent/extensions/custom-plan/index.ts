@@ -65,7 +65,7 @@ async function getPlanFiles(cwd: string): Promise<{ relPath: string; absPath: st
 }
 
 // Tools available during planning (read-only + ask_user for dialogue + write for saving plans)
-const PLAN_TOOLS = ["read", "bash", "ffgrep", "fffind", "ls", "ask_user", "write"];
+const PLAN_TOOLS = ["read", "bash", "ffgrep", "fffind", "ls", "ask_user", "write", "Agent", "resolve-library-id", "query-docs", "steer_subagent", "get_subagent_result"];
 
 interface PlanState {
 	enabled: boolean;

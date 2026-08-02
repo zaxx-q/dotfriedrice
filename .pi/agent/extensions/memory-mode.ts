@@ -21,8 +21,18 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { completeSimple } from "@earendil-works/pi-ai";
-import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
-import { type TUI, matchesKey, Key, truncateToWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+	Theme,
+} from "@earendil-works/pi-coding-agent";
+import {
+	Key,
+	matchesKey,
+	type TUI,
+	truncateToWidth,
+	wrapTextWithAnsi,
+} from "@earendil-works/pi-tui";
 
 // Spinner frames for loading animation
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
@@ -95,13 +105,20 @@ class MemoryPreviewComponent {
 		}
 
 		if (this.state === "preview") {
-			if (matchesKey(data, Key.left) || matchesKey(data, Key.right) || matchesKey(data, "tab")) {
+			if (
+				matchesKey(data, Key.left) ||
+				matchesKey(data, Key.right) ||
+				matchesKey(data, "tab")
+			) {
 				this.selectedOption = this.selectedOption === "yes" ? "no" : "yes";
 				this.invalidate();
 				this.tui.requestRender();
 			} else if (matchesKey(data, Key.enter)) {
 				this.dispose();
-				this.onDone?.({ save: this.selectedOption === "yes", content: this.content });
+				this.onDone?.({
+					save: this.selectedOption === "yes",
+					content: this.content,
+				});
 			} else if (data === "y" || data === "Y") {
 				this.dispose();
 				this.onDone?.({ save: true, content: this.content });
@@ -127,18 +144,36 @@ class MemoryPreviewComponent {
 
 		if (this.state === "loading") {
 			// Show spinner
-			const spinner = this.theme.fg("accent", SPINNER_FRAMES[this.spinnerFrame]);
-			const message = this.theme.fg("muted", " Integrating instruction with AI...");
+			const spinner = this.theme.fg(
+				"accent",
+				SPINNER_FRAMES[this.spinnerFrame],
+			);
+			const message = this.theme.fg(
+				"muted",
+				" Integrating instruction with AI...",
+			);
 			lines.push("");
 			lines.push(truncateToWidth(`  ${spinner}${message}`, width));
 			lines.push("");
-			lines.push(truncateToWidth(this.theme.fg("dim", "  Press ESC to cancel"), width));
+			lines.push(
+				truncateToWidth(this.theme.fg("dim", "  Press ESC to cancel"), width),
+			);
 			lines.push("");
 		} else {
 			// Show preview with YES/NO
 			lines.push("");
-			lines.push(truncateToWidth(this.theme.fg("accent", "  📄 ") + this.theme.bold(this.filePath), width));
-			lines.push(truncateToWidth(this.theme.fg("dim", "  " + "─".repeat(Math.min(60, contentWidth))), width));
+			lines.push(
+				truncateToWidth(
+					this.theme.fg("accent", "  📄 ") + this.theme.bold(this.filePath),
+					width,
+				),
+			);
+			lines.push(
+				truncateToWidth(
+					this.theme.fg("dim", "  " + "─".repeat(Math.min(60, contentWidth))),
+					width,
+				),
+			);
 			lines.push("");
 
 			// Wrap and display content (limit to ~15 lines for preview)
@@ -148,7 +183,12 @@ class MemoryPreviewComponent {
 
 			for (const line of contentLines) {
 				if (displayedLines >= maxLines) {
-					lines.push(truncateToWidth(this.theme.fg("dim", "  ... (content truncated)"), width));
+					lines.push(
+						truncateToWidth(
+							this.theme.fg("dim", "  ... (content truncated)"),
+							width,
+						),
+					);
 					break;
 				}
 				const wrapped = wrapTextWithAnsi(line, contentWidth - 4);
@@ -160,20 +200,37 @@ class MemoryPreviewComponent {
 			}
 
 			lines.push("");
-			lines.push(truncateToWidth(this.theme.fg("dim", "  " + "─".repeat(Math.min(60, contentWidth))), width));
+			lines.push(
+				truncateToWidth(
+					this.theme.fg("dim", "  " + "─".repeat(Math.min(60, contentWidth))),
+					width,
+				),
+			);
 			lines.push("");
 
 			// YES/NO buttons
-			const yesBtn = this.selectedOption === "yes"
-				? this.theme.bg("selectedBg", this.theme.fg("success", " ✓ YES "))
-				: this.theme.fg("dim", "   YES  ");
-			const noBtn = this.selectedOption === "no"
-				? this.theme.bg("selectedBg", this.theme.fg("error", " ✗ NO "))
-				: this.theme.fg("dim", "   NO   ");
+			const yesBtn =
+				this.selectedOption === "yes"
+					? this.theme.bg("selectedBg", this.theme.fg("success", " ✓ YES "))
+					: this.theme.fg("dim", "   YES  ");
+			const noBtn =
+				this.selectedOption === "no"
+					? this.theme.bg("selectedBg", this.theme.fg("error", " ✗ NO "))
+					: this.theme.fg("dim", "   NO   ");
 
-			lines.push(truncateToWidth(`  Save changes?  ${yesBtn}  ${noBtn}`, width));
+			lines.push(
+				truncateToWidth(`  Save changes?  ${yesBtn}  ${noBtn}`, width),
+			);
 			lines.push("");
-			lines.push(truncateToWidth(this.theme.fg("dim", "  ←/→ to select, Enter to confirm, ESC to cancel"), width));
+			lines.push(
+				truncateToWidth(
+					this.theme.fg(
+						"dim",
+						"  ←/→ to select, Enter to confirm, ESC to cancel",
+					),
+					width,
+				),
+			);
 			lines.push("");
 		}
 
@@ -191,9 +248,14 @@ class MemoryPreviewComponent {
  * Simple diff: find lines that were added (in new but not in old)
  */
 function getAddedLines(oldContent: string, newContent: string): string[] {
-	const oldLines = new Set(oldContent.split("\n").map(l => l.trim()).filter(l => l.length > 0));
+	const oldLines = new Set(
+		oldContent
+			.split("\n")
+			.map((l) => l.trim())
+			.filter((l) => l.length > 0),
+	);
 	const newLines = newContent.split("\n");
-	
+
 	const added: string[] = [];
 	for (const line of newLines) {
 		const trimmed = line.trim();
@@ -217,7 +279,10 @@ export default function (pi: ExtensionAPI) {
 		description: "Save an instruction to AGENTS.md (AI-assisted)",
 		handler: async (_args, ctx) => {
 			// Step 1: Text Input - Get the instruction from user
-			const instruction = await ctx.ui.input("Memory instruction:", "e.g., never use git commands");
+			const instruction = await ctx.ui.input(
+				"Memory instruction:",
+				"e.g., never use git commands",
+			);
 
 			if (!instruction || !instruction.trim()) {
 				return; // User cancelled or empty input
@@ -232,7 +297,10 @@ export default function (pi: ExtensionAPI) {
 	pi.registerCommand("remember", {
 		description: "Save an instruction to AGENTS.md (alias for /mem)",
 		handler: async (_args, ctx) => {
-			const instruction = await ctx.ui.input("Memory instruction:", "e.g., always use TypeScript strict mode");
+			const instruction = await ctx.ui.input(
+				"Memory instruction:",
+				"e.g., always use TypeScript strict mode",
+			);
 
 			if (!instruction || !instruction.trim()) {
 				return;
@@ -243,7 +311,11 @@ export default function (pi: ExtensionAPI) {
 	});
 }
 
-async function handleMemoryInstruction(pi: ExtensionAPI, ctx: ExtensionContext, instruction: string): Promise<void> {
+async function handleMemoryInstruction(
+	pi: ExtensionAPI,
+	ctx: ExtensionContext,
+	instruction: string,
+): Promise<void> {
 	const cwd = ctx.cwd;
 	const agentDir = getAgentDir();
 
@@ -298,19 +370,29 @@ async function handleMemoryInstruction(pi: ExtensionAPI, ctx: ExtensionContext, 
 		return;
 	}
 
-	const apiKey = await ctx.modelRegistry.getApiKey(model);
-	if (!apiKey) {
-		ctx.ui.notify("No API key available for current model", "error");
+	const auth = await ctx.modelRegistry.getApiKeyAndHeaders(model);
+	if (!auth.ok || !auth.apiKey) {
+		ctx.ui.notify(
+			auth.ok
+				? "No API key available for current model"
+				: auth.error || "Failed to retrieve API key",
+			"error",
+		);
 		return;
 	}
 
 	// Step 3 & 4: AI Processing with spinner, then Preview with YES/NO
-	const result = await ctx.ui.custom<{ save: boolean; content: string } | null>((tui, theme, _kb, done) => {
-		const component = new MemoryPreviewComponent(tui, theme, location.filePath);
-		component.onDone = done;
+	const result = await ctx.ui.custom<{ save: boolean; content: string } | null>(
+		(tui, theme, _kb, done) => {
+			const component = new MemoryPreviewComponent(
+				tui,
+				theme,
+				location.filePath,
+			);
+			component.onDone = done;
 
-		// Call AI to integrate the instruction (fire-and-forget, don't await)
-		const systemPrompt = `You are helping to maintain an AGENTS.md file that provides instructions for an AI coding assistant.
+			// Call AI to integrate the instruction (fire-and-forget, don't await)
+			const systemPrompt = `You are helping to maintain an AGENTS.md file that provides instructions for an AI coding assistant.
 
 Your task is to integrate a new instruction into the existing file content. Follow these rules:
 - If the file is empty, create a well-structured markdown document with the instruction
@@ -321,8 +403,8 @@ Your task is to integrate a new instruction into the existing file content. Foll
 - Keep the file concise and well-organized
 - Output ONLY the final file content, no explanations or markdown code fences`;
 
-		const userPrompt = existingContent
-			? `Here is the existing AGENTS.md content:
+			const userPrompt = existingContent
+				? `Here is the existing AGENTS.md content:
 
 \`\`\`markdown
 ${existingContent}
@@ -332,64 +414,80 @@ Please integrate this new instruction:
 ${instruction}
 
 Output the complete updated file content:`
-			: `The AGENTS.md file is currently empty. Please create it with this instruction:
+				: `The AGENTS.md file is currently empty. Please create it with this instruction:
 ${instruction}
 
 Output the complete file content:`;
 
-		// Fire-and-forget async work
-		const doWork = async () => {
-			const response = await completeSimple(
-				model,
-				{
-					systemPrompt,
-					messages: [{ role: "user", content: [{ type: "text", text: userPrompt }], timestamp: Date.now() }],
-				},
-				{ apiKey, signal: component.signal, maxTokens: 4096 },
-			);
+			// Fire-and-forget async work
+			const doWork = async () => {
+				const response = await completeSimple(
+					model,
+					{
+						systemPrompt,
+						messages: [
+							{
+								role: "user",
+								content: [{ type: "text", text: userPrompt }],
+								timestamp: Date.now(),
+							},
+						],
+					},
+					{
+						apiKey: auth.apiKey,
+						headers: auth.headers,
+						env: auth.env,
+						signal: component.signal,
+						maxTokens: 4096,
+					},
+				);
 
-			if (response.stopReason === "aborted") {
-				return null;
-			}
-
-			if (response.stopReason === "error") {
-				throw new Error(response.errorMessage || "AI request failed");
-			}
-
-			// Extract the new content from AI response
-			let content = response.content
-				.filter((c): c is { type: "text"; text: string } => c.type === "text")
-				.map((c) => c.text)
-				.join("\n")
-				.trim();
-
-			// Remove markdown code fences if present
-			if (content.startsWith("```markdown")) {
-				content = content.slice(11);
-			} else if (content.startsWith("```")) {
-				content = content.slice(3);
-			}
-			if (content.endsWith("```")) {
-				content = content.slice(0, -3);
-			}
-			return content.trim();
-		};
-
-		doWork()
-			.then((content) => {
-				if (content) {
-					component.setContent(content);
-				} else {
-					component.setError("Cancelled");
+				if (response.stopReason === "aborted") {
+					return null;
 				}
-			})
-			.catch((error) => {
-				ctx.ui.notify(`Failed: ${error instanceof Error ? error.message : "Unknown error"}`, "error");
-				done(null);
-			});
 
-		return component;
-	});
+				if (response.stopReason === "error") {
+					throw new Error(response.errorMessage || "AI request failed");
+				}
+
+				// Extract the new content from AI response
+				let content = response.content
+					.filter((c): c is { type: "text"; text: string } => c.type === "text")
+					.map((c) => c.text)
+					.join("\n")
+					.trim();
+
+				// Remove markdown code fences if present
+				if (content.startsWith("```markdown")) {
+					content = content.slice(11);
+				} else if (content.startsWith("```")) {
+					content = content.slice(3);
+				}
+				if (content.endsWith("```")) {
+					content = content.slice(0, -3);
+				}
+				return content.trim();
+			};
+
+			doWork()
+				.then((content) => {
+					if (content) {
+						component.setContent(content);
+					} else {
+						component.setError("Cancelled");
+					}
+				})
+				.catch((error) => {
+					ctx.ui.notify(
+						`Failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+						"error",
+					);
+					done(null);
+				});
+
+			return component;
+		},
+	);
 
 	if (!result || !result.save) {
 		return; // User cancelled or chose NO
@@ -397,7 +495,7 @@ Output the complete file content:`;
 
 	// Save the file
 	const newContent = result.content;
-	
+
 	// Ensure directory exists
 	const dir = path.dirname(location.filePath);
 	if (!fs.existsSync(dir)) {
@@ -415,7 +513,7 @@ Output the complete file content:`;
 	// Show what was added with colored diff
 	const addedLines = getAddedLines(existingContent, newContent);
 	if (addedLines.length > 0) {
-		const diffDisplay = addedLines.map(line => `+ ${line}`).join("\n");
+		const diffDisplay = addedLines.map((line) => `+ ${line}`).join("\n");
 		pi.sendMessage({
 			customType: "memory-saved",
 			content: `✅ **Saved to ${location.filePath}**\n\n\`\`\`diff\n${diffDisplay}\n\`\`\``,
@@ -423,7 +521,7 @@ Output the complete file content:`;
 		});
 	} else {
 		pi.sendMessage({
-			customType: "memory-saved", 
+			customType: "memory-saved",
 			content: `✅ **Saved to ${location.filePath}**\n\n_(No new lines added - content was reorganized)_`,
 			display: true,
 		});

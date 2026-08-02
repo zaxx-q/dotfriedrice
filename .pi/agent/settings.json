@@ -97,7 +97,7 @@
     {
       "source": "npm:@tintinweb/pi-subagents",
       "extensions": [
-        "-src/index.ts"
+        "+src/index.ts"
       ]
     },
     {
@@ -123,16 +123,22 @@
     "npm:@neilurk12/pi-lazygit",
     "npm:pi-simplify",
     "npm:pi-toggle-skills",
-    "npm:@narumitw/pi-starship"
+    "npm:@narumitw/pi-starship",
+    {
+      "source": "npm:@upstash/context7-pi",
+      "skills": [
+        "-skills/context7-docs/SKILL.md"
+      ]
+    }
   ],
   "theme": "dark",
   "extensions": [
     "-extensions/ephemeral/index.ts",
     "-extensions/whimsical.ts",
     "-extensions/custom-statusline.ts",
-    "-extensions/env-loader.ts",
     "-extensions/todos/index.ts",
-    "extensions/review.ts"
+    "extensions/review.ts",
+    "+extensions/env-loader.ts"
   ],
   "defaultProvider": "AGY-claude",
   "defaultModel": "claude-opus-4-6-thinking",
