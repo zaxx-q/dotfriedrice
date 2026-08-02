@@ -23,7 +23,9 @@
   },
   "enable_language_server": false,
   "languages": {},
-  "terminal": {},
+  "terminal": {
+    "font_family": "Inconsolata Nerd Font Mono"
+  },
   "agent_servers": {
     
   },
@@ -46,7 +48,7 @@
     "dock": "right",
   },
   "agent": {
-    "terminal_init_command": "",
+    "terminal_init_command": "pi",
     "sidebar_side": "right",
     "dock": "right",
     "favorite_models": [],

@@ -33,6 +33,6 @@ alias ymp3="yt-dlp --embed-metadata --extract-audio --audio-format mp3"
 # Bash so there's no make limitations like not being able to forward arguments.
 alias run=./run
 
-alias rg="rg --hidden --glob '!.git/*' --hyperlink-format=default --color=always --smart-case --heading --line-number --sort=path"
+alias rg="rg --hidden --glob '!.git/*' --hyperlink-format='zed://file/{path}:{line}:{column}' --color=always --smart-case --heading --line-number --sort=path"
 
 alias grok="grok --disable-web-search"
