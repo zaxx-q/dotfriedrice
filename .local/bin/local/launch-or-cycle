@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Launch an app, focus it if it's already running, or cycle through its
+# windows if there are several.
+#
+# Most apps report an app_id that's either the plain binary name or a
+# reverse DNS id ending in it, so one term is enough for both matching and
+# launching:
+#   launch-or-cycle ghostty [ARGS]
+#   launch-or-cycle com.mitchellh.ghostty [ARGS]
+#
+# Some apps report an app_id unrelated to their binary name (e.g. Zen
+# Browser: app_id "zen", binary "zen-browser"). For those, give the match
+# term and the launch binary separated by a colon:
+#   launch-or-cycle zen:zen-browser [ARGS]
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+if [ "$#" -lt 1 ]; then
+  echo "Usage: $(basename "$0") <app_id[:binary]> [ARGS]" >&2
+  exit 1
+fi
+
+APP_SPEC="${1}"
+shift
+
+# Split "match:binary" into its two parts. With no colon, both variables
+# just end up holding the original string unchanged.
+MATCH_TERM="${APP_SPEC%%:*}"
+SPAWN_OVERRIDE="${APP_SPEC#*:}"
+
+# Every window whose app_id ends with $MATCH_TERM (case-insensitive), in the
+# order Niri reports them, paired with whether each one currently has focus.
+WINDOWS_JSON=$(
+  niri msg --json windows |
+    jq -c --arg app "${MATCH_TERM}" '
+      [.[] | select(.app_id | ascii_downcase | endswith($app | ascii_downcase))]
+      | map({id, focused: .is_focused})
+    '
+)
+
+if [ "${WINDOWS_JSON}" == "[]" ]; then
+  # Nothing running for this app - spawn it. Prefer an explicit
+  # match:binary override; otherwise fall back to extracting the last
+  # segment after "." so a reverse DNS id like com.mitchellh.ghostty still
+  # resolves to "ghostty".
+  if [ -n "${SPAWN_OVERRIDE}" ] && [ "${SPAWN_OVERRIDE}" != "${APP_SPEC}" ]; then
+    SPAWN_APP="${SPAWN_OVERRIDE}"
+  else
+    SPAWN_APP="${MATCH_TERM##*.}"
+  fi
+  uwsm-app -- "${SPAWN_APP}" "$@"
+  exit 0
+fi
+
+mapfile -t IDS < <(jq -r '.[].id' <<< "${WINDOWS_JSON}")
+
+# 0-based index of the matching window that's currently focused, if any.
+FOCUSED_INDEX=$(jq -r '[.[].focused] | index(true) // empty' <<< "${WINDOWS_JSON}")
+
+if [ -z "${FOCUSED_INDEX}" ]; then
+  # None of this app's windows are focused right now - go to the most
+  # recently opened one.
+  TARGET_ID="${IDS[-1]}"
+else
+  # Already on one of this app's windows - advance to the next, wrapping
+  # back to the first once we pass the last.
+  NEXT_INDEX=$(( (FOCUSED_INDEX + 1) % ${#IDS[@]} ))
+  TARGET_ID="${IDS[${NEXT_INDEX}]}"
+fi
+
+niri msg action focus-window --id "${TARGET_ID}"

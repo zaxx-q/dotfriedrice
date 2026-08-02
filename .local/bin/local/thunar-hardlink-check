@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+#
+# thunar-hardlink-check.sh
+#
+# Thunar custom action: checks whether the selected file(s)/folder(s) are
+# hard links (link count > 1), and reports symlinks (including broken ones)
+# distinctly. Can also:
+#   - search the filesystem for the other name(s) of a hard-linked file
+#   - recursively scan a selected folder for hard-linked files / broken
+#     symlinks inside it
+#
+# Requires: zenity, GNU coreutils (stat, find, df) - present by default on
+# virtually every Linux distro.
+#
+# --- Thunar setup ---
+# 1. Edit > Configure Custom Actions... > "+"
+# 2. Basic tab:
+#      Name:    Check Hard Link
+#      Command: bash /path/to/thunar-hardlink-check.sh %F
+# 3. Appearance Conditions tab:
+#      Tick "Directories" and "Other Files" so it shows up for any selection.
+
+set -uo pipefail
+
+command -v zenity >/dev/null 2>&1 || exit 1
+
+if [ "$#" -eq 0 ]; then
+    zenity --error --text="No file or folder was selected."
+    exit 1
+fi
+
+summary=""
+hardlinked_files=()   # regular files with link count > 1
+scan_dirs=()          # selected directories, offered for a recursive scan
+
+describe_item() {
+    local path="$1" name links inode target tlinks other
+
+    name=$(basename "$path")
+
+    if [ -L "$path" ]; then
+        target=$(readlink "$path")
+        if [ ! -e "$path" ]; then
+            summary+="🔀 ${name}\nSymlink -> ${target}  ⚠ BROKEN (target missing)\n\n"
+        elif [ -d "$path" ]; then
+            summary+="🔀 ${name}\nSymlink -> ${target} (points to a folder)\n\n"
+        else
+            tlinks=$(stat -L -c '%h' "$path" 2>/dev/null || echo 1)
+            if [ "$tlinks" -gt 1 ] 2>/dev/null; then
+                summary+="🔀 ${name}\nSymlink -> ${target}\nTarget file is itself hard-linked (link count: ${tlinks})\n\n"
+            else
+                summary+="🔀 ${name}\nSymlink -> ${target} (target OK, not hard-linked)\n\n"
+            fi
+        fi
+        return
+    fi
+
+    if [ ! -e "$path" ]; then
+        summary+="⚠ ${name}\nNo longer exists\n\n"
+        return
+    fi
+
+    links=$(stat -c '%h' "$path")
+    inode=$(stat -c '%i' "$path")
+
+    if [ -d "$path" ]; then
+        summary+="📁 ${name}\nLink count: ${links} (normal for a directory: reflects subfolders, not other hard links)\n\n"
+        scan_dirs+=("$path")
+    elif [ "$links" -le 1 ]; then
+        summary+="📄 ${name}\nNot a hard link (link count: 1)\n\n"
+    else
+        other=$((links - 1))
+        summary+="🔗 ${name}\nHARD LINKED — link count: ${links} (inode ${inode})\n${other} other name(s) point to this same data.\n\n"
+        hardlinked_files+=("$path")
+    fi
+}
+
+for path in "$@"; do
+    describe_item "$path"
+done
+
+zenity --info --title="Hard Link Check" --width=440 \
+       --text="$(printf '%b' "$summary")"
+
+# --- Locate the other name(s) of any hard-linked file(s) selected directly ---
+if [ "${#hardlinked_files[@]}" -gt 0 ]; then
+    zenity --question --width=420 \
+        --title="Locate other hard links?" \
+        --text="One or more selected files have additional hard links.\nSearch the filesystem for their other name(s)?\n\n(This searches the whole partition the file lives on and may take a while on large disks.)" \
+    || exit 0
+
+    for path in "${hardlinked_files[@]}"; do
+        name=$(basename "$path")
+        inode=$(stat -c '%i' "$path")
+        mount_point=$(df --output=target "$path" | tail -n 1)
+        tmpfile=$(mktemp)
+
+        ( find "$mount_point" -xdev -inum "$inode" 2>/dev/null > "$tmpfile" ) &
+        find_pid=$!
+
+        ( while kill -0 "$find_pid" 2>/dev/null; do
+              echo "# Searching ${mount_point} for other names of ${name} ..."
+              sleep 0.4
+          done
+          echo "100" ) | zenity --progress --pulsate --auto-close --no-cancel \
+              --title="Searching for hard links" \
+              --text="Searching ${mount_point} for other names of ${name} ..."
+
+        wait "$find_pid"
+
+        if [ -s "$tmpfile" ]; then
+            zenity --list --title="Names linked to ${name}" --width=700 --height=400 \
+                   --column="Path (inode ${inode})" < "$tmpfile"
+        else
+            zenity --info --text="Search of ${mount_point} finished, but no other names were found.\n(They may sit under a directory you don't have permission to read.)"
+        fi
+
+        rm -f "$tmpfile"
+    done
+fi
+
+# --- Recursively scan any selected folder(s) for hard links / broken symlinks ---
+if [ "${#scan_dirs[@]}" -gt 0 ]; then
+    zenity --question --width=420 \
+        --title="Scan folder(s) recursively?" \
+        --text="Recursively scan the selected folder(s) for hard-linked files and broken symlinks inside them?\n\n(Large folders may take a while.)" \
+    || exit 0
+
+    for dir in "${scan_dirs[@]}"; do
+        tmpfile=$(mktemp)
+
+        (
+            find "$dir" -mindepth 1 \( -type f -o -type l \) -print0 2>/dev/null |
+            while IFS= read -r -d '' item; do
+                if [ -L "$item" ]; then
+                    [ -e "$item" ] || printf 'BROKEN SYMLINK: %s -> %s\n' "$item" "$(readlink "$item")"
+                else
+                    n=$(stat -c '%h' "$item" 2>/dev/null) || continue
+                    [ "$n" -gt 1 ] && printf 'HARD LINK (x%s): %s\n' "$n" "$item"
+                fi
+            done
+        ) > "$tmpfile" &
+        scan_pid=$!
+
+        ( while kill -0 "$scan_pid" 2>/dev/null; do
+              echo "# Scanning $(basename "$dir") ..."
+              sleep 0.4
+          done
+          echo "100" ) | zenity --progress --pulsate --auto-close --no-cancel \
+              --title="Scanning folder" \
+              --text="Scanning $(basename "$dir") for hard links and broken symlinks..."
+
+        wait "$scan_pid"
+
+        if [ -s "$tmpfile" ]; then
+            zenity --list --title="Findings in $(basename "$dir")" --width=800 --height=450 \
+                   --column="Result" < "$tmpfile"
+        else
+            zenity --info --text="Scanned $(basename "$dir"): no hard-linked files or broken symlinks found."
+        fi
+
+        rm -f "$tmpfile"
+    done
+fi

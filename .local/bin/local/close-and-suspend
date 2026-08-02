@@ -1,0 +1,114 @@
+#!/bin/bash
+# close-and-suspend.sh — closes GPU-holding apps, confirms they're actually
+# gone, then suspends. Meant to be run directly (e.g. bound to the suspend
+# action in dms) instead of calling `systemctl suspend` on its own — this
+# guarantees apps are closed *before* suspend starts, rather than depending
+# on systemd's own hook ordering.
+
+# --- Edit this list to add/remove apps -------------------------------------
+# One process name per entry, exactly as it appears in `pgrep -l <name>` or
+# `ps -C <name>` — not the .desktop file name or window title. Find the
+# exact name with: pgrep -l -f <partial name>
+APPS=(
+  code
+  zen-bin
+)
+# -----------------------------------------------------------------------------
+
+GRACE_SECONDS=25   # max seconds to wait for graceful exit before force-killing
+
+notify() {
+  command -v notify-send >/dev/null 2>&1 && notify-send -t 4000 "Suspend" "$1"
+}
+
+# A PID counts as "alive" only if it isn't a zombie — a zombie has already
+# exited and released everything it held (including any GPU handle); it's
+# just an unreaped exit-status entry, and signals do nothing to it.
+is_alive() {
+  local pid=$1 stat
+  stat=$(ps -o stat= -p "$pid" 2>/dev/null)
+  [ -z "$stat" ] && return 1
+  case "$stat" in
+    Z*) return 1 ;;
+  esac
+  return 0
+}
+
+collect_tree() {
+  local pid=$1
+  echo "$pid"
+  local child
+  for child in $(pgrep -P "$pid"); do
+    collect_tree "$child"
+  done
+}
+
+close_apps() {
+  [ "${#APPS[@]}" -eq 0 ] && return 0
+
+  local roots=() all_pids=() app matched pid ppid other is_child r p elapsed alive leftover=()
+
+  for app in "${APPS[@]}"; do
+    matched=$(pgrep -x "$app")
+    [ -z "$matched" ] && continue
+    for pid in $matched; do
+      ppid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+      # A "root" is a matched process whose parent isn't also a matched
+      # process of the same name — the real top-level app, not one of its
+      # own renderer/extension-host/GPU-helper children. Signaling only the
+      # root lets the app shut its own children down in the correct order.
+      is_child=0
+      for other in $matched; do
+        [ "$ppid" = "$other" ] && is_child=1 && break
+      done
+      [ "$is_child" -eq 0 ] && roots+=("$pid")
+    done
+  done
+
+  [ "${#roots[@]}" -eq 0 ] && return 0
+
+  for r in "${roots[@]}"; do
+    while read -r p; do all_pids+=("$p"); done < <(collect_tree "$r")
+  done
+
+  echo "Closing before suspend: ${APPS[*]} (${#all_pids[@]} processes)"
+  notify "Closing ${APPS[*]} before suspending…"
+  kill -TERM "${roots[@]}" 2>/dev/null
+
+  elapsed=0
+  while [ "$elapsed" -lt "$GRACE_SECONDS" ]; do
+    alive=0
+    for r in "${roots[@]}"; do
+      is_alive "$r" && alive=1
+    done
+    [ "$alive" -eq 0 ] && break
+    sleep 1
+    elapsed=$((elapsed + 1))
+  done
+
+  for r in "${roots[@]}"; do
+    if is_alive "$r"; then
+      echo "Force-killing root PID $r (didn't exit within ${GRACE_SECONDS}s)"
+      kill -KILL "$r" 2>/dev/null
+    fi
+  done
+
+  # Anything left over from the tree at this point is a detached helper
+  # (like a "dconf watch" proxy-settings process) — clean it up quickly
+  # rather than waiting out another full grace period on something that
+  # was never going to exit by itself.
+  for p in "${all_pids[@]}"; do
+    is_alive "$p" && leftover+=("$p")
+  done
+  if [ "${#leftover[@]}" -gt 0 ]; then
+    kill -TERM "${leftover[@]}" 2>/dev/null
+    sleep 2
+    for p in "${leftover[@]}"; do
+      is_alive "$p" && kill -KILL "$p" 2>/dev/null
+    done
+  fi
+}
+
+close_apps
+notify "Suspending now"
+exec systemctl suspend

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# --- CONFIGURATION ---
+# Delay in seconds to give you time to focus the target window/VM
+DELAY=2
+export YDOTOOL_SOCKET="/run/ydotool_socket"
+# ---------------------
+
+# 1. Detect Clipboard Tool & Fetch Content
+if command -v wl-paste >/dev/null 2>&1; then
+    # Wayland detected
+    TEXT=$(wl-paste)
+elif command -v xclip >/dev/null 2>&1; then
+    # X11 (xclip) detected
+    TEXT=$(xclip -selection clipboard -o)
+elif command -v xsel >/dev/null 2>&1; then
+    # X11 (xsel) detected
+    TEXT=$(xsel --clipboard --output)
+else
+    notify-send "Auto-Type Error" "No clipboard tool found (install wl-clipboard, xclip, or xsel)"
+    exit 1
+fi
+
+# 2. Check for empty clipboard
+if [ -z "$TEXT" ]; then
+    exit 0
+fi
+
+# 3. Wait for user to focus the target window
+sleep $DELAY
+
+# 4. Type the content
+ydotool type "$TEXT"

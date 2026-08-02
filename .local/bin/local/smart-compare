@@ -1,0 +1,24 @@
+#!/bin/sh
+file1="$1"
+file2="$2"
+
+if [ -z "$file2" ] || [ -n "$3" ]; then
+    zenity --error --text="Error: Please select exactly TWO files." --title="Smart Compare"
+    exit 1
+fi
+
+size1=$(stat -c%s "$file1")
+size2=$(stat -c%s "$file2")
+
+if [ "$size1" -ne "$size2" ]; then
+    zenity --warning --text="<b>Files do not match!</b>\n\nSize difference detected instantly:\n• $(basename "$file1"): $size1 bytes\n• $(basename "$file2"): $size2 bytes\n\nSkipping hash calculation to save time." --title="Instant Mismatch"
+else
+    hash1=$(xxh3sum "$file1" | awk '{print $1}')
+    hash2=$(xxh3sum "$file2" | awk '{print $1}')
+
+    if [ "$hash1" = "$hash2" ]; then
+        zenity --info --text="<b>Success! Files match perfectly.</b>\n\nBoth files are $size1 bytes.\n\n<b>xxHash3:</b>\n$hash1" --title="Match Confirmed"
+    else
+        zenity --error --text="<b>Collision Alert!</b>\n\nFiles have identical sizes ($size1 bytes) but DIFFERENT content.\n\n• Hash 1: $hash1\n• Hash 2: $hash2" --title="Hash Mismatch"
+    fi
+fi

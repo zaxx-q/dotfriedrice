@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+# Defaults (override via arguments: ./launch-yttv.sh [device] [delay] [bounds])
+TARGET_DEVICE="${1:-192.168.1.17:5555}"
+DELAY="${2:-4}"
+BOUNDS="${3:-0 216 896 720}" # 896x504 exactly 16:9 ratio, top slightly cropped
+# BOUNDS="0 250 885 720"    # original stretch, no crop but smaller
+
+PACKAGE="com.google.android.youtube.tv"
+ACTIVITY="com.google.android.apps.youtube.tv.activity.ShellActivity"
+
+# ANSI colors
+CYAN='\033[0;36m'
+YELLOW='\033[0;33m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${CYAN}Checking device connection status...${NC}"
+
+# Check if the specific device IP is listed as 'device' (online)
+device_check=$(adb devices | rg "${TARGET_DEVICE}\s+device")
+
+if [ -z "$device_check" ]; then
+    echo -e "${YELLOW}Device ${TARGET_DEVICE} not found or offline. Attempting connection...${NC}"
+    connect_result=$(adb connect "$TARGET_DEVICE")
+
+    if ! echo "$connect_result" | grep -q "connected to"; then
+        echo -e "${RED}Error: Failed to connect to ${TARGET_DEVICE}. Check network or IP address.${NC}" >&2
+        read -rp "Press Enter to exit..."
+        exit 1
+    fi
+    echo -e "${GREEN}Successfully connected to ${TARGET_DEVICE}${NC}"
+    sleep 1  # Brief pause to let ADB stabilize
+else
+    echo -e "${GREEN}Device ${TARGET_DEVICE} is online and ready.${NC}"
+fi
+
+echo -e "${YELLOW}Stopping YouTube TV...${NC}"
+adb shell am force-stop "$PACKAGE"
+
+echo -e "${GREEN}Launching YouTube TV...${NC}"
+adb shell am start -n "${PACKAGE}/${ACTIVITY}"
+
+echo -e "${CYAN}Waiting ${DELAY} seconds for stack initialization...${NC}"
+sleep "$DELAY"
+
+echo -e "${CYAN}Locating Stack ID...${NC}"
+stack_id=$(adb shell am stack list | rg -B 2 "$PACKAGE" | rg -m 1 --no-line-number "Stack id=(\d+)" -o -r '$1')
+
+if [ -z "${stack_id// /}" ]; then
+    echo -e "${RED}Error: Could not find Stack ID for ${PACKAGE}. Is the app running?${NC}" >&2
+    read -rp "Press Enter to exit..."
+    exit 1
+fi
+
+echo -e "${GREEN}Found Stack ID: ${stack_id}${NC}"
+echo -e "${YELLOW}Resizing stack to bounds: [${BOUNDS}]...${NC}"
+
+# shellcheck disable=SC2086
+adb shell am stack resize "$stack_id" $BOUNDS
+
+echo -e "${GREEN}Successfully completed!${NC}"

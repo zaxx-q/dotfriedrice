@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -eq 0 ]]; then
+  echo "Usage: magic-exec <prompt>" >&2
+  exit 1
+fi
+
+PROMPT="$*"
+
+SYSTEM_PROMPT="You are a shell command generator. Output ONLY the raw shell command that fulfills the user's request — no explanation, no markdown, no code fences, no commentary. Just the command itself on a single line."
+
+# Use pi -p to generate the command, with a system prompt that forces raw output only.
+RAW="$(pi -p \
+  --no-tools \
+  --no-session \
+  --model gemini-3.5-flash-low \
+  --system-prompt "$SYSTEM_PROMPT" \
+  "$PROMPT" 2>&1)"
+
+# Strip ANSI escape sequences and trim whitespace
+CMD="$(printf '%s' "$RAW" | sed 's/\x1b\[[0-9;?]*[a-zA-Z<>]//g; s/\x1b[()][AB012]//g; s/\r//g' | tr -d '\000-\010\013-\037\177' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | head -n1)"
+
+if [[ -z "$CMD" ]]; then
+  echo "Error: pi returned an empty command." >&2
+  exit 1
+fi
+
+echo ""
+echo "Generated command:"
+echo "  $CMD"
+echo ""
+
+read -r -p "Run it? [y/N] " CONFIRM
+case "$CONFIRM" in
+  [yY]|[yY][eE][sS])
+    echo ""
+    eval "$CMD"
+    ;;
+  *)
+    echo "Aborted."
+    exit 1
+    ;;
+esac

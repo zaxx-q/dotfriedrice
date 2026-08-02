@@ -24,5 +24,4 @@ tags
 .config/nvim/lua/plugins/theme.lua
 .config/zsh/.zsh_history*
 .config/zsh/.zsh_plugins.zsh
-.local/bin/local/
 etc/pacman.d/02-ignore.conf.example
