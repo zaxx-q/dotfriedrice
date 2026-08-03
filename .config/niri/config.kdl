@@ -9,7 +9,9 @@
 
 environment {}
 
-spawn-at-startup "dms" "run"
+// Start dms in systemd autostart instead to make xdg autostart apps after dms.
+// spawn-at-startup "dms" "run"
+
 // spawn-at-startup "swayidle" "-w"
 // spawn-at-startup "dfr-theme-set-bg" "--keep-current"
 // spawn-at-startup "mako"
