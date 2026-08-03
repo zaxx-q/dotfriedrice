@@ -1,4 +1,8 @@
 {
-  "tools": [],
-  "updatedAt": 1783328579698
+  "tools": [
+    "firecrawl_scrape",
+    "firecrawl_crawl",
+    "firecrawl_search"
+  ],
+  "updatedAt": 1785687497528
 }

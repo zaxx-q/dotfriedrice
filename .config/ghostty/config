@@ -57,5 +57,8 @@ shell-integration = detect
 shell-integration-features = sudo,title
 keybind = shift+enter=text:\n
 
+# Pi
+keybind = alt+backspace=text:\x1b\x7f
+
 # Dank color generation
 theme = dankcolors

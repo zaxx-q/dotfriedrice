@@ -101,8 +101,25 @@ const SAFE_PATTERNS = [
 	/^\s*mkdir\s+(-p\s+)?plans(\/|\\|\s|$)/,
 ];
 
+// Permit a common read-only exploration idiom such as:
+// `cd /path/to/repo && git log --oneline -20`
+// The directory operand is intentionally constrained so shell control operators
+// cannot be hidden in it. The remaining command must still match the allowlist.
+const CD_AND_PREFIX =
+	/^\s*cd\s+(?:--\s+)?(?:"[^"]*"|'[^']*'|[^\s;&|]+)\s*&&\s*/;
+const SHELL_CHAIN_PATTERN = /(?:&&|\|\||;|\||`|\$\(|\n)/;
+
+function commandAfterSafeCd(command: string): string | undefined {
+	const match = command.match(CD_AND_PREFIX);
+	if (!match) return undefined;
+
+	const remainder = command.slice(match[0].length);
+	return SHELL_CHAIN_PATTERN.test(remainder) ? undefined : remainder;
+}
+
 export function isSafeCommand(command: string): boolean {
 	const isDestructive = DESTRUCTIVE_PATTERNS.some((p) => p.test(command));
-	const isSafe = SAFE_PATTERNS.some((p) => p.test(command));
+	const commandToCheck = commandAfterSafeCd(command) ?? command;
+	const isSafe = SAFE_PATTERNS.some((p) => p.test(commandToCheck));
 	return !isDestructive && isSafe;
 }

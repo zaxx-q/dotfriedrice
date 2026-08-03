@@ -17,7 +17,12 @@
         "-src/index.ts"
       ]
     },
-    "npm:@narumitw/pi-firecrawl",
+    {
+      "source": "npm:@narumitw/pi-firecrawl",
+      "extensions": [
+        "-src/index.ts"
+      ]
+    },
     "npm:pi-boomerang",
     {
       "source": "npm:pi-smart-fetch",
@@ -62,12 +67,6 @@
       "source": "npm:@jerryan/pi-todo-lite",
       "extensions": [
         "-extension.ts"
-      ]
-    },
-    {
-      "source": "npm:pi-image-tools",
-      "extensions": [
-        "+index.ts"
       ]
     },
     {
@@ -154,6 +153,8 @@
     "AGY/gemini-3.6-flash-high",
     "AGY/gemini-3.6-flash-medium",
     "AGY-claude/claude-sonnet-4-6",
-    "AGY-claude/claude-opus-4-6-thinking"
+    "AGY-claude/claude-opus-4-6-thinking",
+    "Proxy/grok-4.5",
+    "Proxy/gpt-5.6-terra"
   ]
 }
