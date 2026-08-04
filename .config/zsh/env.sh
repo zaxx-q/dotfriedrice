@@ -9,7 +9,7 @@ export DOTFRIEDRICE_PATH="/home/zaxx/dotfriedrice"
 export PATH="${HOME}/.local/bin/local:${HOME}/.local/bin:${PATH}"
 
 # Configure Mise (programming language run-time manager) and bun.
-export PATH="${PATH}:${XDG_DATA_HOME}/mise/shims:${XDG_CACHE_HOME}/bun/bin"
+export PATH="${PATH}:${XDG_DATA_HOME}/mise/shims:${XDG_CACHE_HOME}/.bun/bin"
 
 # Default programs to run.
 export EDITOR="zed --wait"

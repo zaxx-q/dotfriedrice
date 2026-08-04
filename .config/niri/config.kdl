@@ -603,6 +603,7 @@ binds {
     Mod+B                    hotkey-overlay-title="Browser" { spawn "launch-or-cycle" "zen:zen-browser"; }
     Mod+Alt+B                hotkey-overlay-title="Browser (private)" { spawn "zen-browser" "-private-window"; }
     Mod+Ctrl+B               hotkey-overlay-title="Browser (isolated profile)" { spawn-sh "zen-browser -P ${BROWSER_ISOLATED_PROFILE:-isolated}"; }
+    Mod+O                    hotkey-overlay-title="Open file manager" { spawn "scrcpy-daily"; }
 
     Ctrl+Grave               { spawn "AIPromptBridge" "--trigger" "textedit"; }
     Ctrl+Alt+X               { spawn "AIPromptBridge" "--trigger" "snip"; }

@@ -1,0 +1,13 @@
+#!/bin/bash
+exec scrcpy \
+  --turn-screen-off \
+  --keep-active \
+  --power-off-on-close \
+  --disable-screensaver \
+  --window-title=Phone \
+  -m 1920 \
+  -b 12M \
+  --max-fps=45 \
+  --video-codec=h265 \
+  --audio-codec=opus \
+  "$@"
