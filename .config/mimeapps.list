@@ -109,13 +109,12 @@ text/x-yaml=dev.zed.Zed.desktop;
 application/epub=org.pwmt.zathura.desktop;
 application/djvu=org.pwmt.zathura.desktop;
 application/pdf=org.pwmt.zathura.desktop;
-
-application/x-7z-compressed=xarchiver.desktop;
-application/x-gzip=xarchiver.desktop;
-application/x-tar=xarchiver.desktop;
-application/x-zip-compressed=xarchiver.desktop;
-application/x-zip=xarchiver.desktop;
-application/zip=xarchiver.desktop;
+application/x-7z-compressed=peazip.desktop;
+application/x-gzip=peazip.desktop;
+application/x-tar=peazip.desktop;
+application/x-zip-compressed=peazip.desktop;
+application/x-zip=peazip.desktop;
+application/zip=peazip.desktop;
 
 application/msword=libreoffice-writer.desktop;
 application/rtf=libreoffice-writer.desktop;
@@ -156,3 +155,4 @@ application/x-extension-xht=zen-browser.desktop
 
 [Added Associations]
 text/html=zen-browser.desktop;
+application/zip=peazip.desktop;
