@@ -21,8 +21,29 @@ setopt HIST_IGNORE_ALL_DUPS    # Never add duplicate entries.
 setopt HIST_IGNORE_SPACE       # Ignore commands that start with a space.
 setopt HIST_REDUCE_BLANKS      # Remove unnecessary blank lines.
 
-# Use modern completion system. Other than enabling globdots for showing
-# hidden files, these ares values in the default generated zsh config.
+# Configure completion before initializing compinit.
+# fzf-tab provides the interactive completion menu.
+zstyle ':completion:*' menu no
+zstyle ":completion:*" auto-description "specify: %d"
+zstyle ":completion:*" completer _expand _complete _correct _approximate
+zstyle ':completion:*' expand prefix suffix
+zstyle ":completion:*" format "Completing %d"
+zstyle ":completion:*" group-name ""
+
+# dircolors is a GNU utility that's not on macOS by default. With this not
+# being used on macOS it means zsh's complete menu won't have colors.
+command -v dircolors >/dev/null 2>&1 && eval "$(dircolors -b)"
+
+# shellcheck disable=SC2086,SC2296
+[[ -n ${LS_COLORS-} ]] && zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+zstyle ":completion:*" list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
+zstyle ':completion:*' list-suffixes true
+zstyle ":completion:*" matcher-list "" "m:{a-z}={A-Z}" "m:{a-zA-Z}={A-Za-z}" "r:|[._-]=* r:|=* l:|=*"
+zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
+zstyle ":completion:*" use-compctl false
+zstyle ":completion:*" verbose true
+
+# Use modern completion system and show hidden files in file completions.
 autoload -U compinit
 compinit
 _comp_options+=(globdots)
@@ -31,25 +52,6 @@ _comp_options+=(globdots)
 if command -v zoxide >/dev/null 2>&1; then
   eval "$(zoxide init zsh)"
 fi
-
-zstyle ":completion:*" menu select=2
-zstyle ":completion:*" auto-description "specify: %d"
-zstyle ":completion:*" completer _expand _complete _correct _approximate
-zstyle ":completion:*" format "Completing %d"
-zstyle ":completion:*" group-name ""
-
-# dircolors is a GNU utility that's not on macOS by default. With this not
-# being used on macOS it means zsh's complete menu won't have colors.
-command -v dircolors >/dev/null 2>&1 && eval "$(dircolors -b)"
-
-# shellcheck disable=SC2016,SC2296
-zstyle ":completion:*:default" list-colors '${(s.:.)LS_COLORS}'
-zstyle ":completion:*" list-colors ""
-zstyle ":completion:*" list-prompt %SAt %p: Hit TAB for more, or the character to insert%s
-zstyle ":completion:*" matcher-list "" "m:{a-z}={A-Z}" "m:{a-zA-Z}={A-Za-z}" "r:|[._-]=* r:|=* l:|=*"
-zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p%s
-zstyle ":completion:*" use-compctl false
-zstyle ":completion:*" verbose true
 
 # Use Vim key binds.
 # bindkey -v
