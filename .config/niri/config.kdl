@@ -353,7 +353,6 @@ window-rule {
     match app-id=r#"^exo-desktop-item-edit$"#
     match app-id=r#"^Toplevel$"#
     match app-id=r#"^flameshot$"#
-    match app-id=r#"^peazip$"#
     open-floating true
 }
 
