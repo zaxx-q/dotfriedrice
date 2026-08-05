@@ -542,9 +542,13 @@ binds {
  // Mod+Shift+S              hotkey-overlay-title="Screenshot (window)" { spawn "dfr-screenshot" "window"; }
  // Mod+Ctrl+S               hotkey-overlay-title="Screenshot (monitor: focused)" { spawn "dfr-screenshot" "monitor-focused"; }
  // Mod+Ctrl+Shift+S         hotkey-overlay-title="Screenshot (monitor: all)" { spawn "dfr-screenshot" "monitor-all"; }
-    Print                    hotkey-overlay-title="Screenshot (region)" { screenshot; }
-    Ctrl+Print               hotkey-overlay-title="Screenshot (screen)" { screenshot-screen; }
-    Alt+Print                hotkey-overlay-title="Screenshot (window)" { screenshot-window; }
+ // Print                    hotkey-overlay-title="Screenshot (region)" { screenshot; }
+ // Ctrl+Print               hotkey-overlay-title="Screenshot (screen)" { screenshot-screen; }
+ // Alt+Print                hotkey-overlay-title="Screenshot (window)" { screenshot-window; }
+    Print                    hotkey-overlay-title="Screenshot (Interactive Region)" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
+    Ctrl+Print               hotkey-overlay-title="Screenshot (Full Screen)" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "full" "edit"; }
+    Alt+Print                hotkey-overlay-title="Screenshot (Focused Window)" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "window" "edit"; }
+    Pause                    hotkey-overlay-title="Screenshot (Float)" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "float"; }
 
     Mod+P                    hotkey-overlay-title="Pick window" { spawn "ghostty" "--class=dfr.floating.ghostty" "-e" "sh" "-c" "printf 'Pick a window...\n\n'; niri msg pick-window; niri msg action focus-window-previous; printf '\nDone! Press CTRL+c to quit\n'; read"; }
  // Mod+Shift+P              hotkey-overlay-title="Pick color" { spawn-sh "killall hyprpicker || hyprpicker --autocopy --lowercase-hex"; }
