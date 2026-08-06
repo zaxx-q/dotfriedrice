@@ -7,7 +7,8 @@
     {
       "source": "npm:pi-free",
       "extensions": [
-        "-index.ts"
+        "-index.ts",
+        "-dist/index.js"
       ]
     },
     {
@@ -137,10 +138,11 @@
     "-extensions/custom-statusline.ts",
     "-extensions/todos/index.ts",
     "extensions/review.ts",
-    "+extensions/env-loader.ts"
+    "+extensions/env-loader.ts",
+    "-extensions/resilient-retry.ts"
   ],
-  "defaultProvider": "AGY-claude",
-  "defaultModel": "claude-opus-4-6-thinking",
+  "defaultProvider": "Proxy",
+  "defaultModel": "gpt-5.6-terra",
   "defaultThinkingLevel": "high",
   "compaction": {
     "enabled": false
