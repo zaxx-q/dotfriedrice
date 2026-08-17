@@ -39,8 +39,8 @@ export GUI_ELIGIBLE="0"
 export GUI_ENABLED="0"
 
 export DOTFRIEDRICE_PATH="${DOTFRIEDRICE_PATH:-"${HOME}/dotfriedrice"}"
-export DOTFRIEDRICE_BRANCH="${DOTFRIEDRICE_BRANCH:-master}"
-export DOTFRIEDRICE_CLONE_URL="${DOTFRIEDRICE_CLONE_URL:-https://github.com/nickjj/dotfriedrice}"
+export DOTFRIEDRICE_BRANCH="${DOTFRIEDRICE_BRANCH:-main}"
+export DOTFRIEDRICE_CLONE_URL="${DOTFRIEDRICE_CLONE_URL:-https://github.com/zaxx-q/dotfriedrice}"
 export DOTFRIEDRICE_UPSTREAM_URL="${DOTFRIEDRICE_UPSTREAM_URL:-"${DOTFRIEDRICE_CLONE_URL}"}"
 
 if [ -n "${SUDO_PASS:-}" ] && [ -z "${SUDO_ASKPASS:-}" ]; then
