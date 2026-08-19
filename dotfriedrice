@@ -2212,7 +2212,12 @@ install_gui_themes() {
 install_zsh_plugins() {
   _info "INSTALL ZSH PLUGINS"
 
-  "${DOTFRIEDRICE_PATH}/.local/bin/dfr-update-zsh-plugins"
+  # Plugin downloads are optional; do not leave an otherwise successful
+  # system installation half-finished because a third-party plugin update
+  # failed. The helper prints its specific failure before this warning.
+  if ! "${DOTFRIEDRICE_PATH}/.local/bin/dfr-update-zsh-plugins"; then
+    _warning "Zsh plugins could not be installed or updated. Run 'dfr-update-zsh-plugins' after resolving the issue."
+  fi
 }
 
 install_external_scripts() {

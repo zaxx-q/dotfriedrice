@@ -29,5 +29,11 @@
 [mergetool "meld"]
   cmd = meld \"$LOCAL\" \"$BASE\" \"$REMOTE\" --output \"$MERGED\"
 
+[commit]
+  gpgsign = true
+
+[tag]
+  gpgSign = true
+
 [include]
   path = ~/.config/git/config.local

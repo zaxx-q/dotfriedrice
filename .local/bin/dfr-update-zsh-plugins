@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Install or update zsh plugins.
 
+# This script is also intended to work when called outside an interactive
+# shell, where the XDG variables normally set by .zshenv are unavailable.
+: "${XDG_DATA_HOME:="${HOME}/.local/share"}"
+: "${XDG_CONFIG_HOME:="${HOME}/.config"}"
+
 function clone_or_pull {
   local repo_path="${1}"
   local project=
@@ -11,15 +16,18 @@ function clone_or_pull {
 
   if cd "${project_path}" >/dev/null 2>&1; then
     echo "Updating ${repo_path}..."
-    git pull
-    cd - >/dev/null 2>&1 || exit
+    git pull || return
+    cd - >/dev/null 2>&1 || return
   else
     echo "Installing ${repo_path}..."
     git clone "https://github.com/${repo_path}" "${project_path}"
   fi
 }
 
-clone_or_pull "mattmc3/antidote"
+if ! clone_or_pull "mattmc3/antidote"; then
+  echo "Unable to install or update mattmc3/antidote." >&2
+  exit 1
+fi
 
 # Source antidote to update the rest of the plugins.
 # shellcheck disable=SC1091
@@ -41,7 +49,27 @@ done
 
 if [ -n "${antidote_dir}" ]; then
   if command -v zsh >/dev/null 2>&1; then
+    zsh_plugins="${ZDOTDIR:-"${XDG_CONFIG_HOME}/zsh"}/.zsh_plugins"
+
+    if [ ! -f "${zsh_plugins}.txt" ]; then
+      echo "Skipping: '${zsh_plugins}.txt' was not found" >&2
+      exit 0
+    fi
+
+    # `antidote update` only updates bundles that were first parsed and
+    # cached by `antidote bundle`. On a first install that cache does not yet
+    # exist, so calling update by itself returns 1 after the self-update.
+    echo "Installing antidote plugins..."
+    if ! zsh -c 'source "$1" && antidote bundle < "$2.txt" >| "$2.zsh"' \
+      zsh "${antidote_dir}/antidote.zsh" "${zsh_plugins}"; then
+      echo "Unable to install antidote plugins." >&2
+      exit 1
+    fi
+
     echo "Updating antidote plugins..."
-    zsh -c "source '${antidote_dir}/antidote.zsh' && antidote update"
+    if ! zsh -c 'source "$1" && antidote update' zsh "${antidote_dir}/antidote.zsh"; then
+      echo "Unable to update antidote plugins." >&2
+      exit 1
+    fi
   fi
 fi

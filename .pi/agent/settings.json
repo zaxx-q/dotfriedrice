@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.83.0",
+  "lastChangelogVersion": "0.84.2",
   "npmCommand": [
     "bun"
   ],
@@ -97,13 +97,13 @@
     {
       "source": "npm:@tintinweb/pi-subagents",
       "extensions": [
-        "+src/index.ts"
+        "-src/index.ts"
       ]
     },
     {
       "source": "npm:@gotgenes/pi-subagents",
       "extensions": [
-        "-src/index.ts"
+        "+src/index.ts"
       ]
     },
     "npm:@gotgenes/pi-autoformat",
@@ -116,10 +116,9 @@
     {
       "source": "npm:@ayulab/pi-rewind",
       "extensions": [
-        "-index.js"
+        "+index.js"
       ]
     },
-    "npm:pi-rtk-optimizer",
     "npm:@neilurk12/pi-lazygit",
     "npm:pi-simplify",
     "npm:pi-toggle-skills",
@@ -128,8 +127,13 @@
       "source": "npm:@upstash/context7-pi",
       "skills": [
         "-skills/context7-docs/SKILL.md"
+      ],
+      "extensions": [
+        "-extensions/context7.ts"
       ]
-    }
+    },
+    "npm:pi-google-services",
+    "npm:@xynogen/pix-optimizer"
   ],
   "theme": "dark",
   "extensions": [
@@ -141,8 +145,6 @@
     "+extensions/env-loader.ts",
     "-extensions/resilient-retry.ts"
   ],
-  "defaultProvider": "Proxy",
-  "defaultModel": "gpt-5.6-terra",
   "defaultThinkingLevel": "high",
   "compaction": {
     "enabled": false
@@ -153,10 +155,12 @@
   "hideThinkingBlock": false,
   "enabledModels": [
     "AGY/gemini-3.6-flash-high",
-    "AGY/gemini-3.6-flash-medium",
     "AGY-claude/claude-sonnet-4-6",
     "AGY-claude/claude-opus-4-6-thinking",
     "Proxy/grok-4.5",
+    "Proxy/grok-4.6",
     "Proxy/gpt-5.6-terra"
-  ]
+  ],
+  "defaultProvider": "Proxy",
+  "defaultModel": "grok-4.6"
 }
