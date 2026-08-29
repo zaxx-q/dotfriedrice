@@ -60,5 +60,5 @@ keybind = shift+enter=text:\n
 # Pi
 keybind = alt+backspace=text:\x1b\x7f
 
-# Dank color generation
-theme = dankcolors
+# Color generation
+theme = noctalia

@@ -5,11 +5,8 @@ export DOTFRIEDRICE_PATH="/home/zaxx/dotfriedrice"
 # shellcheck disable=SC1091
 . "${XDG_CONFIG_HOME:-"${HOME}/.config"}/zsh/.xdg.local"
 
-# Add all local binaries to the system path and make sure they are first.
-export PATH="${HOME}/.local/bin/local:${HOME}/.local/bin:${PATH}"
-
-# Configure Mise (programming language run-time manager) and bun.
-export PATH="${PATH}:${XDG_DATA_HOME}/mise/shims:${XDG_CACHE_HOME}/.bun/bin"
+# Add Mise shims first so runtime versions take precedence, then local binaries and bun.
+export PATH="${XDG_DATA_HOME}/mise/shims:${HOME}/.local/bin/local:${HOME}/.local/bin:${PATH}:${XDG_CACHE_HOME}/.bun/bin"
 
 # Default programs to run.
 export EDITOR="zed --wait"
@@ -33,6 +30,8 @@ export QT_IM_MODULE="xim"
 # Fix Nvidia HW acceleration on browsers
 export MOZ_DISABLE_RDD_SANDBOX=1
 export MOZ_DRM_DEVICE=/dev/dri/renderD128
-export NVD_BACKEND=direct
-export LIBVA_DRIVER_NAME=nvidia
-export CUDA_DISABLE_PERF_BOOST=1
+export LIBVA_DRIVER_NAME=radeonsi
+export VDPAU_DRIVER=va_gl
+# export NVD_BACKEND=direct
+# export LIBVA_DRIVER_NAME=nvidia
+# export CUDA_DISABLE_PERF_BOOST=1

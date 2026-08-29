@@ -25,3 +25,6 @@ tags
 .config/zsh/.zsh_history*
 .config/zsh/.zsh_plugins.zsh
 etc/pacman.d/02-ignore.conf.example
+
+.config/zed/themes/noctalia.json
+.pi/agent/themes/noctalia.json

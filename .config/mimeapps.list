@@ -1,9 +1,7 @@
 [Default Applications]
 inode/directory=thunar.desktop;
-
 x-scheme-handler/http=zen-browser.desktop;
 x-scheme-handler/https=zen-browser.desktop
-
 video/mp4=mpv.desktop;
 video/x-matroska=mpv.desktop;
 video/webm=mpv.desktop;
@@ -16,7 +14,6 @@ video/x-ms-wmv=mpv.desktop;
 video/3gpp=mpv.desktop;
 video/divx=mpv.desktop;
 video/vnd.avi=mpv.desktop;
-
 audio/aac=mpv.desktop;
 audio/ac3=mpv.desktop;
 audio/flac=mpv.desktop;
@@ -61,7 +58,6 @@ audio/x-tta=mpv.desktop;
 audio/x-vorbis+ogg=mpv.desktop;
 audio/x-wav=mpv.desktop;
 audio/x-wavpack=mpv.desktop;
-
 image/avif=imv-dir.desktop;
 image/bmp=imv-dir.desktop;
 image/gif=imv-dir.desktop;
@@ -72,7 +68,6 @@ image/png=imv-dir.desktop;
 image/svg+xml=imv-dir.desktop;
 image/tiff=imv-dir.desktop;
 image/webp=imv-dir.desktop;
-
 application/javascript=dev.zed.Zed.desktop;
 application/json=dev.zed.Zed.desktop;
 application/toml=dev.zed.Zed.desktop;
@@ -105,18 +100,15 @@ text/x-shellscript=dev.zed.Zed.desktop;
 text/x-sql=dev.zed.Zed.desktop;
 text/x-tex=dev.zed.Zed.desktop;
 text/x-yaml=dev.zed.Zed.desktop;
-
 application/epub=org.pwmt.zathura.desktop;
 application/djvu=org.pwmt.zathura.desktop;
 application/pdf=org.pwmt.zathura.desktop;
-
 application/x-7z-compressed=xarchiver.desktop;
 application/x-gzip=xarchiver.desktop;
 application/x-tar=xarchiver.desktop;
 application/x-zip-compressed=xarchiver.desktop;
 application/x-zip=xarchiver.desktop;
 application/zip=xarchiver.desktop;
-
 application/msword=libreoffice-writer.desktop;
 application/rtf=libreoffice-writer.desktop;
 application/vnd.ms-excel.addin.macroEnabled.12=libreoffice-calc.desktop;
@@ -156,3 +148,4 @@ application/x-extension-xht=zen-browser.desktop
 
 [Added Associations]
 text/html=zen-browser.desktop;
+application/pdf=zen-browser.desktop;

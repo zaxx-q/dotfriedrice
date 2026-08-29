@@ -11,20 +11,21 @@ environment {}
 
 // Start dms in systemd autostart instead to make xdg autostart apps after dms.
 // spawn-at-startup "dms" "run"
+spawn-at-startup "noctalia"
 
 // spawn-at-startup "swayidle" "-w"
 // spawn-at-startup "dfr-theme-set-bg" "--keep-current"
 // spawn-at-startup "mako"
 // spawn-at-startup "waybar"
-spawn-at-startup "elephant"
-spawn-at-startup "walker" "--gapplication-service"
+// spawn-at-startup "elephant"
+// spawn-at-startup "walker" "--gapplication-service"
 spawn-at-startup "mpd"
 spawn-sh-at-startup "sleep 1; exec mpd-mpris"
-spawn-at-startup "kdeconnectd"
+// spawn-at-startup "kdeconnectd"
 // spawn-at-startup "dfr-first-boot"
 
 // ----------------------------------------------------------------------------
-// Input devices (mouse, trackpad, keyboard, etc.)
+// Input devices (mouse, trackpad, keyboard, etc.)codecode
 // Find the full list of options on the wiki:
 // https://github.com/YaLTeR/niri/wiki/Configuration:-Input
 // ----------------------------------------------------------------------------
@@ -44,7 +45,7 @@ input {
             // localectl set-x11-keymap.
 
             // Map the Compose Key
-            options "compose:menu"
+               options "compose:menu"
             // Swap caps lock and escape.
             // Remap menu key to act as an extra super / mod key.
             // options "caps:swapescape,altwin:menu_win"
@@ -63,8 +64,8 @@ input {
     touchpad {
         // Tapping anywhere registers a left click.
         tap
-        // dwt
-        // dwtp
+        dwt
+        dwtp
         // drag false
         // drag-lock
         // Inverted scrolling.
@@ -73,7 +74,7 @@ input {
         // Disable acceleration.
         accel-profile "flat"
         // scroll-method "two-finger"
-        // disabled-on-external-mouse
+        disabled-on-external-mouse
     }
 
     mouse {
@@ -84,16 +85,16 @@ input {
         // accel-speed 0.0 (default)
         // Faster scrolling with the mouse wheel.
         scroll-factor 2.0
-        scroll-method "on-button-down"
-        scroll-button 274
+        // scroll-method "on-button-down"
+        // scroll-button 274
         // scroll-button-lock
     }
 
     trackpoint {
         // off
         // natural-scroll
-        // accel-speed 0.2
-        // accel-profile "flat"
+        accel-speed 0.6
+        accel-profile "flat"
         // scroll-method "on-button-down"
         // scroll-button 273
         // scroll-button-lock
@@ -220,7 +221,9 @@ layout {
         top 10
         bottom 10
     }
-    // background-color "transparent"
+    // Set transparent workspace background color so the backdrop is visible at all times.
+    background-color "transparent"
+
     // When to center a column when changing focus, options are:
     // - "never", default behavior, focusing an off-screen column will keep at the left
     //   or right edge of the screen.
@@ -261,34 +264,25 @@ layout {
 // Window / layer rules
 // ----------------------------------------------------------------------------
 
-// Show DMS wallpaper within the overview.
+// Place the regular wallpaper on the backdrop.
 layer-rule {
-    match namespace="^quickshell$"
-    place-within-backdrop true
+  match namespace="^noctalia-wallpaper"
+  place-within-backdrop true
 }
-// Show DMS duplicate blur wallpaper within the overview, don't use both.
-/-layer-rule {
-    match namespace="dms:blurwallpaper"
-    place-within-backdrop true
-}
-layer-rule {
-    match namespace=r#"^dms:bar$"#
-    match namespace=r#"^dms:dock$"#
 
-    shadow {
-        on
-        // off
-        softness 40
-        spread 5
-        offset x=0 y=5
-        draw-behind-window true
-        color "#00000064"
-        // inactive-color "#00000064"
-    }
+// Optionally, disable workspace shadows in the overview.
+overview {
+  workspace-shadow {
+    off
+  }
+}
+
+switch-events {
+    lid-close { spawn "noctalia" "msg" "session" "lock-and-suspend"; }
 }
 
 // Indicate screencasted windows with red colors.
-/-window-rule {
+window-rule {
     match is-window-cast-target=true
 
     focus-ring {
@@ -310,19 +304,12 @@ layer-rule {
     }
 }
 
-// Disable workspace shadows in the overview.
-overview {
-    workspace-shadow {
-        off
-    }
-}
-
 // Window rules let you adjust behavior for individual windows.
 // Find more information on the wiki:
 // https://github.com/YaLTeR/niri/wiki/Configuration:-Window-Rules
 window-rule {
     // Slight rounded corners.
-    geometry-corner-radius 2
+    geometry-corner-radius 20
     clip-to-geometry true
 }
 
@@ -435,8 +422,10 @@ window-rule {
 
 // Open DMS windows as floating by default
 window-rule {
-    match app-id=r#"^com\.danklinux\.dms$"#
+    match app-id="dev.noctalia.Noctalia"
     open-floating true
+    default-column-width { fixed 1080; }
+    default-window-height { fixed 920; }
 }
 
 // ----------------------------------------------------------------------------
@@ -445,96 +434,34 @@ window-rule {
 // ----------------------------------------------------------------------------
 
 binds {
-    // Specific Desktop.
-    // === Application Launchers ===
-    Mod+Space hotkey-overlay-title="Application Launcher" {
-        spawn "dms" "ipc" "call" "spotlight" "toggle";
-    }
-    Alt+Space hotkey-overlay-title="Spotlight Bar" {
-        spawn "dms" "ipc" "call" "spotlight-bar" "toggle";
-    }
-    Mod+V hotkey-overlay-title="Clipboard Manager" {
-        spawn "dms" "ipc" "call" "clipboard" "toggle";
-    }
-    Mod+Grave hotkey-overlay-title="Power Menu: Toggle" { spawn "dms" "ipc" "call" "powermenu" "toggle"; }
-    Mod+Alt+Comma hotkey-overlay-title="Settings" {
-        spawn "dms" "ipc" "call" "settings" "focusOrToggle";
-    }
-    Mod+Y hotkey-overlay-title="Browse Wallpapers" {
-        spawn "dms" "ipc" "call" "dash" "toggle" "wallpaper";
-    }
-    Mod+N hotkey-overlay-title="Notification Center" { spawn "dms" "ipc" "call" "notifications" "toggle"; }
-    // Mod+Alt+N hotkey-overlay-title="Notepad" { spawn "dms" "ipc" "call" "notepad" "toggle"; }
+ // Core Noctalia binds
+    Mod+Space { spawn-sh "noctalia msg panel-toggle launcher"; }
+    Mod+N { spawn-sh "noctalia msg panel-toggle control-center"; }
+    Mod+Alt+Comma { spawn-sh "noctalia msg settings-toggle"; }
+    Mod+V { spawn-sh "noctalia msg panel-toggle clipboard"; }
+    Mod+Grave { spawn-sh "noctalia msg panel-toggle session"; }
+    Alt+Grave { spawn-sh "noctalia msg window-switcher"; }
 
-    // === Security ===
-    Mod+L hotkey-overlay-title="Lock Screen" {
-        spawn "dms" "ipc" "call" "lock" "lock";
-    }
-    Ctrl+Alt+Delete hotkey-overlay-title="Task Manager" {
-        spawn "dms" "ipc" "call" "processlist" "focusOrToggle";
-    }
+ // Niri has a built-in window switcher you might want to try it to see which one you prefer.
 
-    // === Audio Controls ===
-    XF86AudioRaiseVolume allow-when-locked=true {
-        spawn "dms" "ipc" "call" "audio" "increment" "3";
-    }
-    XF86AudioLowerVolume allow-when-locked=true {
-        spawn "dms" "ipc" "call" "audio" "decrement" "3";
-    }
-    XF86AudioMute allow-when-locked=true {
-        spawn "dms" "ipc" "call" "audio" "mute";
-    }
-    XF86AudioMicMute allow-when-locked=true {
-        spawn "dms" "ipc" "call" "audio" "micmute";
-    }
-		XF86AudioPause allow-when-locked=true {
-		    spawn "dms" "ipc" "call" "mpris" "playPause";
-		}
-		XF86AudioPlay allow-when-locked=true {
-		    spawn "dms" "ipc" "call" "mpris" "playPause";
-		}
-		XF86AudioPrev allow-when-locked=true {
-		    spawn "dms" "ipc" "call" "mpris" "previous";
-		}
-		XF86AudioNext allow-when-locked=true {
-		    spawn "dms" "ipc" "call" "mpris" "next";
-		}
-        Ctrl+XF86AudioRaiseVolume allow-when-locked=true {
-            spawn "dms" "ipc" "call" "mpris" "increment" "3";
-        }
-        Ctrl+XF86AudioLowerVolume allow-when-locked=true {
-            spawn "dms" "ipc" "call" "mpris" "decrement" "3";
-        }
-
-    // === Brightness Controls ===
-    XF86MonBrightnessUp allow-when-locked=true {
-       spawn "dms" "ipc" "call" "brightness" "increment" "5" "";
-    }
-    XF86MonBrightnessDown allow-when-locked=true {
-       spawn "dms" "ipc" "call" "brightness" "decrement" "5" "";
-    }
-    // === Window Management ===
-    Mod+Shift+P hotkey-overlay-title="Create window rule" { spawn "dms" "ipc" "call" "window-rules" "toggle"; }
-    // === Workspace Management ===
-    /-Ctrl+Shift+R hotkey-overlay-title="Rename Workspace" {
-        spawn "dms" "ipc" "call" "workspace-rename" "open";
-    }
-    // === Display Profiles ===
-    /-Mod+P hotkey-overlay-title="Cycle Display Profile" {
-        spawn "dms" "ipc" "outputs" "cycleProfile";
-    }
-
+ // Audio & Brightness
+    XF86AudioRaiseVolume { spawn-sh "noctalia msg volume-up"; }
+    XF86AudioLowerVolume { spawn-sh "noctalia msg volume-down"; }
+    XF86AudioMute { spawn-sh "noctalia msg volume-mute"; }
+    XF86AudioMicMute { spawn-sh "noctalia msg mic-mute"; }
+    XF86MonBrightnessUp { spawn-sh "noctalia msg brightness-up"; }
+    XF86MonBrightnessDown { spawn-sh "noctalia msg brightness-down"; }
 
  // Overview.
  // Mod+Grave                hotkey-overlay-title="System menu" { spawn "dfr-menu"; }
-    Mod+Slash                hotkey-overlay-title="Search niri keybinds" { spawn "walker" "--height" "980" "--width" "980" "--provider" "menus:keybinds"; }
-    Mod+Alt+Slash            hotkey-overlay-title="Search niri actions" { spawn "walker" "--height" "980" "--width" "980" "--provider" "niriactions"; }
+    Mod+Slash                hotkey-overlay-title="Search keyboard shortcuts" { spawn "niri-keybinds"; }
+ // Mod+Alt+Slash            hotkey-overlay-title="Search niri actions" { spawn "walker" "--height" "980" "--width" "980" "--provider" "niriactions"; }
  // Mod+Shift+Slash           hotkey-overlay-title="Search Waybar actions" { spawn "walker" "--height" "980" "--width" "800" "--provider" "menus:waybar"; }
  // Mod+O repeat=false       hotkey-overlay-title="Toggle overview (4-finger swipe)" { toggle-overview; }
     Mod+Tab                  repeat=false hotkey-overlay-title="Toggle overview (4-finger swipe)" { toggle-overview; }
 
  // System.
- // Mod+Alt+L                hotkey-overlay-title="Lock screen" { spawn "swaylock"; }
+    Mod+L                    hotkey-overlay-title="Lock screen" { spawn "noctalia" "msg" "session" "lock"; }
     Mod+Alt+L                hotkey-overlay-title="Power off monitors" { power-off-monitors; }
     Mod+Ctrl+Shift+Q         hotkey-overlay-title="Exit niri session" { spawn "uwsm" "stop"; }
 
@@ -563,11 +490,11 @@ binds {
  // Mod+Ctrl+N               hotkey-overlay-title="Dismiss all notifications" { spawn "makoctl" "dismiss" "--all"; }
  // Mod+Ctrl+Shift+N         hotkey-overlay-title="Toggle silencing notifications" { spawn "dfr-toggle-notifications"; }
 
- // Themes.
- // Mod+BackSlash            hotkey-overlay-title="Cycle theme's wallpapers" { spawn "dfr-theme-set-bg"; }
- // Mod+Shift+BackSlash      hotkey-overlay-title="Pick theme's wallpapers" { spawn "dfr-theme-set-bg" "--menu"; }
- // Mod+Ctrl+BackSlash       hotkey-overlay-title="Cycle themes" { spawn "dfr-theme-set"; }
- // Mod+Ctrl+Shift+BackSlash hotkey-overlay-title="Pick theme" { spawn "dfr-theme-set" "--menu"; }
+ // Wallpaper.
+    Mod+BackSlash            hotkey-overlay-title="Next wallpaper (rotate mode)" { spawn "wallchemy-rotate" "next"; }
+    Mod+Shift+BackSlash      hotkey-overlay-title="Hot wallpaper" { spawn "wallchemy-rotate" "hot"; }
+    Mod+Ctrl+BackSlash       hotkey-overlay-title="Top wallpaper" { spawn "wallchemy-rotate" "top"; }
+    Mod+Ctrl+Shift+BackSlash hotkey-overlay-title="Open current wallpaper on Wallhaven" { spawn "wallchemy-rotate" "open"; }
 
  // Media keys.
  // XF86AudioRaiseVolume     allow-when-locked=true hotkey-overlay-title="Raise volume" { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.05+"; }
@@ -579,18 +506,20 @@ binds {
  // XF86AudioStop            allow-when-locked=true hotkey-overlay-title="Stop track" { spawn "playerctl" "stop"; }
  // XF86AudioPrev            allow-when-locked=true hotkey-overlay-title="Previous track" { spawn "playerctl" "previous"; }
  // XF86AudioNext            allow-when-locked=true hotkey-overlay-title="Next track" { spawn "playerctl" "next"; }
-    Shift+XF86AudioPrev      allow-when-locked=true hotkey-overlay-title="Seek -5 seconds" { spawn "playerctl" "position" "5-"; }
-    Shift+XF86AudioNext      allow-when-locked=true hotkey-overlay-title="Seek +5 seconds" { spawn "playerctl" "position" "5+"; }
+    XF86TouchpadToggle            allow-when-locked=true hotkey-overlay-title="Previous track" { spawn "noctalia" "msg" "media" "previous"; }
+    XF86TouchpadOn            allow-when-locked=true hotkey-overlay-title="Next track" { spawn "noctalia" "msg" "media" "next"; }
+    Shift+XF86TouchpadToggle      allow-when-locked=true hotkey-overlay-title="Seek -5 seconds" { spawn "playerctl" "position" "5-"; }
+    Shift+XF86TouchpadOn      allow-when-locked=true hotkey-overlay-title="Seek +5 seconds" { spawn "playerctl" "position" "5+"; }
 
  // XF86MonBrightnessUp      allow-when-locked=true hotkey-overlay-title="Increase brightness" { spawn "brightnessctl" "--class=backlight" "set" "+5%"; }
  // XF86MonBrightnessDown    allow-when-locked=true hotkey-overlay-title="Decrease brightness" { spawn "brightnessctl" "--class=backlight" "set" "5%-"; }
 
  // XF86Calculator           repeat=false hotkey-overlay-title="Launcher (calculator)" { spawn "walker" "--provider" "calc"; }
-    Mod+K                    repeat=false hotkey-overlay-title="Launcher (calculator)" { spawn "walker" "--provider" "calc"; }
+ // Mod+K                    repeat=false hotkey-overlay-title="Launcher (calculator)" { spawn "walker" "--provider" "calc"; }
 
  // Launcher.
  // Mod+Space                hotkey-overlay-title="Launcher" { spawn "walker"; }
-    Ctrl+Space               repeat=false hotkey-overlay-title="Launcher (windows)" { spawn "walker" "--provider" "windows"; }
+ // Ctrl+Space               repeat=false hotkey-overlay-title="Launcher (windows)" { spawn "walker" "--provider" "windows"; }
  // Mod+V                    repeat=false hotkey-overlay-title="Launcher (clipboard)" { spawn "walker" "--provider" "clipboard"; }
 
  // Apps.
@@ -794,12 +723,4 @@ binds {
 // include optional=true "theme.kdl"
 // include optional=true "config.kdl.local"
 
-// Include dms files
-include optional=true "dms/colors.kdl"
-include optional=true "dms/layout.kdl"
-include optional=true "dms/alttab.kdl"
-// include optional=true "dms/binds.kdl"
-include optional=true "dms/outputs.kdl"
-include optional=true "dms/cursor.kdl"
-include optional=true "dms/windowrules.kdl"
-// include optional=true "dms/wpblur.kdl"
+include "noctalia.kdl"

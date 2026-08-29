@@ -84,7 +84,7 @@
 	<directories/>
 </action>
 <action>
-	<icon></icon>
+	<icon>emblem-symbolic-link</icon>
 	<name>Check Hard Link</name>
 	<submenu></submenu>
 	<unique-id>1784372785141578-1</unique-id>
@@ -98,5 +98,16 @@
 	<other-files/>
 	<text-files/>
 	<video-files/>
+</action>
+<action>
+	<icon>io.github.cboxdoerfer.FSearch</icon>
+	<name>Search with FSearch</name>
+	<submenu></submenu>
+	<unique-id>1787789944069286-1</unique-id>
+	<command>fsearch -s path:\&quot;%f\&quot;\ </command>
+	<description>Open FSearch in this directory</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<directories/>
 </action>
 </actions>

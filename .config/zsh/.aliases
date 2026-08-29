@@ -36,3 +36,5 @@ alias run=./run
 alias rg="rg --hidden --glob '!.git/*' --hyperlink-format='zed://file/{path}:{line}:{column}' --color=always --smart-case --heading --line-number --sort=path"
 
 alias grok="grok --disable-web-search"
+
+alias azan="mise x node -- azaan"

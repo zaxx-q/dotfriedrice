@@ -1,6 +1,7 @@
 [tools]
 biome = "latest"
 bun = "latest"
+go = "latest"
 uv = "latest"
 
 [settings]

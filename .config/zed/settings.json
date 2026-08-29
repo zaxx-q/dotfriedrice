@@ -1,83 +1,287 @@
-// Zed settings
-//
-// For information on how to configure Zed, see the Zed
-// documentation: https://zed.dev/docs/configuring-zed
-//
-// To see all of Zed's default settings without changing your
-// custom settings, run `zed: open default settings` from the
-// command palette (cmd-shift-p / ctrl-shift-p)
 {
-  "node": {
-    "ignore_system_version": false,
-    "path": "/home/zaxx/.local/bin/local/node",
-    "npm_path": "/home/zaxx/.local/bin/local/npm"
-  },
-  "formatter": "none",
-  "diagnostics": {
-    "lsp_pull_diagnostics": {
-      "enabled": false
-    }
-  },
-  "completions": {
-    "lsp": false
-  },
-  "enable_language_server": false,
-  "languages": {},
-  "terminal": {
-    "font_family": "Inconsolata Nerd Font Mono"
-  },
-  "agent_servers": {
-    
-  },
-  "minimap": {
-    "show": "always"
-  },
-  "diff_view_style": "unified",
-  "cli_default_open_behavior": "existing_window",
-  "indent_guides": {
-    "coloring": "indent_aware",
-  },
-  "project_panel": {
-    "hide_gitignore": false,
-    "dock": "left",
-  },
-  "outline_panel": {
-    "dock": "right",
-  },
-  "collaboration_panel": {
-    "dock": "right",
-  },
-  "agent": {
-    "terminal_init_command": "pi",
-    "sidebar_side": "right",
-    "dock": "right",
-    "favorite_models": [],
-    "model_parameters": [],
-  },
-  "git_panel": {
-    "tree_view": false,
-    "dock": "left",
-  },
-  "proxy": "",
-  "telemetry": {
-    "diagnostics": false,
-    "metrics": false,
-    "anthropic_retention": false,
-  },
-  "session": {
-    "trust_all_worktrees": true,
-  },
-  "base_keymap": "VSCode",
-  "icon_theme": {
-    "mode": "light",
-    "light": "Material Icon Theme",
-    "dark": "Material Icon Theme",
-  },
-  "ui_font_size": 16,
-  "buffer_font_size": 15,
-  "theme": {
-    "mode": "dark",
-    "light": "Gruvbox Light",
-    "dark": "Ayu Mirage",
-  },
+	"language_models": {
+		"openai_compatible": {
+			"proxy": {
+				"api_url": "http://127.0.0.1:8300/v1",
+				"available_models": [
+					{
+						"name": "gemini-3-flash-agent",
+						"max_tokens": 1048576,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "gemini-3.6-flash-high",
+						"max_tokens": 1048576,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "gemini-3.5-flash-low",
+						"max_tokens": 1048576,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "gemini-3.7-flash-high",
+						"max_tokens": 1048576,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "gemini-3-flash",
+						"max_tokens": 1048576,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "gemini-3.1-pro-low",
+						"max_tokens": 1048576,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "gemini-pro-agent",
+						"max_tokens": 1048576,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "gemini-3.1-flash-lite",
+						"max_tokens": 1048576,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "claude-sonnet-4-6",
+						"max_tokens": 200000,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 64000,
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "claude-opus-4-6-thinking",
+						"max_tokens": 200000,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 64000,
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "grok-4.5",
+						"max_tokens": 500000,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"reasoning_effort": "high",
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "grok-4.6",
+						"max_tokens": 500000,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"reasoning_effort": "high",
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					},
+					{
+						"name": "gpt-5.6-terra",
+						"max_tokens": 500000,
+						"max_output_tokens": 32000,
+						"max_completion_tokens": 200000,
+						"reasoning_effort": "high",
+						"capabilities": {
+							"tools": true,
+							"images": true,
+							"parallel_tool_calls": true,
+							"prompt_cache_key": true,
+							"chat_completions": true,
+							"interleaved_reasoning": true,
+							"max_tokens_parameter": false
+						}
+					}
+				]
+			}
+		}
+	},
+	"node": {
+		"ignore_system_version": false,
+		"path": "/home/zaxx/.local/bin/local/node",
+		"npm_path": "/home/zaxx/.local/bin/local/npm"
+	},
+	"formatter": "none",
+	"diagnostics": {
+		"lsp_pull_diagnostics": {
+			"enabled": false
+		}
+	},
+	"completions": {
+		"lsp": false
+	},
+	"enable_language_server": false,
+	"languages": {},
+	"terminal": {
+		"font_family": "Inconsolata Nerd Font Mono"
+	},
+	"agent_servers": {},
+	"minimap": {
+		"show": "always"
+	},
+	"diff_view_style": "unified",
+	"cli_default_open_behavior": "existing_window",
+	"indent_guides": {
+		"coloring": "indent_aware"
+	},
+	"project_panel": {
+		"hide_gitignore": false,
+		"dock": "left"
+	},
+	"outline_panel": {
+		"dock": "right"
+	},
+	"collaboration_panel": {
+		"dock": "right"
+	},
+	"agent": {
+		"default_model": {
+			"effort": "high",
+			"provider": "proxy",
+			"model": "gpt-5.6-terra",
+			"enable_thinking": true
+		},
+		"default_profile": "ask",
+		"terminal_init_command": "pi",
+		"sidebar_side": "right",
+		"dock": "right",
+		"favorite_models": [],
+		"model_parameters": []
+	},
+	"git_panel": {
+		"tree_view": false,
+		"dock": "left"
+	},
+	"proxy": "",
+	"telemetry": {
+		"diagnostics": false,
+		"metrics": false,
+		"anthropic_retention": false
+	},
+	"session": {
+		"trust_all_worktrees": true
+	},
+	"base_keymap": "VSCode",
+	"icon_theme": {
+		"mode": "light",
+		"light": "Material Icon Theme",
+		"dark": "Material Icon Theme"
+	},
+	"ui_font_size": 16,
+	"buffer_font_size": 15,
+	"theme": {
+		"mode": "dark",
+		"light": "Noctalia Light",
+		"dark": "Noctalia Dark"
+	}
 }

@@ -117,9 +117,27 @@ function commandAfterSafeCd(command: string): string | undefined {
 	return SHELL_CHAIN_PATTERN.test(remainder) ? undefined : remainder;
 }
 
+/**
+ * Strip a leading `rtk ` prefix from a command string.
+ * The pix-optimizer RTK extension may rewrite bash commands (e.g.
+ * `cat foo` → `rtk cat foo`) before the plan-mode safety check runs.
+ * We need to see through that prefix to match SAFE_PATTERNS correctly.
+ */
+function stripRtk(cmd: string): string {
+	return cmd.replace(/^\s*rtk\s+/, "");
+}
+
 export function isSafeCommand(command: string): boolean {
-	const isDestructive = DESTRUCTIVE_PATTERNS.some((p) => p.test(command));
-	const commandToCheck = commandAfterSafeCd(command) ?? command;
+	// Check destructiveness on the raw command (rtk prefix doesn't hide intent)
+	const stripped = stripRtk(command);
+	const isDestructive = DESTRUCTIVE_PATTERNS.some(
+		(p) => p.test(command) || p.test(stripped),
+	);
+
+	let commandToCheck = commandAfterSafeCd(command) ?? command;
+	// Strip rtk prefix so `^\s*cat\b` etc. still match after RTK rewriting
+	commandToCheck = stripRtk(commandToCheck);
+
 	const isSafe = SAFE_PATTERNS.some((p) => p.test(commandToCheck));
 	return !isDestructive && isSafe;
 }

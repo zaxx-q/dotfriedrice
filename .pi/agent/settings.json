@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.84.2",
+  "lastChangelogVersion": "0.84.4",
   "npmCommand": [
     "bun"
   ],
@@ -21,7 +21,7 @@
     {
       "source": "npm:@narumitw/pi-firecrawl",
       "extensions": [
-        "-src/index.ts"
+        "+src/index.ts"
       ]
     },
     "npm:pi-boomerang",
@@ -103,7 +103,7 @@
     {
       "source": "npm:@gotgenes/pi-subagents",
       "extensions": [
-        "+src/index.ts"
+        "-src/index.ts"
       ]
     },
     "npm:@gotgenes/pi-autoformat",
@@ -116,7 +116,7 @@
     {
       "source": "npm:@ayulab/pi-rewind",
       "extensions": [
-        "+index.js"
+        "-index.js"
       ]
     },
     "npm:@neilurk12/pi-lazygit",
@@ -135,7 +135,7 @@
     "npm:pi-google-services",
     "npm:@xynogen/pix-optimizer"
   ],
-  "theme": "dark",
+  "theme": "noctalia",
   "extensions": [
     "-extensions/ephemeral/index.ts",
     "-extensions/whimsical.ts",
@@ -154,7 +154,7 @@
   },
   "hideThinkingBlock": false,
   "enabledModels": [
-    "AGY/gemini-3.6-flash-high",
+    "AGY/gemini-3.7-flash-high",
     "AGY-claude/claude-sonnet-4-6",
     "AGY-claude/claude-opus-4-6-thinking",
     "Proxy/grok-4.5",
@@ -162,5 +162,5 @@
     "Proxy/gpt-5.6-terra"
   ],
   "defaultProvider": "Proxy",
-  "defaultModel": "grok-4.6"
+  "defaultModel": "gpt-5.6-terra"
 }
