@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Toggle the "Glass styling" window-rule block in Niri's configuration.
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+config="${XDG_CONFIG_HOME:-${HOME}/.config}/niri/config.kdl"
+
+if [[ ! -e "${config}" ]]; then
+    printf 'Niri config not found: %s\n' "${config}" >&2
+    exit 1
+fi
+
+# Update the linked file rather than replacing a dotfiles-manager symlink.
+config="$(readlink -f "${config}")"
+
+rule_line="$(awk '
+    /^\/\/ Glass styling$/ {
+        getline
+        print
+        exit
+    }
+' "${config}")"
+
+case "${rule_line}" in
+    *"/-window-rule"*)
+        replacement='window-rule'
+        status='enabled'
+        ;;
+    *"window-rule"*)
+        replacement='/-window-rule'
+        status='disabled'
+        ;;
+    *)
+        printf 'Could not find the window rule immediately after "// Glass styling" in %s\n' "${config}" >&2
+        exit 1
+        ;;
+esac
+
+temporary="$(mktemp "${config}.XXXXXX")"
+backup="${temporary}.backup"
+trap 'rm -f "${temporary}" "${backup}"' EXIT
+
+cp --preserve=mode "${config}" "${backup}"
+
+sed "/^\/\/ Glass styling$/ {
+    n
+    s|^[[:space:]]*\(/-\)\?window-rule|    ${replacement}|
+}" "${config}" >"${temporary}"
+mv "${temporary}" "${config}"
+
+if ! niri msg action load-config-file; then
+    mv "${backup}" "${config}"
+    printf 'Niri rejected the updated config; restored the previous version.\n' >&2
+    exit 1
+fi
+
+rm -f "${backup}"
+trap - EXIT
+
+notify-send "Niri glass styling ${status}" 2>/dev/null || true
+printf 'Niri glass styling %s.\n' "${status}"

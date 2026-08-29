@@ -148,7 +148,7 @@ debug {
     honor-xdg-activation-with-invalid-serial
 }
 
-/-animations {
+animations {
     // Uncomment to turn off all animations.
     // You can also put "off" into each individual animation to disable it.
     // off
@@ -221,6 +221,22 @@ layout {
         top 10
         bottom 10
     }
+
+    /-tab-indicator {
+        //off
+        hide-when-single-tab
+        place-within-column
+        gap 5
+        width 4
+        length total-proportion=1.0
+        position "right"
+        gaps-between-tabs 2
+        corner-radius 8
+        active-color "red"
+        inactive-color "gray"
+        urgent-color "blue"
+    }
+
     // Set transparent workspace background color so the backdrop is visible at all times.
     background-color "transparent"
 
@@ -230,7 +246,8 @@ layout {
     // - "always", the focused column will always be centered.
     // - "on-overflow", focusing a column will center it if it doesn't fit
     //   together with the previously focused column.
-    // center-focused-column "never"
+    center-focused-column "never"
+    // always-center-single-column
     // You can customize the widths that "switch-preset-column-width" (Mod+R) toggles between.
     /-preset-column-widths {
         // Proportion sets the width as a fraction of the output width, taking gaps into account.
@@ -311,11 +328,26 @@ window-rule {
     // Slight rounded corners.
     geometry-corner-radius 20
     clip-to-geometry true
+    draw-border-with-background false
 }
 
-window-rule {
-    match is-active=false
-    opacity 0.9
+// Glass styling
+    /-window-rule {
+    opacity 0.75
+    background-effect {
+        xray true
+        blur true
+        // noise 0.05
+        // saturation 3
+    }
+
+    shadow {
+        on
+        softness 30
+        spread 5
+        offset x=0 y=5
+        color "#00000080"
+    }
 }
 
 // Assorted window rules.
@@ -430,7 +462,7 @@ window-rule {
 
 // ----------------------------------------------------------------------------
 // Key binds
-// Available hotkeys: Mod + U I O H J
+// Available hotkeys: Mod + U I -O H -J
 // ----------------------------------------------------------------------------
 
 binds {
@@ -537,7 +569,7 @@ binds {
     Mod+B                    hotkey-overlay-title="Browser" { spawn "launch-or-cycle" "zen:zen-browser"; }
     Mod+Alt+B                hotkey-overlay-title="Browser (private)" { spawn "zen-browser" "-private-window"; }
     Mod+Ctrl+B               hotkey-overlay-title="Browser (isolated profile)" { spawn-sh "zen-browser -P ${BROWSER_ISOLATED_PROFILE:-isolated}"; }
-    Mod+O                    hotkey-overlay-title="Open file manager" { spawn "scrcpy-daily"; }
+    Mod+J                    hotkey-overlay-title="Open file manager" { spawn "scrcpy-daily"; }
 
     Ctrl+Grave               { spawn "AIPromptBridge" "--trigger" "textedit"; }
     Ctrl+Alt+X               { spawn "AIPromptBridge" "--trigger" "snip"; }
@@ -557,6 +589,8 @@ binds {
 
     Mod+Z                    repeat=false hotkey-overlay-title="Toggle floating window" { toggle-window-floating; }
     Mod+T                    hotkey-overlay-title="Switch focus between floating and tiling"{ switch-focus-between-floating-and-tiling; }
+    Mod+O                    repeat=false hotkey-overlay-title="Toggle focused window glass/readability" { toggle-window-rule-opacity; }
+    Mod+Shift+O              repeat=false hotkey-overlay-title="Toggle all window glass styling" { spawn "toggle-niri-glass"; }
 
     Mod+Alt+T                hotkey-overlay-title="Toggle tabbed column" { toggle-column-tabbed-display; }
 
@@ -706,8 +740,12 @@ binds {
     Mod+Escape                   allow-inhibiting=false hotkey-overlay-title="Always process even with inhibitor" { toggle-keyboard-shortcuts-inhibit; }
 }
 
-/-recent-windows {
-    binds {
+recent-windows {
+    previews {
+        max-height 200
+        max-scale 0.2
+    }
+    /-binds {
         // Override to disable super+tab
         Alt+Tab         { next-window scope="output"; }
         Alt+Shift+Tab   { previous-window scope="output"; }
