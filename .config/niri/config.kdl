@@ -11,7 +11,7 @@ environment {}
 
 // Start dms in systemd autostart instead to make xdg autostart apps after dms.
 // spawn-at-startup "dms" "run"
-spawn-at-startup "noctalia"
+spawn-at-startup "uwsm-app" "-s" "b" "--" "noctalia"
 
 // spawn-at-startup "swayidle" "-w"
 // spawn-at-startup "dfr-theme-set-bg" "--keep-current"
@@ -19,8 +19,7 @@ spawn-at-startup "noctalia"
 // spawn-at-startup "waybar"
 // spawn-at-startup "elephant"
 // spawn-at-startup "walker" "--gapplication-service"
-spawn-at-startup "mpd"
-spawn-sh-at-startup "sleep 1; exec mpd-mpris"
+spawn-sh-at-startup "sleep 1; uwsm-app -s b mpd-mpris"
 // spawn-at-startup "kdeconnectd"
 // spawn-at-startup "dfr-first-boot"
 
@@ -148,7 +147,7 @@ debug {
     honor-xdg-activation-with-invalid-serial
 }
 
-animations {
+/-animations {
     // Uncomment to turn off all animations.
     // You can also put "off" into each individual animation to disable it.
     // off
@@ -294,7 +293,8 @@ overview {
   }
 }
 
-switch-events {
+// Currently handled by logind.conf, uncomment to control it here.
+/-switch-events {
     lid-close { spawn "noctalia" "msg" "session" "lock-and-suspend"; }
 }
 
@@ -410,7 +410,7 @@ window-rule {
     default-window-height { proportion 0.5; }
 }
 
-/-window-rule {
+window-rule {
     match app-id=r#"^com\.gabm\.satty$"#
     open-floating true
     min-width 730
@@ -462,33 +462,34 @@ window-rule {
 
 // ----------------------------------------------------------------------------
 // Key binds
-// Available hotkeys: Mod + U I -O H -J
+// Available hotkeys: Mod + U -I -O -H -J
 // ----------------------------------------------------------------------------
 
 binds {
  // Core Noctalia binds
-    Mod+Space { spawn-sh "noctalia msg panel-toggle launcher"; }
-    Mod+N { spawn-sh "noctalia msg panel-toggle control-center"; }
-    Mod+Alt+Comma { spawn-sh "noctalia msg settings-toggle"; }
-    Mod+V { spawn-sh "noctalia msg panel-toggle clipboard"; }
-    Mod+Grave { spawn-sh "noctalia msg panel-toggle session"; }
-    Alt+Grave { spawn-sh "noctalia msg window-switcher"; }
+    Mod+Space                hotkey-overlay-title="Launcher" { spawn "noctalia" "msg" "panel-toggle" "launcher"; }
+    Mod+N                    hotkey-overlay-title="Control center" { spawn "noctalia" "msg" "panel-toggle" "control-center"; }
+    Mod+Alt+Comma            hotkey-overlay-title="Settings" { spawn "noctalia" "msg" "settings-toggle"; }
+    Mod+V                    hotkey-overlay-title="Clipboard" { spawn "noctalia" "msg" "panel-toggle" "clipboard"; }
+    Mod+Grave                hotkey-overlay-title="Session" { spawn "noctalia" "msg" "panel-toggle" "session"; }
+    Alt+Grave                hotkey-overlay-title="Window switcher" { spawn "noctalia" "msg" "window-switcher"; }
+    Mod+Shift+Space          hotkey-overlay-title="Bar toggle" { spawn "noctalia" "msg" "bar-toggle"; }
 
  // Niri has a built-in window switcher you might want to try it to see which one you prefer.
 
  // Audio & Brightness
-    XF86AudioRaiseVolume { spawn-sh "noctalia msg volume-up"; }
-    XF86AudioLowerVolume { spawn-sh "noctalia msg volume-down"; }
-    XF86AudioMute { spawn-sh "noctalia msg volume-mute"; }
-    XF86AudioMicMute { spawn-sh "noctalia msg mic-mute"; }
-    XF86MonBrightnessUp { spawn-sh "noctalia msg brightness-up"; }
-    XF86MonBrightnessDown { spawn-sh "noctalia msg brightness-down"; }
+    XF86AudioRaiseVolume     hotkey-overlay-title="Volume up" { spawn "noctalia" "msg" "volume-up"; }
+    XF86AudioLowerVolume     hotkey-overlay-title="Volume down" { spawn "noctalia" "msg" "volume-down"; }
+    XF86AudioMute            hotkey-overlay-title="Volume mute" { spawn "noctalia" "msg" "volume-mute"; }
+    XF86AudioMicMute         hotkey-overlay-title="Mic mute" { spawn "noctalia" "msg" "mic-mute"; }
+    XF86MonBrightnessUp      hotkey-overlay-title="Brightness up" { spawn "noctalia" "msg" "brightness-up"; }
+    XF86MonBrightnessDown    hotkey-overlay-title="Brightness down" { spawn "noctalia" "msg" "brightness-down"; }
 
  // Overview.
  // Mod+Grave                hotkey-overlay-title="System menu" { spawn "dfr-menu"; }
     Mod+Slash                hotkey-overlay-title="Search keyboard shortcuts" { spawn "niri-keybinds"; }
  // Mod+Alt+Slash            hotkey-overlay-title="Search niri actions" { spawn "walker" "--height" "980" "--width" "980" "--provider" "niriactions"; }
- // Mod+Shift+Slash           hotkey-overlay-title="Search Waybar actions" { spawn "walker" "--height" "980" "--width" "800" "--provider" "menus:waybar"; }
+ // Mod+Shift+Slash          hotkey-overlay-title="Search Waybar actions" { spawn "walker" "--height" "980" "--width" "800" "--provider" "menus:waybar"; }
  // Mod+O repeat=false       hotkey-overlay-title="Toggle overview (4-finger swipe)" { toggle-overview; }
     Mod+Tab                  repeat=false hotkey-overlay-title="Toggle overview (4-finger swipe)" { toggle-overview; }
 
@@ -502,15 +503,13 @@ binds {
  // Mod+Shift+S              hotkey-overlay-title="Screenshot (window)" { spawn "dfr-screenshot" "window"; }
  // Mod+Ctrl+S               hotkey-overlay-title="Screenshot (monitor: focused)" { spawn "dfr-screenshot" "monitor-focused"; }
  // Mod+Ctrl+Shift+S         hotkey-overlay-title="Screenshot (monitor: all)" { spawn "dfr-screenshot" "monitor-all"; }
- // Print                    hotkey-overlay-title="Screenshot (region)" { screenshot; }
- // Ctrl+Print               hotkey-overlay-title="Screenshot (screen)" { screenshot-screen; }
- // Alt+Print                hotkey-overlay-title="Screenshot (window)" { screenshot-window; }
-    Print                    hotkey-overlay-title="Screenshot (Interactive Region)" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "edit"; }
-    Ctrl+Print               hotkey-overlay-title="Screenshot (Full Screen)" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "full" "edit"; }
-    Alt+Print                hotkey-overlay-title="Screenshot (Focused Window)" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "window" "edit"; }
-    Pause                    hotkey-overlay-title="Screenshot (Float)" { spawn "dms" "ipc" "call" "quickCapture" "screenshot" "region" "float"; }
+    Print                    hotkey-overlay-title="Screenshot (region)" { spawn "noctalia" "msg" "screenshot-region"; }
+    Ctrl+Print               hotkey-overlay-title="Screenshot (screen)" { spawn "noctalia" "msg" "screenshot-fullscreen"; }
+    Shift+Print              hotkey-overlay-title="Screenshot (window)" { screenshot-window; }
+    Alt+Print                hotkey-overlay-title="Open screenshot toolkit menu" { spawn "noctalia" "msg" "plugin" "alexander/screen-toolkit:service" "all" "toggle"; }
 
     Mod+P                    hotkey-overlay-title="Pick window" { spawn "ghostty" "--class=dfr.floating.ghostty" "-e" "sh" "-c" "printf 'Pick a window...\n\n'; niri msg pick-window; niri msg action focus-window-previous; printf '\nDone! Press CTRL+c to quit\n'; read"; }
+    Mod+Alt+P                hotkey-overlay-title="Open Crashes Panel" { spawn "noctalia" "msg" "panel-toggle" "umedbazarov/crashes:panel"; }
  // Mod+Shift+P              hotkey-overlay-title="Pick color" { spawn-sh "killall hyprpicker || hyprpicker --autocopy --lowercase-hex"; }
 
     Mod+U                    hotkey-overlay-title="Cast focused window" { spawn-sh "niri msg action set-dynamic-cast-window --id $(niri msg --json focused-window | jq .id)"; }
@@ -556,11 +555,12 @@ binds {
 
  // Apps.
     Ctrl+Shift+Escape        repeat=false hotkey-overlay-title="System health" { spawn "dfr-launch-or-focus-tui" "monitor"; }
-    Mod+Return               hotkey-overlay-title="Terminal" { spawn "ghostty"; }
-    Mod+Alt+Return           hotkey-overlay-title="Terminal (floating)" { spawn "ghostty" "--class=dfr.floating.ghostty"; }
-    Mod+G                    hotkey-overlay-title="File manager" { spawn "thunar"; }
+    Mod+Return               hotkey-overlay-title="Terminal" { spawn "uwsm-app" "ghostty"; }
+    Mod+Alt+Return           hotkey-overlay-title="Terminal (floating)" { spawn "ghostty" "--gtk-single-instance=true" "--class=dfr.floating.ghostty"; }
+    Mod+G                    hotkey-overlay-title="File manager" { spawn "uwsm-app" "thunar"; }
     Mod+Alt+G                repeat=false hotkey-overlay-title="File manager (floating)" { spawn "dbus-run-session" "thunar" "--name=dfr.floating.thunar" "downloads"; }
-    Alt+Z                    repeat=false hotkey-overlay-title="File manager (zoxide)" { spawn "ghostty" "--background-opacity=0.7" "--class=dfr.floating.ghostty" "-e" "bash" "-c" "choice=$(zoxide query -i); if [ -n \"$choice\" ]; then zoxide add \"$choice\"; niri msg action spawn -- thunar \"$choice\"; fi"; }
+    Mod+J                    repeat=false hotkey-overlay-title="File manager (zoxide)" { spawn "bash" "-c" "choice=$(zoxide query -l | noctalia dmenu -p 'zoxide'); if [ -n \"$choice\" ]; then zoxide add \"$choice\"; niri msg action spawn -- thunar \"$choice\"; fi"; }
+    Mod+H                    repeat=false hotkey-overlay-title="Favorite files" { spawn "noctalia" "msg" "panel-toggle" "dunarand/bookmarks:panel" "search"; }
  // Mod+Alt+N                hotkey-overlay-title="Notes" { spawn "dfr-launch-or-focus-tui" "notes"; }
  // Mod+Ctrl+N               hotkey-overlay-title="Notes (directory)" { spawn-sh "dfr-launch-or-focus-tui ${EDITOR} ${NOTES_DIRECTORY}"; }
  // Mod+Alt+P                hotkey-overlay-title="Passwords" { spawn "dfr-launch-or-focus" "keepassxc"; }
@@ -569,7 +569,7 @@ binds {
     Mod+B                    hotkey-overlay-title="Browser" { spawn "launch-or-cycle" "zen:zen-browser"; }
     Mod+Alt+B                hotkey-overlay-title="Browser (private)" { spawn "zen-browser" "-private-window"; }
     Mod+Ctrl+B               hotkey-overlay-title="Browser (isolated profile)" { spawn-sh "zen-browser -P ${BROWSER_ISOLATED_PROFILE:-isolated}"; }
-    Mod+J                    hotkey-overlay-title="Open file manager" { spawn "scrcpy-daily"; }
+    Mod+I                    hotkey-overlay-title="Open scrcpy" { spawn "scrcpy-daily"; }
 
     Ctrl+Grave               { spawn "AIPromptBridge" "--trigger" "textedit"; }
     Ctrl+Alt+X               { spawn "AIPromptBridge" "--trigger" "snip"; }
@@ -658,20 +658,20 @@ binds {
  // Mod+Ctrl+Shift+Down      hotkey-overlay-title="Move column to lower monitor" { move-column-to-monitor-down; }
  // Mod+Ctrl+Shift+Up        hotkey-overlay-title="Move column to upper monitor" { move-column-to-monitor-up; }
  // Mod+Ctrl+Shift+Right     hotkey-overlay-title="Move column to right monitor" { move-column-to-monitor-right; }
- // Mod+Ctrl+Shift+H         hotkey-overlay-title="Move column to left monitor" { move-column-to-monitor-left; }
- // Mod+Ctrl+Shift+J         hotkey-overlay-title="Move column to lower monitor" { move-column-to-monitor-down; }
- // Mod+Ctrl+Shift+K         hotkey-overlay-title="Move column to upper monitor" { move-column-to-monitor-up; }
- // Mod+Ctrl+Shift+L         hotkey-overlay-title="Move column to right monitor" { move-column-to-monitor-right; }
+ Mod+Ctrl+Alt+A         hotkey-overlay-title="Move column to left monitor" { move-column-to-monitor-left; }
+ Mod+Ctrl+Alt+S         hotkey-overlay-title="Move column to lower monitor" { move-column-to-monitor-down; }
+ Mod+Ctrl+Alt+W         hotkey-overlay-title="Move column to upper monitor" { move-column-to-monitor-up; }
+ Mod+Ctrl+Alt+D         hotkey-overlay-title="Move column to right monitor" { move-column-to-monitor-right; }
 
  // === Monitor Navigation ===
  // Mod+Ctrl+Left            { focus-monitor-left; }
  // Mod+Ctrl+Down            { focus-monitor-down; }
  // Mod+Ctrl+Up              { focus-monitor-up; }
  // Mod+Ctrl+Right           { focus-monitor-right; }
- // Mod+Ctrl+H               { focus-monitor-left; }
- // Mod+Ctrl+J               { focus-monitor-down; }
- // Mod+Ctrl+K               { focus-monitor-up; }
- // Mod+Ctrl+L               { focus-monitor-right; }
+ Mod+Ctrl+A               { focus-monitor-left; }
+ Mod+Ctrl+S               { focus-monitor-down; }
+ Mod+Ctrl+W               { focus-monitor-up; }
+ Mod+Ctrl+D               { focus-monitor-right; }
 
  // Mod+MouseBack            hotkey-overlay-title="Focus left monitor" { focus-monitor-left; }
  // Mod+MouseForward         hotkey-overlay-title="Focus right monitor" { focus-monitor-right; }

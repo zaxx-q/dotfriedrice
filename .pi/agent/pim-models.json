@@ -1,0 +1,16 @@
+{
+  "cacheFetchedAt": "2026-09-04T10:30:12.735Z",
+  "lastProvider": "prox-anthropic",
+  "lastEndpoints": [
+    {
+      "provider": "prox-anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://127.0.0.1:8300"
+    },
+    {
+      "provider": "prox-anthropic",
+      "api": "anthropic-messages",
+      "baseUrl": "http://127.0.0.1:8300"
+    }
+  ]
+}

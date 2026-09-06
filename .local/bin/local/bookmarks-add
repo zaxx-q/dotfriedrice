@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# bookmarks-add — add selected file(s)/folder(s) to Noctalia's Bookmarks plugin.
+# Meant to be wired into a Thunar custom action with %F (works with any file
+# manager that can pass selected paths as arguments).
+#
+# Usage: bookmarks-add file1 [file2 ...]
+
+set -euo pipefail
+
+DATA_FILE="${BOOKMARKS_DATA_FILE:-$HOME/.local/state/noctalia/plugins/data/dunarand/bookmarks/data.json}"
+LOCK_FILE="$DATA_FILE.lock"
+
+notify() {
+    command -v notify-send >/dev/null 2>&1 && notify-send "Bookmarks" "$1"
+    return 0
+}
+
+if [ "$#" -eq 0 ]; then
+    notify "No file selected"
+    exit 1
+fi
+
+command -v jq >/dev/null 2>&1 || { notify "jq is required but not installed"; exit 1; }
+
+mkdir -p "$(dirname "$DATA_FILE")"
+[ -f "$DATA_FILE" ] || echo "[]" > "$DATA_FILE"
+
+added=()
+skipped=()
+
+exec 9>"$LOCK_FILE"
+flock 9
+
+for f in "$@"; do
+    [ -e "$f" ] || continue
+    abs="$(readlink -f -- "$f")"
+    name="$(basename -- "$abs")"
+    esc="$(printf '%q' "$abs")"
+
+    if [ -d "$abs" ]; then
+        glyph="folder"
+        cmd="thunar $esc"
+    else
+        glyph="file-text"
+        cmd="xdg-open $esc"
+    fi
+
+    # Skip if this exact command is already bookmarked, top-level or inside a folder.
+    if jq -e --arg cmd "$cmd" '
+        def allBookmarks: .. | objects | select(.type == "bookmark");
+        [allBookmarks | select(.cmd == $cmd)] | length > 0
+    ' "$DATA_FILE" >/dev/null; then
+        skipped+=("$name")
+        continue
+    fi
+
+    new_entry=$(jq -n --arg glyph "$glyph" --arg label "$name" --arg cmd "$cmd" \
+        '{type:"bookmark", glyph:$glyph, label:$label, cmd:$cmd, description:"", runInBackground:true, runInTerminal:false}')
+
+    tmp="$(mktemp)"
+    jq --argjson new "$new_entry" '. + [$new]' "$DATA_FILE" > "$tmp"
+    mv "$tmp" "$DATA_FILE"
+    added+=("$name")
+done
+
+flock -u 9
+
+if [ "${#added[@]}" -gt 0 ]; then
+    notify "Added: ${added[*]}"
+fi
+if [ "${#skipped[@]}" -gt 0 ]; then
+    notify "Already bookmarked: ${skipped[*]}"
+fi

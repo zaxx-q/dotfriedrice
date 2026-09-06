@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Keep the Realtek ALC257 headphone path at alsamixer's mapped 60% (-12 dB).
+# HDA jack events can reset these hardware controls after PipeWire has started.
+
+set -u
+
+card="Generic_1"
+target_raw=72 # 71/87 maps to 60% in alsamixer (-12.00 dB)
+
+control_value() {
+  /usr/bin/amixer -c "$card" cget "numid=$1" 2>/dev/null |
+    /usr/bin/awk -F'values=' '/: values=/{gsub(/ /, "", $2); print $2; exit}'
+}
+
+headphones_connected() {
+  [[ "$(control_value 14)" == "on" ]]
+}
+
+apply_headphone_gain() {
+  headphones_connected || return 0
+
+  [[ "$(control_value 10)" == "$target_raw" ]] ||
+    /usr/bin/amixer -q -c "$card" cset numid=10 "$target_raw"
+  [[ "$(control_value 11)" == "on" ]] ||
+    /usr/bin/amixer -q -c "$card" cset numid=11 on
+  [[ "$(control_value 1)" == "$target_raw,$target_raw" ]] ||
+    /usr/bin/amixer -q -c "$card" cset numid=1 "$target_raw,$target_raw"
+  [[ "$(control_value 2)" == "on,on" ]] ||
+    /usr/bin/amixer -q -c "$card" cset numid=2 on,on
+}
+
+# Apply once at startup, then immediately reapply after an ALSA jack or mixer
+# change. alsactl monitor blocks until an event; this is not a polling loop.
+apply_headphone_gain || true
+/usr/bin/alsactl monitor "hw:1" 2>/dev/null | while IFS= read -r _; do
+  apply_headphone_gain || true
+done

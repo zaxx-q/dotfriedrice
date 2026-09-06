@@ -130,9 +130,11 @@ export PACKAGES_APT_SKIP=()
 # Applies to Fedora.
 export PACKAGES_DNF=()
 export PACKAGES_DNF_EXTRAS=(
-  hd-idle
+  # hd-idle
   keyd
-  kdeconnectd
+  # kdeconnectd
+  trans
+  earlyoom
 )
 export PACKAGES_DNF_SKIP=(
   "aspell"
@@ -142,8 +144,8 @@ export PACKAGES_DNF_SKIP=(
 # Packages defined here only get installed when GUI_LINUX=1 is set on Fedora.
 export PACKAGES_DNF_GUI=()
 export PACKAGES_DNF_GUI_EXTRAS=()
-# - Desktop suite already provides: brightnessctl, grim, hyprpicker, mako,
-#   satty, slurp, swaybg, swayidle, swaylock, waybar
+# - Desktop suite already provides: brightnessctl, grim, mako,
+#   slurp, swaybg, swayidle, swaylock, waybar
 export PACKAGES_DNF_GUI_SKIP=(
   "brightnessctl"
   "docker"
@@ -151,13 +153,11 @@ export PACKAGES_DNF_GUI_SKIP=(
   "docker-compose"
   "firefox"
   "grim"
-  "hyprpicker"
   "kdenlive"
   "keepassxc"
   "libreoffice"
   "mako"
   "qt6-qtmultimedia"
-  "satty"
   "slurp"
   "swaybg"
   "swayidle"
@@ -366,7 +366,6 @@ export CONFIG_INSTALL_GUI_LINUX_SKIP=(
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/fontconfig/fonts.conf\" \"\${XDG_CONFIG_HOME}/fontconfig/fonts.conf\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/mako/config.local\" \"\${XDG_CONFIG_HOME}/mako/config.local\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/mako/config\" \"\${XDG_CONFIG_HOME}/mako/config\""
-  "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/satty/config.toml\" \"\${XDG_CONFIG_HOME}/satty/config.toml\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/swayidle/config\" \"\${XDG_CONFIG_HOME}/swayidle/config\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/swaylock/config\" \"\${XDG_CONFIG_HOME}/swaylock/config\""
   "ln -fns \"\${DOTFRIEDRICE_PATH}/.config/waybar/config.jsonc\" \"\${XDG_CONFIG_HOME}/waybar/config.jsonc\""
@@ -454,6 +453,8 @@ export SYSTEMD_ENABLED_SERVICES=()
 export SYSTEMD_ENABLED_SERVICES_EXTRAS=(
   "hd-idle.service"
   "keyd.service"
+  "earlyoom.service"
+  "mpd.service"
 )
 export SYSTEMD_ENABLED_SERVICES_SKIP=(
   "lactd.service"

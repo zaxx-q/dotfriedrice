@@ -6,7 +6,7 @@
 	<submenu></submenu>
 	<unique-id>1781764519674275-1</unique-id>
 	<command>ghostty --gtk-single-instance=false --working-directory=%f</command>
-	<description>Example for a custom action</description>
+	<description></description>
 	<range></range>
 	<patterns>*</patterns>
 	<startup-notify/>
@@ -109,5 +109,32 @@
 	<range>*</range>
 	<patterns>*</patterns>
 	<directories/>
+</action>
+<action>
+	<icon></icon>
+	<name>Set as Wallpaper</name>
+	<submenu></submenu>
+	<unique-id>1788045482368462-1</unique-id>
+	<command>noctalia msg wallpaper-set %f</command>
+	<description>Set selected image as desktop background</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<image-files/>
+</action>
+<action>
+	<icon>bookmark-new</icon>
+	<name>Add to Bookmarks</name>
+	<submenu></submenu>
+	<unique-id>1788518931959208-3</unique-id>
+	<command>/home/zaxx/.local/bin/local/bookmarks-add %F</command>
+	<description>Add to Noctalia Bookmarks plugin data</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<directories/>
+	<audio-files/>
+	<image-files/>
+	<other-files/>
+	<text-files/>
+	<video-files/>
 </action>
 </actions>

@@ -32,12 +32,6 @@
       ]
     },
     "npm:pi-btw",
-    {
-      "source": "npm:@ssweens/pi-dynamic-models",
-      "extensions": [
-        "-index.ts"
-      ]
-    },
     "npm:pi-mono-multi-edit",
     "npm:@dreki-gg/pi-modes",
     "npm:pi-qq",
@@ -133,7 +127,8 @@
       ]
     },
     "npm:pi-google-services",
-    "npm:@xynogen/pix-optimizer"
+    "npm:@xynogen/pix-optimizer",
+    "npm:@palmtom/pi-models"
   ],
   "theme": "noctalia",
   "extensions": [
@@ -143,7 +138,8 @@
     "-extensions/todos/index.ts",
     "extensions/review.ts",
     "+extensions/env-loader.ts",
-    "-extensions/resilient-retry.ts"
+    "-extensions/resilient-retry.ts",
+    "-extensions/tps-tracker.ts"
   ],
   "defaultThinkingLevel": "high",
   "compaction": {
@@ -153,14 +149,6 @@
     "showTerminalProgress": true
   },
   "hideThinkingBlock": false,
-  "enabledModels": [
-    "AGY/gemini-3.7-flash-high",
-    "AGY-claude/claude-sonnet-4-6",
-    "AGY-claude/claude-opus-4-6-thinking",
-    "Proxy/grok-4.5",
-    "Proxy/grok-4.6",
-    "Proxy/gpt-5.6-terra"
-  ],
-  "defaultProvider": "Proxy",
-  "defaultModel": "gpt-5.6-terra"
+  "defaultProvider": "AGY",
+  "defaultModel": "gemini-3.8-flash-high"
 }

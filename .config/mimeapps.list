@@ -149,3 +149,4 @@ application/x-extension-xht=zen-browser.desktop
 [Added Associations]
 text/html=zen-browser.desktop;
 application/pdf=zen-browser.desktop;
+image/svg+xml=imv.desktop;

@@ -1,8 +1,7 @@
 {
   "tools": [
     "firecrawl_scrape",
-    "firecrawl_crawl",
     "firecrawl_search"
   ],
-  "updatedAt": 1785687497528
+  "updatedAt": 1788343855970
 }

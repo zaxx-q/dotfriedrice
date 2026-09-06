@@ -21,7 +21,7 @@ RAW="$(pi -p \
   --no-prompt-templates \
   --no-themes \
   --extension "$HOME/.pi/agent/extensions/environment-details.ts" \
-  --model gemini-3.5-flash-low \
+  --model grok-4.6 \
   --system-prompt "$SYSTEM_PROMPT" \
   -- \
   "$PROMPT" 2>&1)"

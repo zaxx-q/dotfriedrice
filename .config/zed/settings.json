@@ -229,7 +229,7 @@
 	"minimap": {
 		"show": "always"
 	},
-	"diff_view_style": "unified",
+	"diff_view_style": "split",
 	"cli_default_open_behavior": "existing_window",
 	"indent_guides": {
 		"coloring": "indent_aware"
