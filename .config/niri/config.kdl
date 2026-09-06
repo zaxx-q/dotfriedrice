@@ -540,15 +540,15 @@ binds {
  // XF86AudioStop            allow-when-locked=true hotkey-overlay-title="Stop track" { spawn "playerctl" "stop"; }
  // XF86AudioPrev            allow-when-locked=true hotkey-overlay-title="Previous track" { spawn "playerctl" "previous"; }
  // XF86AudioNext            allow-when-locked=true hotkey-overlay-title="Next track" { spawn "playerctl" "next"; }
-    XF86TouchpadToggle            allow-when-locked=true hotkey-overlay-title="Previous track" { spawn "noctalia" "msg" "media" "previous"; }
-    XF86TouchpadOn            allow-when-locked=true hotkey-overlay-title="Next track" { spawn "noctalia" "msg" "media" "next"; }
-    Shift+XF86TouchpadToggle      allow-when-locked=true hotkey-overlay-title="Seek -5 seconds" { spawn "playerctl" "position" "5-"; }
-    Shift+XF86TouchpadOn      allow-when-locked=true hotkey-overlay-title="Seek +5 seconds" { spawn "playerctl" "position" "5+"; }
+    Mod+Shift+9              allow-when-locked=true hotkey-overlay-title="Previous track" { spawn "noctalia" "msg" "media" "previous"; }
+    Mod+Shift+0              allow-when-locked=true hotkey-overlay-title="Next track" { spawn "noctalia" "msg" "media" "next"; }
+    Mod+Alt+Shift+9          allow-when-locked=true hotkey-overlay-title="Seek -5 seconds" { spawn "playerctl" "position" "5-"; }
+    Mod+Alt+Shift+0          allow-when-locked=true hotkey-overlay-title="Seek +5 seconds" { spawn "playerctl" "position" "5+"; }
 
  // XF86MonBrightnessUp      allow-when-locked=true hotkey-overlay-title="Increase brightness" { spawn "brightnessctl" "--class=backlight" "set" "+5%"; }
  // XF86MonBrightnessDown    allow-when-locked=true hotkey-overlay-title="Decrease brightness" { spawn "brightnessctl" "--class=backlight" "set" "5%-"; }
 
- // XF86Calculator           repeat=false hotkey-overlay-title="Launcher (calculator)" { spawn "walker" "--provider" "calc"; }
+    XF86Calculator           repeat=false hotkey-overlay-title="Launcher (calculator)" { spawn "noctalia" "msg" "panel-toggle" "yuuto/calculator:panel"; }
  // Mod+K                    repeat=false hotkey-overlay-title="Launcher (calculator)" { spawn "walker" "--provider" "calc"; }
 
  // Launcher.
@@ -582,7 +582,7 @@ binds {
  // Display scaling / zoom.
     Mod+Shift+Equal          hotkey-overlay-title="Increase focused monitor scale" { spawn "output-scale" "+"; }
     Mod+Shift+Minus          hotkey-overlay-title="Decrease focused monitor scale" { spawn "output-scale" "-"; }
-    Mod+Shift+0              hotkey-overlay-title="Reset focused monitor scale" { spawn "output-scale" "1.0"; }
+ // Mod+Shift+0              hotkey-overlay-title="Reset focused monitor scale" { spawn "output-scale" "1.0"; }
 
  // Window and column behavior.
     Mod+X                    repeat=false hotkey-overlay-title="Close window" { close-window; }

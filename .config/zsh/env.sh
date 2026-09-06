@@ -5,8 +5,8 @@ export DOTFRIEDRICE_PATH="/home/zaxx/dotfriedrice"
 # shellcheck disable=SC1091
 . "${XDG_CONFIG_HOME:-"${HOME}/.config"}/zsh/.xdg.local"
 
-# Add Mise shims first so runtime versions take precedence, then local binaries and bun.
-export PATH="${XDG_DATA_HOME}/mise/shims:${HOME}/.local/bin/local:${HOME}/.local/bin:${PATH}:${XDG_CACHE_HOME}/.bun/bin"
+# Add Mise shims first so runtime versions take precedence, then local binaries, cargo, and bun.
+export PATH="${XDG_DATA_HOME}/mise/shims:${HOME}/.local/bin/local:${HOME}/.local/bin:${HOME}/.cargo/bin:${PATH}:${XDG_CACHE_HOME}/.bun/bin"
 
 # Default programs to run.
 export EDITOR="zed --wait"
