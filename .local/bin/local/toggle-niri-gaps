@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Toggle between standard gaps/struts/borders and zero-gap/flush layout in Niri.
+# Toggle between standard struts/corners and flush layout in Niri.
+# Keeps gaps at 1 and focus-ring active.
 
 set -o errexit
 set -o nounset
@@ -22,25 +23,21 @@ config_path = sys.argv[1]
 with open(config_path, "r", encoding="utf-8") as f:
     content = f.read()
 
-m = re.search(r'// Toggleable gaps\s*\n\s*(gaps\s+\d+)', content)
+m = re.search(r'// Toggleable struts\s*\n\s*(\/?-?struts\s*\{)', content)
 if not m:
-    print("Error: Could not find '// Toggleable gaps' marker in config", file=sys.stderr)
+    print("Error: Could not find '// Toggleable struts' marker in config", file=sys.stderr)
     sys.exit(1)
 
-is_normal = "gaps 0" not in m.group(1)
+is_normal = "/-struts" not in m.group(1)
 
 if is_normal:
-    content = re.sub(r'(// Toggleable gaps\s*\n\s*)gaps\s+\d+', r'\1gaps 0', content)
-    content = re.sub(r'(// Toggleable focus-ring\s*\n\s*)focus-ring\s*\{', r'\1/-focus-ring {', content)
     content = re.sub(r'(// Toggleable struts\s*\n\s*)struts\s*\{', r'\1/-struts {', content)
     content = re.sub(r'(// Toggleable corner-radius\s*\n\s*)geometry-corner-radius\s+\d+', r'\1geometry-corner-radius 0', content)
-    status = "Zero gaps (flush mode)"
+    status = "Flush mode (zero struts/corners)"
 else:
-    content = re.sub(r'(// Toggleable gaps\s*\n\s*)gaps\s+\d+', r'\1gaps 2', content)
-    content = re.sub(r'(// Toggleable focus-ring\s*\n\s*)/-focus-ring\s*\{', r'\1focus-ring {', content)
     content = re.sub(r'(// Toggleable struts\s*\n\s*)/-struts\s*\{', r'\1struts {', content)
     content = re.sub(r'(// Toggleable corner-radius\s*\n\s*)geometry-corner-radius\s+\d+', r'\1geometry-corner-radius 20', content)
-    status = "Normal gaps"
+    status = "Normal layout"
 
 with open(config_path, "w", encoding="utf-8") as f:
     f.write(content)

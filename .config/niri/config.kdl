@@ -196,8 +196,9 @@ debug {
 // https://github.com/YaLTeR/niri/wiki/Configuration:-Layout
 layout {
     // Set gaps around windows in logical pixels.
-    gaps 2
+    gaps 1
 
+    // Focus ring
     focus-ring {
         width 1
     }
@@ -214,6 +215,7 @@ layout {
         offset x=0 y=5
         color "#0007"
     }
+    // Toggleable struts
     struts {
         left 64
         right 64
@@ -326,6 +328,7 @@ window-rule {
 // https://github.com/YaLTeR/niri/wiki/Configuration:-Window-Rules
 window-rule {
     // Slight rounded corners.
+    // Toggleable corner-radius
     geometry-corner-radius 20
     clip-to-geometry true
     draw-border-with-background false
@@ -591,6 +594,7 @@ binds {
     Mod+T                    hotkey-overlay-title="Switch focus between floating and tiling"{ switch-focus-between-floating-and-tiling; }
     Mod+O                    repeat=false hotkey-overlay-title="Toggle focused window glass/readability" { toggle-window-rule-opacity; }
     Mod+Shift+O              repeat=false hotkey-overlay-title="Toggle all window glass styling" { spawn "toggle-niri-glass"; }
+    Mod+Shift+G              repeat=false hotkey-overlay-title="Toggle zero gaps and borders (flush layout)" { spawn "toggle-niri-gaps"; }
 
     Mod+Alt+T                hotkey-overlay-title="Toggle tabbed column" { toggle-column-tabbed-display; }
 
