@@ -114,10 +114,10 @@ input {
 // Find more information on the wiki:
 // https://github.com/YaLTeR/niri/wiki/Configuration:-Outputs
 // Remember to uncomment the node by removing "/-"!
-/-output "eDP-2" {
-    mode "2560x1600@239.998993"
-    position x=2560 y=0
-    variable-refresh-rate
+output "eDP-1" {
+    mode "1920x1080@60.056"
+    position x=0 y=0
+
 }
 
 // ----------------------------------------------------------------------------
@@ -517,6 +517,7 @@ binds {
 
     Mod+U                    hotkey-overlay-title="Cast focused window" { spawn-sh "niri msg action set-dynamic-cast-window --id $(niri msg --json focused-window | jq .id)"; }
     Mod+Alt+Y                repeat=false hotkey-overlay-title="Mirror focused monitor to a window" { spawn-sh "wl-mirror $(niri msg --json focused-output | jq -r .name)"; }
+    Mod+Alt+V                hotkey-overlay-title="Select region to make it float/Pin to screen" { spawn "pin-to-screen"; }
 
  // Notifications.
  // Mod+N                    hotkey-overlay-title="Show last notification" { spawn "makoctl" "restore"; }

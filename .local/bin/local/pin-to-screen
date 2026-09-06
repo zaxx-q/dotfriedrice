@@ -1,0 +1,402 @@
+#!/usr/bin/env python3
+"""pin-to-screen — capture a screen region and pin it as an always-on-top overlay.
+
+Usage:
+    pin-to-screen                  Select a region interactively
+    pin-to-screen <image>          Pin an existing image file
+    pin-to-screen --clipboard      Pin image from clipboard
+
+Controls:
+    Left-drag        Move the pinned image
+    Scroll           Resize (preserves aspect ratio)
+    Middle-click     Close this pin
+    Right-click      Toggle transparency (100% / 40%)
+    Ctrl+C           Copy image back to clipboard
+    Escape / Q       Close (when focused)
+
+Dependencies: grim, slurp, wl-copy, python3-gobject, gtk4, gtk4-layer-shell
+"""
+
+from __future__ import annotations
+
+import ctypes.util
+import os
+import sys
+
+# gtk4-layer-shell must be loaded before libwayland-client.
+# Re-exec with LD_PRELOAD if not already active.
+if os.environ.get("_PIN_LAYER_PRELOADED") != "1":
+    _lso = (
+        ctypes.util.find_library("gtk4-layer-shell")
+        or "/usr/lib64/libgtk4-layer-shell.so.0"
+    )
+    if _lso:
+        _existing = os.environ.get("LD_PRELOAD")
+        os.environ["LD_PRELOAD"] = f"{_lso}:{_existing}" if _existing else _lso
+        os.environ["_PIN_LAYER_PRELOADED"] = "1"
+        os.execvp(sys.executable, [sys.executable, *sys.argv])
+
+import math
+import signal
+import subprocess
+import tempfile
+import warnings
+from pathlib import Path
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Gdk", "4.0")
+gi.require_version("Gtk4LayerShell", "1.0")
+gi.require_version("GdkPixbuf", "2.0")
+
+from gi.repository import Gdk, GdkPixbuf, Gio, Gtk, Gtk4LayerShell
+
+MAX_INITIAL_WIDTH = 500
+MIN_SIZE = 32
+MAX_SIZE = 3000
+BORDER_PX = 2
+CORNER_RADIUS = 6.0
+
+
+class PinWindow(Gtk.Window):
+    """Floating, always-on-top window displaying a pinned image."""
+
+    def __init__(
+        self,
+        image_path: str,
+        spawn_x: int | None = None,
+        spawn_y: int | None = None,
+    ) -> None:
+        super().__init__()
+
+        self.image_path = image_path
+        self.margin_left = spawn_x if spawn_x is not None else 100
+        self.margin_top = spawn_y if spawn_y is not None else 100
+
+        # Drag state
+        self.drag_origin_ml = 0
+        self.drag_origin_mt = 0
+
+        # Layer shell setup
+        Gtk4LayerShell.init_for_window(self)
+        Gtk4LayerShell.set_layer(self, Gtk4LayerShell.Layer.OVERLAY)
+        Gtk4LayerShell.set_anchor(self, Gtk4LayerShell.Edge.TOP, True)
+        Gtk4LayerShell.set_anchor(self, Gtk4LayerShell.Edge.LEFT, True)
+        Gtk4LayerShell.set_exclusive_zone(self, -1)
+        Gtk4LayerShell.set_namespace(self, "pin-to-screen")
+        self._apply_margins()
+
+        # Load image & calculate initial dimensions
+        self.pixbuf = GdkPixbuf.Pixbuf.new_from_file(image_path)
+        self.orig_w = self.pixbuf.get_width()
+        self.orig_h = self.pixbuf.get_height()
+        if self.orig_w <= 0 or self.orig_h <= 0:
+            msg = f"Invalid image dimensions: {self.orig_w}x{self.orig_h}"
+            raise ValueError(msg)
+        self.aspect = self.orig_w / self.orig_h
+
+        self.disp_w = min(self.orig_w, MAX_INITIAL_WIDTH)
+        self.disp_h = max(1, int(self.disp_w / self.aspect))
+
+        # Cached scaled pixbuf for drawing
+        self._scaled_pb: GdkPixbuf.Pixbuf | None = None
+        self._rebuild_scaled()
+
+        # Drawing area
+        self.draw_area = Gtk.DrawingArea()
+        self._update_draw_size()
+        self.draw_area.set_draw_func(self._draw)
+        self.set_child(self.draw_area)
+
+        # Transparent background styling
+        css = Gtk.CssProvider()
+        css.load_from_string("window { background: transparent; }")
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            css,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+
+        self.set_cursor_from_name("grab")
+        self._setup_controllers()
+
+    def _rebuild_scaled(self) -> None:
+        """Cache a scaled copy of the pixbuf at current display size."""
+        self._scaled_pb = self.pixbuf.scale_simple(
+            self.disp_w, self.disp_h, GdkPixbuf.InterpType.BILINEAR
+        )
+
+    def _update_draw_size(self) -> None:
+        """Update drawing area dimensions to include borders."""
+        self.draw_area.set_content_width(self.disp_w + BORDER_PX * 2)
+        self.draw_area.set_content_height(self.disp_h + BORDER_PX * 2)
+
+    def _setup_controllers(self) -> None:
+        # Left-drag to move
+        drag = Gtk.GestureDrag()
+        drag.set_button(1)
+        drag.connect("drag-begin", self._on_drag_begin)
+        drag.connect("drag-update", self._on_drag_update)
+        drag.connect("drag-end", self._on_drag_end)
+        self.add_controller(drag)
+
+        # Middle-click to close
+        mid_click = Gtk.GestureClick()
+        mid_click.set_button(2)
+        mid_click.connect("pressed", lambda *_: self.close())
+        self.add_controller(mid_click)
+
+        # Right-click to toggle opacity
+        right_click = Gtk.GestureClick()
+        right_click.set_button(3)
+        right_click.connect("pressed", self._on_right_click)
+        self.add_controller(right_click)
+
+        # Scroll to resize
+        scroll = Gtk.EventControllerScroll(
+            flags=Gtk.EventControllerScrollFlags.VERTICAL
+        )
+        scroll.connect("scroll", self._on_scroll)
+        self.add_controller(scroll)
+
+        # Keyboard shortcuts
+        key = Gtk.EventControllerKey()
+        key.connect("key-pressed", self._on_key)
+        self.add_controller(key)
+
+    # --- Drawing ---
+
+    def _draw(
+        self,
+        area: Gtk.DrawingArea,
+        cr,
+        width: int,
+        height: int,
+    ) -> None:
+        b = BORDER_PX
+        iw, ih = self.disp_w, self.disp_h
+        tw, th = iw + b * 2, ih + b * 2
+        r = CORNER_RADIUS
+
+        def rrect(x: float, y: float, w: float, h: float, radius: float) -> None:
+            cr.new_sub_path()
+            cr.arc(x + w - radius, y + radius, radius, -math.pi / 2, 0)
+            cr.arc(x + w - radius, y + h - radius, radius, 0, math.pi / 2)
+            cr.arc(x + radius, y + h - radius, radius, math.pi / 2, math.pi)
+            cr.arc(x + radius, y + radius, radius, math.pi, 3 * math.pi / 2)
+            cr.close_path()
+
+        # Border background & outline
+        rrect(0, 0, tw, th, r)
+        cr.set_source_rgba(1, 1, 1, 0.25)
+        cr.fill_preserve()
+        cr.set_line_width(b)
+        cr.set_source_rgba(1, 1, 1, 0.45)
+        cr.stroke()
+
+        # Image clipped to inside border
+        rrect(b, b, iw, ih, max(0.0, r - b))
+        cr.clip()
+        if self._scaled_pb:
+            Gdk.cairo_set_source_pixbuf(cr, self._scaled_pb, b, b)
+            cr.paint()
+
+    # --- Positioning & Drag ---
+
+    def _apply_margins(self) -> None:
+        Gtk4LayerShell.set_margin(self, Gtk4LayerShell.Edge.LEFT, self.margin_left)
+        Gtk4LayerShell.set_margin(self, Gtk4LayerShell.Edge.TOP, self.margin_top)
+
+    def _on_drag_begin(
+        self, gesture: Gtk.GestureDrag, start_x: float, start_y: float
+    ) -> None:
+        self.drag_origin_ml = self.margin_left
+        self.drag_origin_mt = self.margin_top
+        self.set_cursor_from_name("grabbing")
+
+    def _on_drag_update(
+        self, gesture: Gtk.GestureDrag, offset_x: float, offset_y: float
+    ) -> None:
+        # On Wayland compositors (niri, sway, etc.) the compositor does NOT send
+        # synthetic pointer-motion when a layer surface repositions.  GestureDrag's
+        # offset is therefore the raw screen-space mouse movement — no compensation.
+        self.margin_left = max(0, int(self.drag_origin_ml + offset_x))
+        self.margin_top = max(0, int(self.drag_origin_mt + offset_y))
+        self._apply_margins()
+
+    def _on_drag_end(
+        self, gesture: Gtk.GestureDrag, offset_x: float, offset_y: float
+    ) -> None:
+        self.set_cursor_from_name("grab")
+
+    # --- Actions ---
+
+    def _on_right_click(
+        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+    ) -> None:
+        self.set_opacity(0.4 if self.get_opacity() > 0.9 else 1.0)
+
+    def _on_scroll(
+        self, controller: Gtk.EventControllerScroll, dx: float, dy: float
+    ) -> bool:
+        factor = 1.1 if dy < 0 else (1.0 / 1.1)
+        new_w = max(MIN_SIZE, min(MAX_SIZE, int(self.disp_w * factor)))
+        new_h = max(MIN_SIZE, min(MAX_SIZE, max(1, int(new_w / self.aspect))))
+        if new_w == self.disp_w:
+            return True
+
+        self.disp_w = new_w
+        self.disp_h = new_h
+        self._rebuild_scaled()
+        self._update_draw_size()
+        self.draw_area.queue_draw()
+        return True
+
+    def _copy_to_clipboard(self) -> None:
+        """Copy the pinned image back to system clipboard using wl-copy."""
+        try:
+            with Path(self.image_path).open("rb") as f:
+                subprocess.run(
+                    ["wl-copy", "--type", "image/png"],
+                    stdin=f,
+                    check=False,
+                )
+        except OSError as e:
+            print(f"Failed to copy to clipboard: {e}", file=sys.stderr)
+
+    def _on_key(
+        self,
+        controller: Gtk.EventControllerKey,
+        keyval: int,
+        keycode: int,
+        state: Gdk.ModifierType,
+    ) -> bool:
+        if keyval in (Gdk.KEY_Escape, Gdk.KEY_q):
+            self.close()
+            return True
+        if keyval in (Gdk.KEY_c, Gdk.KEY_C) and (state & Gdk.ModifierType.CONTROL_MASK):
+            self._copy_to_clipboard()
+            return True
+        return False
+
+
+# --- Capture helpers ---
+
+
+def capture_region() -> tuple[str | None, int | None, int | None]:
+    """Select and capture a screen region using slurp + grim.
+
+    Returns (image_path, x, y) or (None, None, None) if cancelled.
+    """
+    try:
+        slurp = subprocess.run(
+            ["slurp"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if slurp.returncode != 0:
+            return None, None, None
+        geometry = slurp.stdout.strip()
+
+        fd, tmp_path = tempfile.mkstemp(suffix=".png", prefix="pin_")
+        os.close(fd)
+
+        result = subprocess.run(
+            ["grim", "-g", geometry, tmp_path],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            Path(tmp_path).unlink(missing_ok=True)
+            return None, None, None
+
+        try:
+            pos, _ = geometry.split(" ")
+            x, y = pos.split(",")
+            return tmp_path, int(x), int(y)
+        except ValueError:
+            return tmp_path, None, None
+
+    except FileNotFoundError as e:
+        print(f"Missing dependency: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def from_clipboard() -> str:
+    """Save clipboard image to a temp file via wl-paste."""
+    try:
+        fd, tmp_path = tempfile.mkstemp(suffix=".png", prefix="pin_clip_")
+        with open(fd, "wb") as f:
+            result = subprocess.run(
+                ["wl-paste", "--type", "image/png"],
+                stdout=f,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        if result.returncode != 0:
+            Path(tmp_path).unlink(missing_ok=True)
+            print("No image in clipboard.", file=sys.stderr)
+            sys.exit(1)
+        return tmp_path
+
+    except FileNotFoundError:
+        print("wl-paste not found.", file=sys.stderr)
+        sys.exit(1)
+
+
+# --- Entrypoint ---
+
+
+def main() -> None:
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    is_temp = False
+    spawn_x, spawn_y = None, None
+
+    if len(sys.argv) > 1:
+        arg = sys.argv[1]
+        if arg in ("-h", "--help"):
+            print(__doc__)
+            sys.exit(0)
+        elif arg == "--clipboard":
+            image_path = from_clipboard()
+            is_temp = True
+        else:
+            image_path = str(Path(arg).resolve())
+            if not Path(image_path).is_file():
+                print(f"File not found: {image_path}", file=sys.stderr)
+                sys.exit(1)
+    else:
+        image_path, spawn_x, spawn_y = capture_region()
+        is_temp = True
+        if not image_path:
+            sys.exit(0)
+
+    app = Gtk.Application(
+        application_id=None,
+        flags=Gio.ApplicationFlags.NON_UNIQUE,
+    )
+
+    def on_activate(application: Gtk.Application) -> None:
+        win = PinWindow(image_path, spawn_x, spawn_y)
+        win.set_application(application)
+
+        def on_close(_win: Gtk.Window) -> bool:
+            if is_temp:
+                Path(image_path).unlink(missing_ok=True)
+            return False
+
+        win.connect("close-request", on_close)
+        win.present()
+
+    app.connect("activate", on_activate)
+    app.run()
+
+
+if __name__ == "__main__":
+    main()

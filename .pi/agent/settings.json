@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.85.0",
+  "lastChangelogVersion": "0.85.1",
   "npmCommand": [
     "bun"
   ],
@@ -139,7 +139,8 @@
     "extensions/review.ts",
     "+extensions/env-loader.ts",
     "-extensions/resilient-retry.ts",
-    "-extensions/tps-tracker.ts"
+    "-extensions/tps-tracker.ts",
+    "+extensions/environment-details.ts"
   ],
   "defaultThinkingLevel": "high",
   "compaction": {

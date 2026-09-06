@@ -17,6 +17,7 @@
  */
 
 import * as fs from "node:fs";
+import { createRequire } from "node:module";
 import * as os from "node:os";
 import * as path from "node:path";
 import type {
@@ -33,7 +34,6 @@ import {
 	SettingsList,
 	Text,
 } from "@earendil-works/pi-tui";
-import ignore from "ignore";
 
 // ── Constants ──────────────────────────────────────────────────────────
 
@@ -260,6 +260,192 @@ async function getGitInfo(
 	return lines.join("\n");
 }
 
+// ── Ignore matcher helpers ─────────────────────────────────────────────
+
+interface IgnoreMatcher {
+	ignores(pathname: string): boolean;
+}
+
+type IgnoreFactory = () => {
+	add(patterns: string | string[]): { ignores(pathname: string): boolean };
+};
+
+let cachedIgnoreFactory: IgnoreFactory | null | undefined;
+
+function getIgnoreFactory(): IgnoreFactory | null {
+	if (cachedIgnoreFactory !== undefined) {
+		return cachedIgnoreFactory;
+	}
+
+	const candidates = [
+		() => {
+			const req = createRequire(import.meta.url);
+			return req("ignore");
+		},
+		() => {
+			const npmPkg = path.join(
+				os.homedir(),
+				CONFIG_DIR_NAME,
+				"agent",
+				"npm",
+				"package.json",
+			);
+			return createRequire(npmPkg)("ignore");
+		},
+		() => {
+			const bunGlobalDir = path.join(
+				os.homedir(),
+				".cache",
+				".bun",
+				"install",
+				"global",
+				"node_modules",
+				"ignore",
+			);
+			const req = createRequire(import.meta.url);
+			return req(bunGlobalDir);
+		},
+	];
+
+	for (const candidate of candidates) {
+		try {
+			const mod = candidate();
+			const factory = typeof mod === "function" ? mod : mod?.default;
+			if (typeof factory === "function") {
+				cachedIgnoreFactory = factory;
+				return factory;
+			}
+		} catch {
+			// Continue to next candidate
+		}
+	}
+
+	cachedIgnoreFactory = null;
+	return null;
+}
+
+function createFallbackMatcher(patterns: string[]): IgnoreMatcher {
+	interface Rule {
+		regex: RegExp;
+		negate: boolean;
+		directoryOnly: boolean;
+	}
+
+	const rules: Rule[] = [];
+
+	for (let line of patterns) {
+		line = line.trim();
+		if (!line || line.startsWith("#")) continue;
+
+		let negate = false;
+		if (line.startsWith("!")) {
+			negate = true;
+			line = line.slice(1).trim();
+		}
+		if (!line) continue;
+
+		let directoryOnly = false;
+		if (line.endsWith("/")) {
+			directoryOnly = true;
+			line = line.slice(0, -1);
+		}
+
+		const isAnchored = line.startsWith("/") || line.includes("/");
+		if (line.startsWith("/")) {
+			line = line.slice(1);
+		}
+
+		let regexStr = "";
+		let i = 0;
+		while (i < line.length) {
+			const c = line[i];
+			if (c === "*") {
+				if (line[i + 1] === "*") {
+					if (line[i + 2] === "/") {
+						regexStr += "(?:.*/)?";
+						i += 3;
+						continue;
+					}
+					regexStr += ".*";
+					i += 2;
+					continue;
+				}
+				regexStr += "[^/]*";
+				i++;
+				continue;
+			}
+			if (c === "?") {
+				regexStr += "[^/]";
+				i++;
+				continue;
+			}
+			if (/[.+^$[\](){}|\\]/.test(c)) {
+				regexStr += `\\${c}`;
+				i++;
+				continue;
+			}
+			regexStr += c;
+			i++;
+		}
+
+		const patternStr = isAnchored
+			? `^${regexStr}(?:/.*)?$`
+			: `(?:^|/)${regexStr}(?:/.*)?$`;
+
+		try {
+			rules.push({
+				regex: new RegExp(patternStr),
+				negate,
+				directoryOnly,
+			});
+		} catch {
+			// Skip invalid regex
+		}
+	}
+
+	return {
+		ignores(pathname: string): boolean {
+			const isDirectory = pathname.endsWith("/");
+			const normalized = pathname.replace(/^\/+|\/+$/g, "");
+			let ignored = false;
+			for (const rule of rules) {
+				if (rule.directoryOnly && !isDirectory) {
+					const hasDirMatch = normalized
+						.split("/")
+						.slice(0, -1)
+						.some((_, idx, arr) => {
+							const dirPrefix = arr.slice(0, idx + 1).join("/");
+							return rule.regex.test(dirPrefix);
+						});
+					if (hasDirMatch) {
+						ignored = !rule.negate;
+					}
+					continue;
+				}
+				if (rule.regex.test(normalized)) {
+					ignored = !rule.negate;
+				}
+			}
+			return ignored;
+		},
+	};
+}
+
+function createIgnoreMatcher(patterns: string[]): IgnoreMatcher {
+	const factory = getIgnoreFactory();
+	if (factory) {
+		try {
+			const ig = factory().add(patterns);
+			return {
+				ignores: (pathname: string) => ig.ignores(pathname),
+			};
+		} catch {
+			// Fall through to fallback
+		}
+	}
+	return createFallbackMatcher(patterns);
+}
+
 // ── File discovery ─────────────────────────────────────────────────────
 
 async function discoverFilesGit(
@@ -283,7 +469,7 @@ function discoverFilesWalk(cwd: string): string[] {
 	const results: string[] = [];
 
 	// Load gitignore if present
-	let ig: ReturnType<typeof ignore> | undefined;
+	let ig: IgnoreMatcher | undefined;
 	const gitignorePath = path.join(cwd, ".gitignore");
 	const ignorePath = path.join(cwd, ".ignore");
 	const fdignorePath = path.join(cwd, ".fdignore");
@@ -305,7 +491,7 @@ function discoverFilesWalk(cwd: string): string[] {
 			.filter((p) => p && !p.startsWith("#"));
 
 		if (filteredPatterns.length > 0) {
-			ig = ignore().add(filteredPatterns);
+			ig = createIgnoreMatcher(filteredPatterns);
 		}
 	} catch {
 		// skip

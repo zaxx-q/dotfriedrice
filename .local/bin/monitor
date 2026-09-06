@@ -20,10 +20,10 @@ else
 fi
 
 if [ -n "${TMUX:-}" ]; then
-  tmux new-window -n "monitor" "btop" \; split-window "${gpu_command[@]}"
+  tmux new-window -n "monitor" "btop" \; split-window "${gpu_command[@]}" \; select-pane -t 1
 else
   tmux kill-session -t "monitor" 2>/dev/null || true
   tmux new-session -s "monitor" "btop; tmux kill-session -t monitor 2>/dev/null" \; \
     set-option -t "monitor" destroy-unattached on \; \
-    split-window "${gpu_command[@]}"
+    split-window "${gpu_command[@]}" \; select-pane -t 1
 fi
