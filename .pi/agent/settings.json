@@ -15,7 +15,8 @@
       "source": "npm:@narumitw/pi-caffeinate",
       "extensions": [
         "-src/caffeinate.ts",
-        "-src/index.ts"
+        "-src/index.ts",
+        "-dist/index.ts"
       ]
     },
     {
