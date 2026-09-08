@@ -12,21 +12,28 @@
  * - The plan file is comprehensive enough to stand alone as context
  *
  * Commands:
- *   /plan [prompt]  — enter plan mode (toggle off if already in plan mode)
- *   /plan-exec      — execute the current plan in a new session
- *   Ctrl+Alt+P      — toggle plan mode
+ *   /plan [options] [prompt] — enter plan mode (toggle off if already in plan mode)
+ *                              options: --unrestricted, -u, --unsafe-bash (lifts bash read-only restrictions)
+ *   /plan-exec               — execute the current plan in a new session
+ *   Ctrl+Alt+P               — toggle plan mode
  *
- * Flag:
- *   --plan           — start session in plan mode
+ * Flags:
+ *   --plan                   — start session in plan mode
+ *   --plan-unrestricted      — start session in plan mode with unrestricted bash
  */
 
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
 import { Key } from "@earendil-works/pi-tui";
-import { isSafeCommand } from "./utils.ts";
 import fs from "fs";
 import path from "path";
+import { isSafeCommand } from "./utils.ts";
 
-async function getPlanFiles(cwd: string): Promise<{ relPath: string; absPath: string; mtime: number }[]> {
+async function getPlanFiles(
+	cwd: string,
+): Promise<{ relPath: string; absPath: string; mtime: number }[]> {
 	const plansDir = path.join(cwd, "plans");
 	try {
 		const stat = await fs.promises.stat(plansDir);
@@ -65,20 +72,62 @@ async function getPlanFiles(cwd: string): Promise<{ relPath: string; absPath: st
 }
 
 // Tools available during planning (read-only + ask_user for dialogue + write for saving plans)
-const PLAN_TOOLS = ["read", "bash", "ffgrep", "fffind", "ls", "ask_user", "write", "Agent", "resolve-library-id", "query-docs", "steer_subagent", "get_subagent_result"];
+const PLAN_TOOLS = [
+	"read",
+	"bash",
+	"ffgrep",
+	"fffind",
+	"ls",
+	"ask_user",
+	"write",
+	"Agent",
+	"resolve-library-id",
+	"query-docs",
+	"steer_subagent",
+	"get_subagent_result",
+];
 
 interface PlanState {
 	enabled: boolean;
 	planFile: string | undefined;
+	bashUnrestricted?: boolean;
+}
+
+function parsePlanArgs(args?: string): {
+	unrestricted: boolean;
+	prompt?: string;
+} {
+	if (!args) return { unrestricted: false };
+	let text = args.trim();
+	const flagRegex =
+		/(?:^|\s)(?:--unrestricted|-u|--unsafe-bash|--no-bash-restriction|--full-bash)(?=\s|$)/i;
+	let unrestricted = false;
+
+	while (flagRegex.test(text)) {
+		unrestricted = true;
+		text = text.replace(flagRegex, " ").trim();
+	}
+
+	return {
+		unrestricted,
+		prompt: text.length > 0 ? text : undefined,
+	};
 }
 
 export default function customPlanMode(pi: ExtensionAPI): void {
 	let planEnabled = false;
 	let currentPlanFile: string | undefined;
+	let bashUnrestricted = false;
 
-	// ── Flag ────────────────────────────────────────────────────────────────
+	// ── Flags ───────────────────────────────────────────────────────────────
 	pi.registerFlag("plan", {
 		description: "Start in plan mode (read-only exploration + planning)",
+		type: "boolean",
+		default: false,
+	});
+
+	pi.registerFlag("plan-unrestricted", {
+		description: "Start in plan mode with unrestricted bash execution",
 		type: "boolean",
 		default: false,
 	});
@@ -87,26 +136,35 @@ export default function customPlanMode(pi: ExtensionAPI): void {
 
 	function updateStatus(ctx: ExtensionContext): void {
 		if (planEnabled) {
+			const modeSuffix = bashUnrestricted ? " [unrestricted bash]" : "";
 			const label = currentPlanFile
-				? ctx.ui.theme.fg("warning", `⏸ plan (${currentPlanFile})`)
-				: ctx.ui.theme.fg("warning", "⏸ plan");
+				? ctx.ui.theme.fg("warning", `⏸ plan${modeSuffix} (${currentPlanFile})`)
+				: ctx.ui.theme.fg("warning", `⏸ plan${modeSuffix}`);
 			ctx.ui.setStatus("custom-plan", label);
 		} else {
 			ctx.ui.setStatus("custom-plan", undefined);
 		}
 	}
 
-	function enterPlanMode(ctx: ExtensionContext): void {
+	function enterPlanMode(
+		ctx: ExtensionContext,
+		options?: { unrestricted?: boolean },
+	): void {
 		planEnabled = true;
+		bashUnrestricted = options?.unrestricted ?? false;
 		currentPlanFile = undefined;
 		pi.setActiveTools(PLAN_TOOLS);
-		ctx.ui.notify("Plan mode enabled — read-only tools only. Use /plan to exit.", "info");
+		const notifyMsg = bashUnrestricted
+			? "Plan mode enabled (unrestricted bash) — save plans to plans/. Use /plan to exit."
+			: "Plan mode enabled — read-only tools only. Use /plan to exit.";
+		ctx.ui.notify(notifyMsg, "info");
 		updateStatus(ctx);
 		persistState();
 	}
 
 	function exitPlanMode(ctx: ExtensionContext): void {
 		planEnabled = false;
+		bashUnrestricted = false;
 		pi.setActiveTools(pi.getAllTools().map((t) => t.name));
 		ctx.ui.notify("Plan mode disabled. Full tool access restored.", "info");
 		updateStatus(ctx);
@@ -117,22 +175,44 @@ export default function customPlanMode(pi: ExtensionAPI): void {
 		pi.appendEntry("custom-plan-state", {
 			enabled: planEnabled,
 			planFile: currentPlanFile,
+			bashUnrestricted,
 		} as PlanState);
 	}
 
 	// ── Commands ────────────────────────────────────────────────────────────
 
 	pi.registerCommand("plan", {
-		description: "Toggle plan mode, or start with a prompt: /plan <prompt>",
+		description:
+			"Toggle plan mode, or start with options/prompt: /plan [--unrestricted|-u] <prompt>",
 		handler: async (args, ctx) => {
+			const parsed = parsePlanArgs(args);
+
 			if (planEnabled) {
-				exitPlanMode(ctx);
+				if (!args?.trim()) {
+					exitPlanMode(ctx);
+					return;
+				}
+
+				// If switching restriction mode while already in plan mode
+				if (parsed.unrestricted !== bashUnrestricted) {
+					bashUnrestricted = parsed.unrestricted;
+					const modeMsg = bashUnrestricted
+						? "Plan mode updated: bash is now unrestricted."
+						: "Plan mode updated: bash is now restricted to read-only commands.";
+					ctx.ui.notify(modeMsg, "info");
+					updateStatus(ctx);
+					persistState();
+				}
+
+				if (parsed.prompt) {
+					pi.sendUserMessage(parsed.prompt);
+				}
 				return;
 			}
-			enterPlanMode(ctx);
-			const trimmed = args?.trim();
-			if (trimmed) {
-				pi.sendUserMessage(trimmed);
+
+			enterPlanMode(ctx, { unrestricted: parsed.unrestricted });
+			if (parsed.prompt) {
+				pi.sendUserMessage(parsed.prompt);
 			}
 		},
 	});
@@ -143,7 +223,10 @@ export default function customPlanMode(pi: ExtensionAPI): void {
 			const planFiles = await getPlanFiles(ctx.cwd || process.cwd());
 
 			if (planFiles.length === 0) {
-				ctx.ui.notify("No plan files found in ./plans/. Create a plan first with /plan.", "error");
+				ctx.ui.notify(
+					"No plan files found in ./plans/. Create a plan first with /plan.",
+					"error",
+				);
 				return;
 			}
 
@@ -151,7 +234,10 @@ export default function customPlanMode(pi: ExtensionAPI): void {
 
 			if (planFiles.length > 1) {
 				const options = planFiles.map((f) => f.relPath);
-				const selected = await ctx.ui.select("Select a plan to execute (most recent first):", options);
+				const selected = await ctx.ui.select(
+					"Select a plan to execute (most recent first):",
+					options,
+				);
 				if (!selected) return;
 				planFile = selected;
 			} else {
@@ -181,7 +267,10 @@ export default function customPlanMode(pi: ExtensionAPI): void {
 
 					if (newCtx.hasUI) {
 						newCtx.ui.setEditorText(kickoffMessage);
-						newCtx.ui.notify("Plan execution prompt prefilled. Press Enter to send or edit.", "info");
+						newCtx.ui.notify(
+							"Plan execution prompt prefilled. Press Enter to send or edit.",
+							"info",
+						);
 					} else {
 						await newCtx.sendUserMessage(kickoffMessage);
 					}
@@ -205,12 +294,12 @@ export default function customPlanMode(pi: ExtensionAPI): void {
 	pi.on("tool_call", async (event) => {
 		if (!planEnabled) return;
 
-		if (event.toolName === "bash") {
+		if (event.toolName === "bash" && !bashUnrestricted) {
 			const command = event.input.command as string;
 			if (!isSafeCommand(command)) {
 				return {
 					block: true,
-					reason: `Plan mode: command blocked (not in read-only allowlist). Use /plan to exit plan mode first.\nCommand: ${command}`,
+					reason: `Plan mode: command blocked (not in read-only allowlist). Use /plan to exit plan mode or use /plan --unrestricted to allow unrestricted bash.\nCommand: ${command}`,
 				};
 			}
 		}
@@ -262,7 +351,7 @@ export default function customPlanMode(pi: ExtensionAPI): void {
 		return {
 			message: {
 				customType: "custom-plan-context",
-				content: buildPlanPrompt(),
+				content: buildPlanPrompt(bashUnrestricted),
 				display: false,
 			},
 		};
@@ -282,13 +371,22 @@ export default function customPlanMode(pi: ExtensionAPI): void {
 			"Stay in plan mode",
 		];
 
-		const choice = await ctx.ui.select(`Plan saved to ${currentPlanFile}. What next?`, options);
+		const choice = await ctx.ui.select(
+			`Plan saved to ${currentPlanFile}. What next?`,
+			options,
+		);
 
 		if (choice === "Execute in a new session") {
 			ctx.ui.setEditorText("/plan-exec");
-			ctx.ui.notify("Prefilled `/plan-exec`. Press Enter to run it and launch the execution session.", "info");
+			ctx.ui.notify(
+				"Prefilled `/plan-exec`. Press Enter to run it and launch the execution session.",
+				"info",
+			);
 		} else if (choice === "Refine the plan") {
-			const refinement = await ctx.ui.editor("What would you like to change about the plan?", "");
+			const refinement = await ctx.ui.editor(
+				"What would you like to change about the plan?",
+				"",
+			);
 			if (refinement?.trim()) {
 				pi.sendUserMessage(refinement.trim());
 			}
@@ -300,21 +398,27 @@ export default function customPlanMode(pi: ExtensionAPI): void {
 
 	// ── Event: restore state on session start ──────────────────────────────
 	pi.on("session_start", async (_event, ctx) => {
-		if (pi.getFlag("plan") === true) {
+		if (pi.getFlag("plan-unrestricted") === true) {
 			planEnabled = true;
+			bashUnrestricted = true;
+		} else if (pi.getFlag("plan") === true) {
+			planEnabled = true;
+			bashUnrestricted = false;
 		}
 
 		// Restore persisted state
 		const entries = ctx.sessionManager.getEntries();
 		const stateEntry = entries
 			.filter(
-				(e: { type: string; customType?: string }) => e.type === "custom" && e.customType === "custom-plan-state",
+				(e: { type: string; customType?: string }) =>
+					e.type === "custom" && e.customType === "custom-plan-state",
 			)
 			.pop() as { data?: PlanState } | undefined;
 
 		if (stateEntry?.data) {
 			planEnabled = stateEntry.data.enabled ?? planEnabled;
 			currentPlanFile = stateEntry.data.planFile ?? currentPlanFile;
+			bashUnrestricted = stateEntry.data.bashUnrestricted ?? bashUnrestricted;
 		}
 
 		if (planEnabled) {
@@ -326,8 +430,12 @@ export default function customPlanMode(pi: ExtensionAPI): void {
 
 // ── Plan mode system prompt ─────────────────────────────────────────────────
 
-function buildPlanPrompt(): string {
+function buildPlanPrompt(bashUnrestricted: boolean = false): string {
 	const tools = PLAN_TOOLS.join(", ");
+
+	const bashRestrictionLine = bashUnrestricted
+		? "- Bash commands are unrestricted (running tests, build scripts, dev commands, etc. is allowed, but do NOT modify source code files directly)"
+		: "- Bash is restricted to read-only commands (ls, grep, git status, cat, find, rg, etc.)";
 
 	const lines = [
 		"[PLAN MODE ACTIVE]",
@@ -335,7 +443,7 @@ function buildPlanPrompt(): string {
 		"",
 		"## Restrictions",
 		`- Available tools: ${tools}`,
-		"- Bash is restricted to read-only commands (ls, grep, git status, cat, find, rg, etc.)",
+		bashRestrictionLine,
 		"- You CANNOT use: edit, write (except to the plans/ directory)",
 		"- Do NOT attempt to make code changes — just plan.",
 		"",

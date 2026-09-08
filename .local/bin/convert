@@ -10,6 +10,8 @@
 #   convert img2jpg hello.jpg -resize x480   # Resize to 480 height w/ aspect ratio
 #   convert img2jpg hello.jpg -resize x480!  # Resize to 480 height w/o aspect ratio
 #   convert img2jpg hello.jpg -resize 10%    # Resize to 10% w/ aspect ratio
+#   convert img2webp hello.png               # Convert to WebP at quality 82
+#   convert img2webp hello.png -quality 90   # Override the default WebP quality
 
 set -o errexit
 set -o pipefail
@@ -29,6 +31,12 @@ IMG_OPTS_PNG=(
   -define png:compression-filter=5
   -define png:compression-strategy=1
   -define png:exclude-chunk=all
+)
+
+IMG_OPTS_WEBP=(
+  -quality 82
+  -define webp:method=6
+  -strip
 )
 
 img2jpg() {
@@ -67,6 +75,26 @@ img2png-small() {
 
   magick "${image}" -resize "${SMALL_MAX_WIDTH}x" "${IMG_OPTS_PNG[@]}" \
     "$@" "${image%.*}${OUTPUT_SUFFIX}.png"
+}
+
+img2webp() {
+  # Convert to lossy WebP at reasonable quality. Override with -quality N.
+  local image="${1:-}"
+
+  shift
+
+  magick "${image}" "${IMG_OPTS_WEBP[@]}" "$@" \
+    "${image%.*}${OUTPUT_SUFFIX}.webp"
+}
+
+img2webp-small() {
+  # Convert to lossy WebP at reasonable quality and resize to SMALL_MAX_WIDTH.
+  local image="${1:-}"
+
+  shift
+
+  magick "${image}" -resize "${SMALL_MAX_WIDTH}x" "${IMG_OPTS_WEBP[@]}" \
+    "$@" "${image%.*}${OUTPUT_SUFFIX}.webp"
 }
 
 help() {

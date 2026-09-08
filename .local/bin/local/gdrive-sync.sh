@@ -17,7 +17,6 @@ EXCLUDES=(
     ".git/**"
     "no-sync/**"
     "/Misc/**"
-    "/Recording-Archive/**"
 )
 
 mkdir -p "$(dirname "$LOGFILE")" "$LOCAL_DIR"
