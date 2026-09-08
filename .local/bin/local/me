@@ -8,7 +8,11 @@ fi
 
 PROMPT="$*"
 
-SYSTEM_PROMPT="You are a shell command generator. Output ONLY a raw Bash command or Bash script that fulfills the user's request. Do not include explanations, markdown, code fences, or commentary."
+SYSTEM_PROMPT="You are a shell command generator. Output ONLY raw executable Bash code fulfilling the user's request.
+CRITICAL: Do NOT wrap output in markdown code fences or blocks (NO \`\`\` or \`\`\`bash).
+Do NOT wrap the command in backticks.
+Do NOT include explanations, markdown, or commentary.
+Start immediately with the command on line 1, as the output will be executed directly by a shell."
 
 # Run a single isolated turn: use no discovered instructions, skills, or
 # extensions. Load only the environment-details extension explicitly.
@@ -26,8 +30,31 @@ RAW="$(pi -p \
   -- \
   "$PROMPT" 2>&1)"
 
-# Strip ANSI escape sequences and trim whitespace
-CMD="$(printf '%s' "$RAW" | sed 's/\x1b\[[0-9;?]*[a-zA-Z<>]//g; s/\x1b[()][AB012]//g; s/\r//g' | tr -d '\000-\010\013-\037\177' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+# Strip ANSI escape sequences and control characters
+CMD="$(printf '%s' "$RAW" | sed 's/\x1b\[[0-9;?]*[a-zA-Z<>]//g; s/\x1b[()][AB012]//g; s/\r//g' | tr -d '\000-\010\013-\037\177')"
+
+# Strip markdown code fences if the model still wrapped the output
+CMD="$(printf '%s\n' "$CMD" | awk '
+  !NF && !started { next }
+  { started = 1; lines[++n] = $0 }
+  END {
+    while (n > 0 && lines[n] ~ /^[[:space:]]*$/) n--
+    start = 1
+    if (n >= 1 && lines[1] ~ /^[[:space:]]*```/) start = 2
+    end = n
+    if (end >= start && lines[end] ~ /^[[:space:]]*```[[:space:]]*$/) end = end - 1
+    for (i = start; i <= end; i++) print lines[i]
+  }
+')"
+
+# Strip single backtick wrapping if the entire command was wrapped in `...`
+if [[ "$CMD" =~ ^\`[^\`]+\`$ ]]; then
+  CMD="${CMD#\`}"
+  CMD="${CMD%\`}"
+fi
+
+# Trim any remaining leading/trailing whitespace
+CMD="$(printf '%s' "$CMD" | sed -e '1s/^[[:space:]]*//' -e '$s/[[:space:]]*$//')"
 
 if [[ -z "$CMD" ]]; then
   echo "Error: pi returned an empty command." >&2

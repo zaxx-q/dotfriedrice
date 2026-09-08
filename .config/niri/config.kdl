@@ -548,6 +548,7 @@ binds {
  // XF86AudioStop            allow-when-locked=true hotkey-overlay-title="Stop track" { spawn "playerctl" "stop"; }
  // XF86AudioPrev            allow-when-locked=true hotkey-overlay-title="Previous track" { spawn "playerctl" "previous"; }
  // XF86AudioNext            allow-when-locked=true hotkey-overlay-title="Next track" { spawn "playerctl" "next"; }
+    Mod+Backspace            allow-when-locked=true hotkey-overlay-title="Play / pause track" { spawn "noctalia" "msg" "media" "toggle"; }
     Mod+Shift+9              allow-when-locked=true hotkey-overlay-title="Previous track" { spawn "noctalia" "msg" "media" "previous"; }
     Mod+Shift+0              allow-when-locked=true hotkey-overlay-title="Next track" { spawn "noctalia" "msg" "media" "next"; }
     Mod+Alt+Shift+9          allow-when-locked=true hotkey-overlay-title="Seek -5 seconds" { spawn "playerctl" "position" "5-"; }

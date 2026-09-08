@@ -1,0 +1,151 @@
+#!/bin/sh
+# Wrapper for Flatpak applications to execute host zsh with proper environment forwarding, host PTY allocation (/dev/tty support), and custom profile commands
+
+ENV_FLAGS=""
+[ -n "$TERM" ] && ENV_FLAGS="$ENV_FLAGS --env=TERM=$TERM"
+[ -n "$COLORTERM" ] && ENV_FLAGS="$ENV_FLAGS --env=COLORTERM=$COLORTERM"
+[ -n "$ZDOTDIR" ] && ENV_FLAGS="$ENV_FLAGS --env=ZDOTDIR=$ZDOTDIR"
+[ -n "$__LOT_USER_ZDOTDIR" ] && ENV_FLAGS="$ENV_FLAGS --env=__LOT_USER_ZDOTDIR=$__LOT_USER_ZDOTDIR"
+[ -n "$__LOT_SHELL_INTEGRATION" ] && ENV_FLAGS="$ENV_FLAGS --env=__LOT_SHELL_INTEGRATION=$__LOT_SHELL_INTEGRATION"
+[ -n "$BASH_ENV" ] && ENV_FLAGS="$ENV_FLAGS --env=BASH_ENV=$BASH_ENV"
+
+if [ -z "$__LOT_USER_ZDOTDIR" ] && [ -f "$HOME/.config/zsh/.zshrc" ]; then
+  ENV_FLAGS="$ENV_FLAGS --env=__LOT_USER_ZDOTDIR=$HOME/.config/zsh"
+fi
+
+exec /usr/bin/flatpak-spawn --host $ENV_FLAGS /usr/bin/python3 -c '
+import os, sys, pty, signal, termios, fcntl, select, tty, shlex, errno
+
+def set_winsize(master_fd):
+    try:
+        s = fcntl.ioctl(0, termios.TIOCGWINSZ, b"\x00" * 8)
+        fcntl.ioctl(master_fd, termios.TIOCSWINSZ, s)
+    except Exception:
+        pass
+
+args = sys.argv[1:]
+
+if not args:
+    cmd = ["/usr/bin/zsh", "-l"]
+elif args[0] == "-c":
+    cmd = ["/usr/bin/zsh", "-l", "-c", " ".join(args[1:])]
+elif args[0] in ("-k", "--keep", "--stay"):
+    cmd_to_run = " ".join(args[1:])
+    cmd = ["/usr/bin/zsh", "-l", "-c", f"{cmd_to_run}; exec zsh -l"]
+elif args[0].startswith("-"):
+    cmd = ["/usr/bin/zsh"] + args
+else:
+    joined_cmd = " ".join(shlex.quote(a) for a in args)
+    cmd = ["/usr/bin/zsh", "-l", "-c", f"exec {joined_cmd}"]
+
+pid, master_fd = pty.fork()
+if pid == 0:
+    os.execvp(cmd[0], cmd)
+
+set_winsize(master_fd)
+signal.signal(signal.SIGWINCH, lambda _s, _f: set_winsize(master_fd))
+
+try:
+    old_attr = termios.tcgetattr(0)
+    tty.setraw(0)
+    restore = True
+except Exception:
+    restore = False
+
+try:
+    os.set_blocking(master_fd, False)
+    os.set_blocking(0, False)
+    os.set_blocking(1, False)
+
+    high_waterlevel = 65536
+    i_buf = b""
+    o_buf = b""
+    stdin_alive = True
+    master_alive = True
+
+    while master_alive or o_buf:
+        rfds = []
+        wfds = []
+
+        if stdin_alive and master_alive and len(i_buf) < high_waterlevel:
+            rfds.append(0)
+        if master_alive and len(o_buf) < high_waterlevel:
+            rfds.append(master_fd)
+        if len(o_buf) > 0:
+            wfds.append(1)
+        if master_alive and len(i_buf) > 0:
+            wfds.append(master_fd)
+
+        if not rfds and not wfds:
+            break
+
+        try:
+            r, w, _ = select.select(rfds, wfds, [])
+        except (InterruptedError, select.error) as e:
+            if getattr(e, "errno", None) == errno.EINTR:
+                continue
+            break
+
+        if 1 in w:
+            try:
+                n = os.write(1, o_buf)
+                o_buf = o_buf[n:]
+            except (BlockingIOError, InterruptedError):
+                pass
+            except OSError:
+                break
+
+        if master_fd in w:
+            try:
+                n = os.write(master_fd, i_buf)
+                i_buf = i_buf[n:]
+            except (BlockingIOError, InterruptedError):
+                pass
+            except OSError:
+                master_alive = False
+
+        if master_fd in r:
+            try:
+                data = os.read(master_fd, 16384)
+                if not data:
+                    master_alive = False
+                else:
+                    o_buf += data
+            except (BlockingIOError, InterruptedError):
+                pass
+            except OSError:
+                master_alive = False
+
+        if 0 in r:
+            try:
+                data = os.read(0, 16384)
+                if not data:
+                    stdin_alive = False
+                else:
+                    i_buf += data
+            except (BlockingIOError, InterruptedError):
+                pass
+            except OSError:
+                stdin_alive = False
+
+    # Flush remaining output buffer
+    if o_buf:
+        try:
+            os.set_blocking(1, True)
+            os.write(1, o_buf)
+        except Exception:
+            pass
+
+finally:
+    if restore:
+        try:
+            termios.tcsetattr(0, termios.TCSAFLUSH, old_attr)
+        except Exception:
+            pass
+    try:
+        os.close(master_fd)
+    except Exception:
+        pass
+    _, status = os.waitpid(pid, 0)
+    sys.exit(os.waitstatus_to_exitcode(status) if hasattr(os, "waitstatus_to_exitcode") else (status >> 8))
+' "$@"
