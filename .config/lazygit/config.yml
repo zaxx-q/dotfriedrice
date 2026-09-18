@@ -2,3 +2,32 @@ git:
   overrideGpg: true
   diffRenderers:
     - command: delta --dark --paging=never --line-numbers --hyperlinks --hyperlinks-file-link-format="lazygit-edit://{path}:{line}"
+
+gui:
+  theme:
+    activeBorderColor:
+      - "#f35959"
+      - bold
+    inactiveBorderColor:
+      - "#f19841"
+    searchingActiveBorderColor:
+      - "#f1f041"
+      - bold
+    optionsTextColor:
+      - "#b6afaf"
+    selectedLineBgColor:
+      - "#3e1e1e"
+    inactiveViewSelectedLineBgColor:
+      - bold
+    cherryPickedCommitFgColor:
+      - "#b6afaf"
+    cherryPickedCommitBgColor:
+      - "#f1f041"
+    markedBaseCommitFgColor:
+      - "#f1f041"
+    markedBaseCommitBgColor:
+      - "#dd1011"
+    unstagedChangesColor:
+      - "#dd1011"
+    defaultFgColor:
+      - "#f3f2f2"

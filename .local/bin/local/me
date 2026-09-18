@@ -15,7 +15,8 @@ Do NOT include explanations, markdown, or commentary.
 Start immediately with the command on line 1, as the output will be executed directly by a shell."
 
 # Run a single isolated turn: use no discovered instructions, skills, or
-# extensions. Load only the environment-details extension explicitly.
+# extensions. Explicitly load the provider and environment-details extensions.
+set +e
 RAW="$(pi -p \
   --no-tools \
   --no-session \
@@ -24,11 +25,21 @@ RAW="$(pi -p \
   --no-extensions \
   --no-prompt-templates \
   --no-themes \
+  --extension "$HOME/.pi/agent/npm/node_modules/@router-for-me/pi-cliproxyapi-provider/extensions/index.ts" \
   --extension "$HOME/.pi/agent/extensions/environment-details.ts" \
   --model grok-4.6 \
+  --thinking off \
   --system-prompt "$SYSTEM_PROMPT" \
   -- \
   "$PROMPT" 2>&1)"
+PI_STATUS=$?
+set -e
+
+if [[ $PI_STATUS -ne 0 ]]; then
+  echo "Error: pi failed with exit code $PI_STATUS" >&2
+  printf '%s\n' "$RAW" >&2
+  exit "$PI_STATUS"
+fi
 
 # Strip ANSI escape sequences and control characters
 CMD="$(printf '%s' "$RAW" | sed 's/\x1b\[[0-9;?]*[a-zA-Z<>]//g; s/\x1b[()][AB012]//g; s/\r//g' | tr -d '\000-\010\013-\037\177')"

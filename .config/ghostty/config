@@ -54,7 +54,7 @@ unfocused-split-fill = #44464f
 
 # Shell integration
 shell-integration = detect
-shell-integration-features = sudo,title
+shell-integration-features = sudo,title,ssh-env,ssh-terminfo
 keybind = shift+enter=text:\n
 
 # Pi

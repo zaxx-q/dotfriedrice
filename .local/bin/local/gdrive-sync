@@ -8,16 +8,43 @@
 set -euo pipefail
 
 LOCAL_DIR="/drive/Docs/"
-REMOTE="GDrive-azai:Docs"
+REMOTE="GDrive-UPN:Docs"
 LOGFILE="$HOME/.local/share/gdrive-sync.log"
 LOCKFILE="/tmp/gdrive-sync.lock"
 
 # List of exclusion patterns for rclone
 EXCLUDES=(
     ".git/**"
-    "no-sync/**"
+    ".pi/**"
+    "/Archive/**"
     "/Misc/**"
 )
+
+# Parse command line flags
+FORCE=false
+EXTRA_FLAGS=()
+
+for arg in "$@"; do
+    case "$arg" in
+        --force|-f)
+            FORCE=true
+            ;;
+        --help|-h)
+            echo "Usage: $(basename "$0") [options] [-- rclone_flags]"
+            echo ""
+            echo "Options:"
+            echo "  --resync       Perform initial or recovery resync"
+            echo "  --force, -f    Skip battery and metered network checks"
+            echo "  --help, -h     Show this help message"
+            echo ""
+            echo "Any additional flags (e.g. --dry-run, -v) are passed directly to rclone bisync."
+            exit 0
+            ;;
+        *)
+            EXTRA_FLAGS+=("$arg")
+            ;;
+    esac
+done
 
 mkdir -p "$(dirname "$LOGFILE")" "$LOCAL_DIR"
 
@@ -115,7 +142,7 @@ is_power_saver() {
     return 1
 }
 
-if is_on_battery && is_power_saver; then
+if [ "$FORCE" = false ] && is_on_battery && is_power_saver; then
     log "Running on battery in Power Saver mode — skipping sync"
     exit 0
 fi
@@ -131,12 +158,14 @@ fi
 # Ask NetworkManager whether that connection is metered
 METERED=$(nmcli -g GENERAL.METERED device show "$DEFAULT_IFACE" 2>/dev/null || echo "unknown")
 
-case "$METERED" in
-    yes|guess-yes)
-        log "Active connection ($DEFAULT_IFACE) is metered/tethered — skipping sync"
-        exit 0
-        ;;
-esac
+if [ "$FORCE" = false ]; then
+    case "$METERED" in
+        yes|guess-yes)
+            log "Active connection ($DEFAULT_IFACE) is metered/tethered — skipping sync"
+            exit 0
+            ;;
+    esac
+fi
 
 # Sanity check that we truly have connectivity, not just a captive portal
 if ! curl -fsS --max-time 5 https://www.google.com -o /dev/null; then
@@ -155,8 +184,12 @@ if rclone bisync "$LOCAL_DIR" "$REMOTE" \
         "${EXCLUDE_FLAGS[@]}" \
         --create-empty-src-dirs \
         --resilient \
+        "${EXTRA_FLAGS[@]}" \
         --log-file "$LOGFILE" --log-level INFO; then
     log "Sync completed successfully"
 else
-    log "Sync FAILED (see log above for details)"
+    log "Sync FAILED (see log at $LOGFILE for details)"
+    if [ -t 1 ]; then
+        tail -n 10 "$LOGFILE"
+    fi
 fi

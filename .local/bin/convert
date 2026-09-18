@@ -12,6 +12,8 @@
 #   convert img2jpg hello.jpg -resize 10%    # Resize to 10% w/ aspect ratio
 #   convert img2webp hello.png               # Convert to WebP at quality 82
 #   convert img2webp hello.png -quality 90   # Override the default WebP quality
+#   convert img2webp photos/                 # Convert image files in a folder
+#   convert img2webp photos/ --recursive     # Include images in subfolders
 
 set -o errexit
 set -o pipefail
@@ -39,62 +41,95 @@ IMG_OPTS_WEBP=(
   -strip
 )
 
+convert_image() {
+  local image="$1"
+  local extension="$2"
+  local resize="$3"
+  local options_name="$4"
+  shift 4
+  local -n options="${options_name}"
+  local magick_args=("${image}")
+
+  if [[ -n "${resize}" ]]; then
+    magick_args+=(-resize "${resize}")
+  fi
+
+  magick_args+=("${options[@]}" "$@" "${image%.*}${OUTPUT_SUFFIX}.${extension}")
+  magick "${magick_args[@]}"
+}
+
+convert_path() {
+  local target="${1:-}"
+  local extension="$2"
+  local resize="$3"
+  local options_name="$4"
+  shift 4
+  local recursive=false
+  local args=()
+  local arg
+
+  for arg in "$@"; do
+    case "${arg}" in
+      --recursive|-r) recursive=true ;;
+      *) args+=("${arg}") ;;
+    esac
+  done
+
+  if [[ -f "${target}" ]]; then
+    convert_image "${target}" "${extension}" "${resize}" "${options_name}" "${args[@]}"
+    return
+  fi
+
+  if [[ ! -d "${target}" ]]; then
+    printf 'Not a file or directory: %s\n' "${target}" >&2
+    return 1
+  fi
+
+  local find_args=("${target}" -type f -print0)
+  if ! "${recursive}"; then
+    find_args=("${target}" -maxdepth 1 -type f -print0)
+  fi
+
+  local image
+  while IFS= read -r -d '' image; do
+    # Do not reprocess files this script previously created.
+    [[ "${image}" == *"${OUTPUT_SUFFIX}.${extension}" ]] && continue
+
+    # Ignore non-image files while retaining ImageMagick's broad format support.
+    if magick identify -ping "${image}" >/dev/null 2>&1; then
+      convert_image "${image}" "${extension}" "${resize}" "${options_name}" "${args[@]}"
+    fi
+  done < <(find "${find_args[@]}")
+}
+
 img2jpg() {
-  # Convert to jpg of reasonable quality.
-  local image="${1:-}"
-
-  shift
-
-  magick "${image}" "${IMG_OPTS_JPG[@]}" "$@" "${image%.*}${OUTPUT_SUFFIX}.jpg"
+  # Convert an image or every image in a folder to jpg of reasonable quality.
+  convert_path "${1:-}" jpg "" IMG_OPTS_JPG "${@:2}"
 }
 
 img2jpg-small() {
-  # Convert to jpg of reasonable quality and resize to SMALL_MAX_WIDTH.
-  local image="${1:-}"
-
-  shift
-
-  magick "${image}" -resize "${SMALL_MAX_WIDTH}x" "${IMG_OPTS_JPG[@]}" \
-    "$@" "${image%.*}${OUTPUT_SUFFIX}.jpg"
+  # Convert an image or every image in a folder to jpg, resized to SMALL_MAX_WIDTH.
+  convert_path "${1:-}" jpg "${SMALL_MAX_WIDTH}x" IMG_OPTS_JPG "${@:2}"
 }
 
 img2png() {
-  # Convert to png of reasonable quality.
-  local image="${1:-}"
-
-  shift
-
-  magick "${image}" "${IMG_OPTS_PNG[@]}" "$@" "${image%.*}${OUTPUT_SUFFIX}.png"
+  # Convert an image or every image in a folder to png of reasonable quality.
+  convert_path "${1:-}" png "" IMG_OPTS_PNG "${@:2}"
 }
 
 img2png-small() {
-  # Convert to png of reasonable quality and resize to SMALL_MAX_WIDTH.
-  local image="${1:-}"
-
-  shift
-
-  magick "${image}" -resize "${SMALL_MAX_WIDTH}x" "${IMG_OPTS_PNG[@]}" \
-    "$@" "${image%.*}${OUTPUT_SUFFIX}.png"
+  # Convert an image or every image in a folder to png, resized to SMALL_MAX_WIDTH.
+  convert_path "${1:-}" png "${SMALL_MAX_WIDTH}x" IMG_OPTS_PNG "${@:2}"
 }
 
 img2webp() {
-  # Convert to lossy WebP at reasonable quality. Override with -quality N.
-  local image="${1:-}"
-
-  shift
-
-  magick "${image}" "${IMG_OPTS_WEBP[@]}" "$@" \
-    "${image%.*}${OUTPUT_SUFFIX}.webp"
+  # Convert an image or every image in a folder to lossy WebP. Override with -quality N.
+  convert_path "${1:-}" webp "" IMG_OPTS_WEBP "${@:2}"
 }
 
 img2webp-small() {
-  # Convert to lossy WebP at reasonable quality and resize to SMALL_MAX_WIDTH.
-  local image="${1:-}"
-
-  shift
-
-  magick "${image}" -resize "${SMALL_MAX_WIDTH}x" "${IMG_OPTS_WEBP[@]}" \
-    "$@" "${image%.*}${OUTPUT_SUFFIX}.webp"
+  # Convert an image or every image in a folder to lossy WebP, resized to SMALL_MAX_WIDTH.
+  convert_path "${1:-}" webp "${SMALL_MAX_WIDTH}x" IMG_OPTS_WEBP "${@:2}"
 }
 
 help() {

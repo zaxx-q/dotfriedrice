@@ -2,34 +2,41 @@
 include "%L"
 
 # Math
-<Multi_key> <s> <u> <m> : "∑"
-<Multi_key> <c> <s> <i> <g> : "Σ"
-<Multi_key> <8> <8> : "∞"
-<Multi_key> <d> <e> <l> : "Δ"
-<Multi_key> <l> <a> <m> : "λ"
-<Multi_key> <p> <i> : "π"
-<Multi_key> <equal> <equal> : "≡"
+<Multi_key> <s> <u> <m> : "∑" # Summation symbol
+<Multi_key> <c> <s> <i> <g> : "Σ" # Capital Sigma (Greek)
+<Multi_key> <8> <8> : "∞" # Infinity
+<Multi_key> <d> <e> <l> : "Δ" # Capital Delta (change/difference)
+<Multi_key> <l> <a> <m> : "λ" # Lowercase lambda
+<Multi_key> <p> <i> : "π" # Lowercase pi
+<Multi_key> <equal> <equal> : "≡" # Identical to / congruence
 
 # Marks
-<Multi_key> <o> <k> : "✓"
-<Multi_key> <n> <o> : "✗"
-<Multi_key> <s> <t> <a> <r> : "★"
+<Multi_key> <o> <k> : "✓" # Check mark
+<Multi_key> <n> <o> : "✗" # Ballot X / cross mark
+<Multi_key> <s> <t> <a> <r> : "★" # Black star
 
 # Fun
-<Multi_key> <f> <l> <i> <p> : "(╯°□°)╯︵ ┻━┻"
-<Multi_key> <u> <n> <f> : "┬─┬ノ( º _ ºノ)"
-<Multi_key> <c> <u> <p> : "☕"
-<Multi_key> <plus> <1> : "👍"
-<Multi_key> <l> <o> <v> <e> : "❤️"
-<Multi_key> <f> <a> <c> <e> : "ツ"
-<Multi_key> <s> <h> <r> <u> <g> : "¯\\_(ツ)_/¯"
-
-# Arabic
+<Multi_key> <f> <l> <i> <p> : "(╯°□°)╯︵ ┻━┻" # Table flip
+<Multi_key> <u> <n> <f> : "┬─┬ノ( º _ ºノ)" # Put the table back (unflip)
+<Multi_key> <c> <u> <p> : "☕" # Coffee cup
+<Multi_key> <plus> <1> : "👍" # Thumbs up
+<Multi_key> <l> <o> <v> <e> : "❤️" # Red heart
+<Multi_key> <f> <a> <c> <e> : "ツ" # Smiley face (kaomoji-style)
+<Multi_key> <s> <h> <r> <u> <g> : "¯\\_(ツ)_/¯" # Shrug kaomoji
 
 # Arabic phrases
-<Multi_key> <a> <m> <n> : "آمِينْ"
-<Multi_key> <a> <s> <s> : "اَلسَّلَامُ عَلَيْكُمْ"
-<Multi_key> <w> <a> <l> : "وَعَلَيْكُمُ السَّلَامُ"
-<Multi_key> <a> <z> <a> : "الْحَمْدُ لِلَّهِ جَزَاكَ اللَّهُ خَيْرًا"
-<Multi_key> <a> <z> <i> : "الْحَمْدُ لِلَّهِ جَزَاكِ اللَّهُ خَيْرًا"
-<Multi_key> <a> <z> <u> : "الْحَمْدُ لِلَّهِ جَزَاكُمُ اللَّهُ خَيْرًا"
+
+# With tashkeel (diacritics)
+<Multi_key> <a> <m> <n> : "آمِينْ" # "Ameen" (Amen)
+<Multi_key> <a> <s> <s> : "اَلسَّلَامُ عَلَيْكُمْ" # "Assalamu alaikum" (peace be upon you) - greeting
+<Multi_key> <w> <a> <l> : "وَعَلَيْكُمُ السَّلَامُ" # "Wa alaikumu assalam" (and upon you be peace) - reply to greeting
+<Multi_key> <a> <z> <a> : "الْحَمْدُ لِلَّهِ جَزَاكَ اللَّهُ خَيْرًا" # "Jazakallahu khairan" (thanks), addressed to a man
+<Multi_key> <a> <z> <i> : "الْحَمْدُ لِلَّهِ جَزَاكِ اللَّهُ خَيْرًا" # "Jazakillahu khairan" (thanks), addressed to a woman
+<Multi_key> <a> <z> <u> : "الْحَمْدُ لِلَّهِ جَزَاكُمُ اللَّهُ خَيْرًا" # "Jazakumullahu khairan" (thanks), addressed to a group
+
+# Without tashkeel (diacritics)
+<Multi_key> <n> <a> <m> : "آمين" # "Ameen" (Amen)
+<Multi_key> <n> <a> <s> : "السلام عليكم" # "Assalamu alaikum" - greeting
+<Multi_key> <n> <w> <a> : "وعليكم السلام" # "Wa alaikumu assalam" - reply to greeting
+<Multi_key> <n> <a> <z> : "الحمد لله جزاك الله خيرا" # "Jazakallahu khairan" (thanks), addressed to a man
+<Multi_key> <n> <a> <k> : "الحمد لله جزاكم الله خيرا" # "Jazakumullahu khairan" (thanks), addressed to a group

@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# Convert media in-place for DaVinci Resolve Free on Linux.
+# Creates <file>_resolve.mov (or .wav) directly beside each input file.
+
+set -Eeuo pipefail
+
+QUALITY="lb"
+if [[ $# -gt 0 && ("$1" == "lb" || "$1" == "sq" || "$1" == "hq") ]]; then
+  QUALITY="$1"
+  shift
+fi
+
+case "$QUALITY" in
+  lb) PROFILE="dnxhr_lb" ;;
+  sq) PROFILE="dnxhr_sq" ;;
+  hq) PROFILE="dnxhr_hq" ;;
+  *)  PROFILE="dnxhr_lb" ;;
+esac
+
+notify() {
+  command -v notify-send >/dev/null 2>&1 || return 0
+  notify-send -a 'DaVinci Resolve' "$1" "$2" >/dev/null 2>&1 || true
+}
+
+converted=0
+failed=0
+
+for input in "$@"; do
+  [[ -f "$input" ]] || continue
+  
+  input="$(realpath "$input")"
+  dir="$(dirname "$input")"
+  filename="$(basename "$input")"
+  stem="${filename%.*}"
+
+  # Inspect streams with ffprobe (counting streams avoids phone metadata CSV quirks)
+  video_count=$(ffprobe -v error -select_streams v -show_entries stream=index -of csv=p=0 "$input" 2>/dev/null | wc -l)
+  audio_count=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$input" 2>/dev/null | wc -l)
+  if (( video_count > 0 )); then
+    kind="video"
+  elif (( audio_count > 0 )); then
+    kind="audio"
+  else
+    printf 'Skipping non-media file: %s\n' "$filename"
+    continue
+  fi
+
+  if [[ "$kind" == "video" ]]; then
+    output="$dir/${stem}_resolve.mov"
+    temp="$dir/.${stem}_resolve.partial.mov"
+    printf 'Converting video: %s -> %s [%s]\n' "$filename" "$(basename "$output")" "$PROFILE"
+    
+    if ffmpeg -nostdin -hide_banner -loglevel error -stats \
+        -i "$input" \
+        -map 0:v:0 -map 0:a? -map_metadata 0 \
+        -c:v dnxhd -profile:v "$PROFILE" -pix_fmt yuv422p \
+        -c:a pcm_s24le -ar 48000 \
+        -movflags +write_colr+use_metadata_tags \
+        -y "$temp"; then
+      mv -f "$temp" "$output"
+      ((++converted))
+      printf 'Done: %s\n' "$output"
+    else
+      rm -f "$temp"
+      ((++failed))
+      printf 'Failed to convert: %s\n' "$input" >&2
+    fi
+  else
+    output="$dir/${stem}_resolve.wav"
+    temp="$dir/.${stem}_resolve.partial.wav"
+    printf 'Converting audio: %s -> %s\n' "$filename" "$(basename "$output")"
+    
+    if ffmpeg -nostdin -hide_banner -loglevel error -stats \
+        -i "$input" -map 0:a:0 -map_metadata 0 \
+        -c:a pcm_s24le -ar 48000 -y "$temp"; then
+      mv -f "$temp" "$output"
+      ((++converted))
+      printf 'Done: %s\n' "$output"
+    else
+      rm -f "$temp"
+      ((++failed))
+      printf 'Failed to convert: %s\n' "$input" >&2
+    fi
+  fi
+done
+
+if (( failed > 0 )); then
+  notify 'DaVinci Conversion Failed' "$failed file(s) failed."
+  exit 1
+elif (( converted > 0 )); then
+  notify 'DaVinci Conversion Complete' "$converted file(s) ready in the same folder."
+fi

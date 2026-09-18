@@ -470,6 +470,11 @@ window-rule {
     default-window-height { fixed 920; }
 }
 
+window-rule {
+    match app-id=r#"^resolve$"#
+    open-floating true
+}
+
 // ----------------------------------------------------------------------------
 // Key binds
 // Available hotkeys: Mod + U -I -O -H -J
@@ -483,7 +488,7 @@ binds {
     Mod+V                    hotkey-overlay-title="Clipboard" { spawn "noctalia" "msg" "panel-toggle" "clipboard"; }
     Mod+Grave                hotkey-overlay-title="Session" { spawn "noctalia" "msg" "panel-toggle" "session"; }
     Alt+Grave                hotkey-overlay-title="Window switcher" { spawn "noctalia" "msg" "window-switcher"; }
-    Mod+Shift+Space          hotkey-overlay-title="Bar toggle" { spawn "noctalia" "msg" "bar-toggle"; }
+    Mod+Shift+Space          repeat=false hotkey-overlay-title="Bar toggle" { spawn "noctalia" "msg" "bar-toggle"; }
 
  // Niri has a built-in window switcher you might want to try it to see which one you prefer.
 
@@ -525,6 +530,8 @@ binds {
     Mod+U                    hotkey-overlay-title="Cast focused window" { spawn-sh "niri msg action set-dynamic-cast-window --id $(niri msg --json focused-window | jq .id)"; }
     Mod+Alt+Y                repeat=false hotkey-overlay-title="Mirror focused monitor to a window" { spawn-sh "wl-mirror $(niri msg --json focused-output | jq -r .name)"; }
     Mod+Alt+V                hotkey-overlay-title="Select region to make it float/Pin to screen" { spawn "pin-to-screen"; }
+    Alt+Q                    repeat=false hotkey-overlay-title="Ask Google AI" { spawn "bash" "-c" "sentinel='🔍'; query=$(printf '%s\n' \"$sentinel\" | noctalia dmenu -p 'Ask Google AI'); if [ -z \"$query\" ] || [ \"$query\" = \"$sentinel\" ]; then exit 0; fi; encoded=$(jq -rn --arg q \"$query\" '$q|@uri'); niri msg action spawn -- xdg-open \"https://www.google.com/search?q=${encoded}&udm=50\""; }
+    Mod+Semicolon            repeat=false hotkey-overlay-title="Compose key cheatsheet" { spawn "compose-picker"; }
 
  // Notifications.
  // Mod+N                    hotkey-overlay-title="Show last notification" { spawn "makoctl" "restore"; }
@@ -579,11 +586,12 @@ binds {
  // Mod+Alt+Shift+P          hotkey-overlay-title="Generate random password to clipboard" { spawn "pw"; }
     Mod+M                    hotkey-overlay-title="Music" { spawn "dfr-launch-or-focus-tui" "rmpc"; }
     Mod+B                    hotkey-overlay-title="Browser" { spawn "launch-or-cycle" "zen:zen-browser"; }
-    Mod+Alt+B                hotkey-overlay-title="Browser (private)" { spawn "zen-browser" "-private-window"; }
+ // Mod+Alt+B                hotkey-overlay-title="Browser (private)" { spawn "zen-browser" "-private-window"; }
     Mod+Ctrl+B               hotkey-overlay-title="Browser (isolated profile)" { spawn-sh "zen-browser -P ${BROWSER_ISOLATED_PROFILE:-isolated}"; }
     Mod+I                    hotkey-overlay-title="Open scrcpy" { spawn "scrcpy-daily"; }
 
     Ctrl+Grave               { spawn "AIPromptBridge" "--trigger" "textedit"; }
+    Ctrl+Shift+Grave         { spawn "AIPromptBridge" "--trigger" "textedit-clipboard"; }
     Ctrl+Alt+X               { spawn "AIPromptBridge" "--trigger" "snip"; }
     Ctrl+Alt+A               { spawn "AIPromptBridge" "--trigger" "audio"; }
     Ctrl+Alt+T               { spawn "AIPromptBridge" "--trigger" "tts"; }
@@ -630,10 +638,10 @@ binds {
  // Window and column movement.
  // Mod+I                    hotkey-overlay-title="Focus previously focused window" { focus-window-previous; } (use alt tab instead)
 
-    Mod+Left                 hotkey-overlay-title="Focus column left" { focus-column-left; }
-    Mod+Down                 hotkey-overlay-title="Focus column down" { focus-window-down; }
-    Mod+Up                   hotkey-overlay-title="Focus column up" { focus-window-up; }
-    Mod+Right                hotkey-overlay-title="Focus column right" { focus-column-right; }
+ // Mod+Left                 hotkey-overlay-title="Focus column left" { focus-column-left; }
+ // Mod+Down                 hotkey-overlay-title="Focus column down" { focus-window-down; }
+ // Mod+Up                   hotkey-overlay-title="Focus column up" { focus-window-up; }
+ // Mod+Right                hotkey-overlay-title="Focus column right" { focus-column-right; }
     Mod+A                    hotkey-overlay-title="Focus column left" { focus-column-left; }
     Mod+S                    hotkey-overlay-title="Focus column down" { focus-window-down; }
     Mod+W                    hotkey-overlay-title="Focus column up" { focus-window-up; }

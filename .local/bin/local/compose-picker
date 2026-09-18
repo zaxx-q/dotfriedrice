@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# compose-picker — fuzzy-search your XCompose definitions with Noctalia's
+# dmenu and copy the resulting character to the clipboard.
+#
+# Reads: $XDG_CONFIG_HOME/XCompose (falls back to ~/.config/XCompose)
+
+set -euo pipefail
+
+XCOMPOSE="${XDG_CONFIG_HOME:-$HOME/.config}/XCompose"
+
+notify() {
+    command -v notify-send >/dev/null 2>&1 && notify-send "Compose" "$1"
+    return 0
+}
+
+[ -f "$XCOMPOSE" ] || { notify "No file at $XCOMPOSE"; exit 1; }
+
+# Parse lines of the form:
+#   <Multi_key> <minus> <greater> : "→" U2192 # RIGHTWARDS ARROW
+# into "seq  →  output   (comment)\toutput" for the picker.
+entries=$(perl -ne '
+    next if /^\s*(#|include\b)/;
+    if (/^\s*((?:<[^>]+>\s*)+):\s*"((?:[^"\\]|\\.)*)"\s*([A-Za-z_]\w*)?\s*(?:#\s*(.*))?\s*$/) {
+        my ($seq, $out, $keysym, $comment) = ($1, $2, $3, $4);
+        $seq =~ s/<([^>]+)>/$1/g;
+        $seq =~ s/Multi_key/⎄/g;
+        $seq =~ s/\s+/ /g;
+        $seq =~ s/^\s+|\s+$//g;
+        $out =~ s/\\"/"/g;
+        $out =~ s/\\\\/\\/g;
+        my $label = "$seq  →  $out";
+        if ($comment) { $label .= "   ($comment)"; }
+        elsif ($keysym) { $label .= "   [$keysym]"; }
+        print "$label\t$out\n";
+    }
+' "$XCOMPOSE")
+
+[ -n "$entries" ] || { notify "No entries found in $XCOMPOSE"; exit 1; }
+
+choice=$(printf '%s\n' "$entries" | noctalia dmenu -p 'Compose key')
+[ -n "$choice" ] || exit 0
+
+result="${choice#*$'\t'}"
+
+if command -v wl-copy >/dev/null 2>&1; then
+    printf '%s' "$result" | wl-copy
+elif command -v xclip >/dev/null 2>&1; then
+    printf '%s' "$result" | xclip -selection clipboard
+else
+    notify "No clipboard tool found (install wl-clipboard)"
+    exit 1
+fi
+
+notify "Copied: $result"

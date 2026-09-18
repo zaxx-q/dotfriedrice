@@ -84,10 +84,21 @@
       "source": "npm:pi-lens",
       "extensions": [
         "-dist/index.js"
+      ],
+      "skills": [
+        "-skills/pi-lens-ast-grep/SKILL.md",
+        "-skills/pi-lens-lsp-navigation/SKILL.md",
+        "-skills/pi-lens-write-ast-grep-rule/SKILL.md",
+        "-skills/pi-lens-write-tree-sitter-rule/SKILL.md"
       ]
     },
     "npm:@ff-labs/pi-fff",
-    "npm:@gotgenes/pi-permission-system",
+    {
+      "source": "npm:@gotgenes/pi-permission-system",
+      "extensions": [
+        "-src/index.ts"
+      ]
+    },
     {
       "source": "npm:@tintinweb/pi-subagents",
       "extensions": [
@@ -128,7 +139,20 @@
     },
     "npm:pi-google-services",
     "npm:@xynogen/pix-optimizer",
-    "npm:@palmtom/pi-models"
+    "npm:@palmtom/pi-models",
+    {
+      "source": "npm:@router-for-me/pi-cliproxyapi-provider",
+      "extensions": [
+        "+extensions/index.ts",
+        "+extensions/tps.ts"
+      ]
+    },
+    {
+      "source": "npm:pi-cliproxyapi-provider",
+      "extensions": [
+        "-extensions/index.ts"
+      ]
+    }
   ],
   "theme": "noctalia",
   "extensions": [
@@ -150,6 +174,7 @@
     "showTerminalProgress": true
   },
   "hideThinkingBlock": false,
-  "defaultProvider": "prox-google",
-  "defaultModel": "gemini-3.8-flash-high"
+  "defaultProvider": "cliproxyapi",
+  "defaultModel": "gemini-3.8-flash-high",
+  "transport": "websocket-cached"
 }

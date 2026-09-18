@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Open a visible delivery terminal from a Thunar custom action.
+
+set -Eeuo pipefail
+
+mode="${1:-}"
+shift || true
+
+case "$mode" in
+  quality|fast) ;;
+  *)
+    printf 'Usage: resolve-thunar-deliver <quality|fast> <video-files>...\n' >&2
+    exit 2
+    ;;
+esac
+
+[[ $# -gt 0 ]] || exit 0
+
+bin_dir="$(dirname "$(readlink -f "$0")")"
+# shellcheck disable=SC2016 # The nested bash must receive these expansions literally.
+exec ghostty --gtk-single-instance=false --title="Resolve delivery ($mode)" \
+  -e bash -c '
+    "$1/resolve-deliver" --"$2" "${@:3}"
+    status=$?
+    printf "\nPress Enter to close this delivery window..."
+    read -r
+    exit "$status"
+  ' resolve-thunar-deliver "$bin_dir" "$mode" "$@"
