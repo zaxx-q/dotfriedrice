@@ -167,6 +167,7 @@ export PACKAGES_DNF_GUI_SKIP=(
   "timidity++"
   "waybar"
   "zathura-djvu"
+  "satty"
 )
 
 # Install Fedora weak dependencies?

@@ -422,6 +422,7 @@ window-rule {
 
 window-rule {
     match app-id=r#"^com\.gabm\.satty$"#
+    match app-id=r#"^dev\.tensaku\.Tensaku$"#
     open-floating true
     min-width 730
     min-height 300
