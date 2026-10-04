@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.85.1",
+  "lastChangelogVersion": "0.99.1",
   "npmCommand": [
     "bun"
   ],
@@ -15,7 +15,8 @@
       "source": "npm:@narumitw/pi-caffeinate",
       "extensions": [
         "-src/caffeinate.ts",
-        "-src/index.ts"
+        "-src/index.ts",
+        "-dist/index.ts"
       ]
     },
     {

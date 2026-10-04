@@ -4,67 +4,241 @@
 from __future__ import annotations
 
 import os
-import re
-import shlex
 import subprocess
 import sys
 from pathlib import Path
+from typing import Iterator
 
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "niri"
-TITLE_RE = re.compile(r'hotkey-overlay-title="([^"]+)"')
-KEY_RE = re.compile(r"^\s*([^\s={}]+)\s+.*hotkey-overlay-title=")
-INCLUDE_RE = re.compile(r'^\s*include(?:\s+optional=true)?\s+"([^"]+)"')
 
 
-def strip_comments(line: str) -> str:
-    return re.sub(r"//.*$", "", line)
+def tokenize_kdl(text: str) -> Iterator[tuple[str, str]]:
+    """Tokenize KDL text into (type, value) pairs, handling comments and quotes properly."""
+    i = 0
+    n = len(text)
+    while i < n:
+        c = text[i]
+
+        if c in " \t\r":
+            i += 1
+            continue
+
+        if c == "\n":
+            yield ("NEWLINE", "\n")
+            i += 1
+            continue
+
+        # Single-line comment //
+        if c == "/" and i + 1 < n and text[i + 1] == "/":
+            i += 2
+            while i < n and text[i] != "\n":
+                i += 1
+            continue
+
+        # Block comment /* ... */
+        if c == "/" and i + 1 < n and text[i + 1] == "*":
+            i += 2
+            depth = 1
+            while i < n and depth > 0:
+                if text[i : i + 2] == "/*":
+                    depth += 1
+                    i += 2
+                elif text[i : i + 2] == "*/":
+                    depth -= 1
+                    i += 2
+                else:
+                    i += 1
+            continue
+
+        # Node comment /-
+        if c == "/" and i + 1 < n and text[i + 1] == "-":
+            yield ("NODE_COMMENT", "/-")
+            i += 2
+            continue
+
+        # Syntax delimiters
+        if c in "{};=":
+            yield (c, c)
+            i += 1
+            continue
+
+        # Double-quoted string "..."
+        if c == '"':
+            i += 1
+            buf: list[str] = []
+            while i < n:
+                if text[i] == "\\" and i + 1 < n:
+                    nc = text[i + 1]
+                    if nc == "n":
+                        buf.append("\n")
+                        i += 2
+                    elif nc == "t":
+                        buf.append("\t")
+                        i += 2
+                    elif nc == "r":
+                        buf.append("\r")
+                        i += 2
+                    elif nc == "\\":
+                        buf.append("\\")
+                        i += 2
+                    elif nc == '"':
+                        buf.append('"')
+                        i += 2
+                    else:
+                        buf.append(nc)
+                        i += 2
+                elif text[i] == '"':
+                    i += 1
+                    break
+                else:
+                    buf.append(text[i])
+                    i += 1
+            yield ("STRING", "".join(buf))
+            continue
+
+        # Raw string r#"..."#
+        if c == "r" and (i + 1 < n and text[i + 1] in ('"', "#")):
+            j = i + 1
+            hashes = 0
+            while j < n and text[j] == "#":
+                hashes += 1
+                j += 1
+            if j < n and text[j] == '"':
+                j += 1
+                end_marker = '"' + ("#" * hashes)
+                end_pos = text.find(end_marker, j)
+                if end_pos != -1:
+                    yield ("STRING", text[j:end_pos])
+                    i = end_pos + len(end_marker)
+                    continue
+
+        # Bare identifier / literal
+        start = i
+        while i < n and text[i] not in " \t\r\n{};=\"":
+            if text[i] == "/" and i + 1 < n and text[i + 1] in "/*-":
+                break
+            i += 1
+        yield ("IDENT", text[start:i])
 
 
-def parse_config(path: Path, binds: dict[str, tuple[str, str]], seen: set[Path]) -> None:
+class KdlNode:
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.args: list[str] = []
+        self.props: dict[str, str] = {}
+        self.children: list[KdlNode] = []
+
+
+def parse_kdl(tokens: list[tuple[str, str]]) -> list[KdlNode]:
+    """Parse token list into a hierarchy of KDL nodes."""
+    pos = 0
+    n = len(tokens)
+
+    def parse_nodes() -> list[KdlNode]:
+        nonlocal pos
+        nodes: list[KdlNode] = []
+        while pos < n:
+            while pos < n and tokens[pos][0] in ("NEWLINE", ";"):
+                pos += 1
+            if pos >= n or tokens[pos][0] == "}":
+                break
+
+            commented_out = False
+            if tokens[pos][0] == "NODE_COMMENT":
+                commented_out = True
+                pos += 1
+                if pos >= n:
+                    break
+
+            if tokens[pos][0] not in ("IDENT", "STRING"):
+                pos += 1
+                continue
+
+            node = KdlNode(tokens[pos][1])
+            pos += 1
+
+            while pos < n:
+                token_type, token_val = tokens[pos]
+
+                if token_type in ("NEWLINE", ";", "}"):
+                    break
+
+                if token_type == "{":
+                    pos += 1
+                    node.children = parse_nodes()
+                    if pos < n and tokens[pos][0] == "}":
+                        pos += 1
+                    break
+
+                if token_type == "NODE_COMMENT":
+                    pos += 1
+                    if pos < n:
+                        if tokens[pos][0] == "{":
+                            pos += 1
+                            _ = parse_nodes()
+                            if pos < n and tokens[pos][0] == "}":
+                                pos += 1
+                        elif pos + 2 < n and tokens[pos + 1][0] == "=":
+                            pos += 3
+                        else:
+                            pos += 1
+                    continue
+
+                if pos + 1 < n and tokens[pos + 1][0] == "=":
+                    prop_key = token_val
+                    prop_val = tokens[pos + 2][1] if pos + 2 < n else ""
+                    node.props[prop_key] = prop_val
+                    pos += 3
+                    continue
+
+                node.args.append(token_val)
+                pos += 1
+
+            if not commented_out:
+                nodes.append(node)
+
+        return nodes
+
+    return parse_nodes()
+
+
+def parse_config(path: Path, binds: dict[str, tuple[str, list[str]]], seen: set[Path]) -> None:
     """Collect titled bindings and their Niri actions; later binds replace earlier ones."""
     try:
         path = path.resolve()
         if path in seen:
             return
         seen.add(path)
-        lines = path.read_text(encoding="utf-8").splitlines()
+        text = path.read_text(encoding="utf-8")
     except OSError:
         return
 
-    buffer = ""
-    for line in lines:
-        clean = strip_comments(line).strip()
-        if not clean:
-            continue
+    nodes = parse_kdl(list(tokenize_kdl(text)))
 
-        include = INCLUDE_RE.match(clean)
-        if include:
-            included = Path(include.group(1)).expanduser()
-            if not included.is_absolute():
-                included = path.parent / included
-            parse_config(included, binds, seen)
-            buffer = ""
-            continue
+    def process_nodes(node_list: list[KdlNode]) -> None:
+        for node in node_list:
+            if node.name == "include":
+                include_target = node.args[0] if node.args else node.props.get("path")
+                if include_target:
+                    inc_path = Path(include_target).expanduser()
+                    if not inc_path.is_absolute():
+                        inc_path = path.parent / inc_path
+                    parse_config(inc_path, binds, seen)
+            elif "hotkey-overlay-title" in node.props and node.children:
+                title = node.props["hotkey-overlay-title"]
+                child = node.children[0]
+                action_args = [child.name, *child.args]
+                if action_args[0] in ("spawn", "spawn-sh") and (len(action_args) == 1 or action_args[1] != "--"):
+                    action_args.insert(1, "--")
+                binds[node.name] = (title, action_args)
 
-        buffer = f"{buffer} {clean}".strip()
-        title = TITLE_RE.search(buffer)
-        if title and "{" in buffer and "}" in buffer:
-            key = KEY_RE.search(buffer)
-            action = re.search(r"\{\s*(.*?)\s*\}", buffer)
-            if key and action and key.group(1) != "binds":
-                # `niri msg action` accepts the action body, not KDL's braces.
-                raw_action = action.group(1).rstrip(";").strip()
-                if raw_action.startswith("spawn "):
-                    # The CLI's spawn action needs `--` before its command.
-                    raw_action = "spawn -- " + raw_action[len("spawn "):]
-                binds[key.group(1)] = (title.group(1), raw_action)
-            buffer = ""
-        elif "}" in clean and not TITLE_RE.search(buffer):
-            buffer = ""
+            process_nodes(node.children)
+
+    process_nodes(nodes)
 
 
 def main() -> int:
-    binds: dict[str, str] = {}
+    binds: dict[str, tuple[str, list[str]]] = {}
     parse_config(CONFIG_DIR / "config.kdl", binds, set())
 
     if not binds:
@@ -90,9 +264,7 @@ def main() -> int:
         print("Selected shortcut is no longer available.", file=sys.stderr)
         return 1
 
-    # Parse arguments without a shell: actions originate only from the local
-    # Niri configuration, and quotes in spawn/spawn-sh arguments are preserved.
-    return subprocess.run(["niri", "msg", "action", *shlex.split(action)], check=False).returncode
+    return subprocess.run(["niri", "msg", "action", *action], check=False).returncode
 
 
 if __name__ == "__main__":

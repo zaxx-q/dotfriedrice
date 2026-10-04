@@ -1,5 +1,6 @@
 {
-	"language_models": {
+	"theme": "Noctalia Dark",
+ "language_models": {
 		"openai_compatible": {
 			"proxy": {
 				"api_url": "http://127.0.0.1:8300/v1",
@@ -278,10 +279,5 @@
 		"dark": "Material Icon Theme"
 	},
 	"ui_font_size": 16,
-	"buffer_font_size": 15,
-	"theme": {
-		"mode": "dark",
-		"light": "Noctalia Light",
-		"dark": "Noctalia Dark"
-	}
+	"buffer_font_size": 15
 }

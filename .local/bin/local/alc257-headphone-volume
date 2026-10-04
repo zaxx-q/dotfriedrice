@@ -5,7 +5,7 @@
 set -u
 
 card="Generic_1"
-target_raw=72 # 71/87 maps to 60% in alsamixer (-12.00 dB)
+target_raw=75 # 71/87 maps to 60% in alsamixer (-12.00 dB)
 
 control_value() {
   /usr/bin/amixer -c "$card" cget "numid=$1" 2>/dev/null |

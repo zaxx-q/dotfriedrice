@@ -35,3 +35,13 @@ export VDPAU_DRIVER=va_gl
 # export NVD_BACKEND=direct
 # export LIBVA_DRIVER_NAME=nvidia
 # export CUDA_DISABLE_PERF_BOOST=1
+
+# Redirect Android preference/emulator files away from home root
+export ANDROID_USER_HOME="$HOME/.local/share/android"
+
+# Redirect Gradle caches away from home root
+export GRADLE_USER_HOME="$HOME/.local/share/gradle"
+
+# Optional: Tell your system CLI where you chose to download the SDK tools in Step 1
+export ANDROID_HOME="$HOME/.local/share/Android/Sdk"
+export PATH=$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools

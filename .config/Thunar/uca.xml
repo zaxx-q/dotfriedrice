@@ -43,8 +43,8 @@
 </action>
 <action>
 	<icon>stock_folder-copy</icon>
-	<name>Compare File Hashes</name>
-	<submenu></submenu>
+	<name>Check if different</name>
+	<submenu>Compare</submenu>
 	<unique-id>1782906810362187-1</unique-id>
 	<command>~/.local/bin/local/smart-compare %F</command>
 	<description></description>
@@ -59,7 +59,7 @@
 <action>
 	<icon>org.gnome.Meld</icon>
 	<name>Compare with Meld</name>
-	<submenu></submenu>
+	<submenu>Compare</submenu>
 	<unique-id>1783582118273125-1</unique-id>
 	<command>meld %F</command>
 	<description>Compare selected files or directories</description>
@@ -151,7 +151,7 @@
 <action>
 	<icon>video-x-generic</icon>
 	<name>Convert for DaVinci Resolve (Fast)</name>
-	<submenu>Resolve</submenu>
+	<submenu>Video</submenu>
 	<unique-id>resolve-convert-lb-20260912</unique-id>
 	<command>/home/zaxx/.local/bin/resolve-convert-thunar lb %F</command>
 	<description>Convert in-place to DNxHR LB / PCM directly beside this file</description>
@@ -163,7 +163,7 @@
 <action>
 	<icon>video-x-generic</icon>
 	<name>Convert for DaVinci Resolve (High Quality)</name>
-	<submenu>Resolve</submenu>
+	<submenu>Video</submenu>
 	<unique-id>resolve-convert-sq-20260912</unique-id>
 	<command>/home/zaxx/.local/bin/resolve-convert-thunar sq %F</command>
 	<description>Convert in-place to DNxHR SQ / PCM directly beside this file</description>
@@ -175,7 +175,7 @@
 <action>
 	<icon>video-x-generic</icon>
 	<name>Export Web MP4 (Fast AMD)</name>
-	<submenu>Resolve</submenu>
+	<submenu>Video</submenu>
 	<unique-id>resolve-deliver-fast-20260912</unique-id>
 	<command>/home/zaxx/.local/bin/resolve-thunar-deliver fast %F</command>
 	<description>Encode video in-place to H.264/AAC MP4 using AMD hardware</description>
@@ -186,10 +186,68 @@
 <action>
 	<icon>video-x-generic</icon>
 	<name>Export Web MP4 (Best Quality CPU)</name>
-	<submenu>Resolve</submenu>
+	<submenu>Video</submenu>
 	<unique-id>resolve-deliver-quality-20260912</unique-id>
 	<command>/home/zaxx/.local/bin/resolve-thunar-deliver quality %F</command>
 	<description>Encode video in-place to high quality H.264/AAC MP4 using CPU x264</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<video-files/>
+</action>
+<action>
+	<icon>camera-video</icon>
+	<name>Compare Videos</name>
+	<submenu>Compare</submenu>
+	<unique-id>1789869891434855-1</unique-id>
+	<command>bash -c &apos;if [ &quot;$#&quot; -lt 2 ]; then zenity --error --text=&quot;Select at least 2 video files to compare.&quot;; else video-compare &quot;$@&quot;; fi&apos; _ %F</command>
+	<description>Compare selected videos with video-compare</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<video-files/>
+</action>
+<action>
+	<icon>audio-volume-low</icon>
+	<name>Denoise</name>
+	<submenu>Audio</submenu>
+	<unique-id>1790051309681548-1</unique-id>
+	<command>thunar-deepfilter %F</command>
+	<description>Remove noise from speech using DeepFilterNet</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<audio-files/>
+	<video-files/>
+</action>
+<action>
+	<icon>audio-volume-high</icon>
+	<name>Denoise + Normalize (EBU R128)</name>
+	<submenu>Audio</submenu>
+	<unique-id>1790051409769577-2</unique-id>
+	<command>thunar-deepfilter --normalize %F</command>
+	<description>Remove noise from speech using DeepFilterNet and then normalize</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<audio-files/>
+	<video-files/>
+</action>
+<action>
+	<icon>audio-speakers</icon>
+	<name>Denoise (Heavy) + Normalize</name>
+	<submenu>Audio</submenu>
+	<unique-id>1790053200484037-3</unique-id>
+	<command>thunar-deepfilter --pf --atten 40 --normalize %F</command>
+	<description>Remove heavy noise from speech using DeepFilterNet and normalize</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<audio-files/>
+	<video-files/>
+</action>
+<action>
+	<icon>audio-card</icon>
+	<name>Extract Audio to Opus (.ogg)</name>
+	<submenu>Video</submenu>
+	<unique-id>1790054734239877-4</unique-id>
+	<command>bash -c &apos;notify-send &quot;Audio Extraction&quot; &quot;Started converting $# file(s)...&quot; -i multimedia-audio-player; for f in &quot;$@&quot;; do ffmpeg -y -i &quot;$f&quot; -vn -c:a libopus -b:a 128k &quot;${f%%.*}.ogg&quot;; done; notify-send &quot;Audio Extraction&quot; &quot;Finished converting $# file(s)!&quot; -i dialog-information&apos; _ %F</command>
+	<description>Converts video audio to Opus format inside an Ogg container</description>
 	<range>*</range>
 	<patterns>*</patterns>
 	<video-files/>

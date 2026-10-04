@@ -1,4 +1,5 @@
 {
 	"tui.altScreen.search": "f3",
-	"tui.altScreen.searchPrevious": "shift+enter"
+	"tui.altScreen.searchPrevious": "shift+enter",
+	"app.editor.external": "ctrl+h"
 }

@@ -1,0 +1,359 @@
+#!/usr/bin/env bash
+#
+# thunar-deepfilter
+#
+# Thunar custom action & CLI tool: AI noise suppression for audio & video files using DeepFilterNet.
+#
+# Audio files:
+#   Converts any audio (mp3, wav, flac, m4a, ogg, opus, etc.) to 48kHz mono WAV,
+#   denoises with DeepFilterNet, and encodes back to the original format (or .wav).
+#
+# Video files:
+#   Extracts audio track, denoises with DeepFilterNet, and remuxes it back with the
+#   original video stream (-c:v copy) without re-encoding video.
+#
+# --- Thunar Setup ---
+# 1. Edit > Configure Custom Actions... > "+"
+# 2. Basic tab:
+#      Name:        AI Clean Audio / Video (DeepFilterNet)
+#      Description: Remove noise from speech using DeepFilterNet
+#      Command:     thunar-deepfilter %F
+#      Icon:        audio-volume-high (or multimedia-video-player)
+# 3. Appearance Conditions tab:
+#      File Pattern: *
+#      Tick:         "Audio Files" AND "Video Files"
+#
+# Tip: You can also create two actions under the same Submenu ("DeepFilterNet"):
+#   - Denoise:                    thunar-deepfilter %F
+#   - Denoise + Normalize:        thunar-deepfilter --normalize %F
+# Or a single action with a prompt:
+#   - Denoise (Ask Normalize):    thunar-deepfilter --ask %F
+#
+# --- Options & Environment Variables ---
+#   --normalize, NORMALIZE=1       Apply EBU R128 loudness normalization
+#   --pf, POST_FILTER=1            Enable post-filter (attenuates residual metallic/watery noise)
+#   --atten <dB>, ATTEN_LIMIT=<dB> Attenuation limit in dB (default: 100 for total silence)
+#   --ask                          Show a popup asking whether to normalize
+#   --wav                          Extract & save as WAV even for video files
+#
+
+set -euo pipefail
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Helper functions: Notifications & Binary detection
+# ─────────────────────────────────────────────────────────────────────────────
+
+notify() {
+    local title="$1" msg="$2"
+    notify-send -a "DeepFilterNet" -i "audio-volume-high" "$title" "$msg" 2>/dev/null || \
+    zenity --info --title="$title" --text="$msg" 2>/dev/null || \
+    echo "[$title] $msg"
+}
+
+notify_error() {
+    local title="$1" msg="$2"
+    notify-send -u critical -a "DeepFilterNet" -i "dialog-error" "$title" "$msg" 2>/dev/null || \
+    zenity --error --title="$title" --text="$msg" 2>/dev/null || \
+    echo "ERROR: [$title] $msg" >&2
+}
+
+# Find deep-filter binary
+DEEP_FILTER_BIN=""
+if command -v deep-filter >/dev/null 2>&1; then
+    DEEP_FILTER_BIN="$(command -v deep-filter)"
+elif [ -x "$HOME/.local/bin/deep-filter" ]; then
+    DEEP_FILTER_BIN="$HOME/.local/bin/deep-filter"
+elif command -v deepFilter >/dev/null 2>&1; then
+    DEEP_FILTER_BIN="$(command -v deepFilter)"
+fi
+
+if [ -z "$DEEP_FILTER_BIN" ]; then
+    notify_error "DeepFilterNet Not Found" "deep-filter binary was not found in PATH or ~/.local/bin/.\nInstall it from https://github.com/Rikorose/DeepFilterNet/releases"
+    exit 1
+fi
+
+if ! command -v ffmpeg >/dev/null 2>&1; then
+    notify_error "FFmpeg Not Found" "ffmpeg is required to process audio and video files with DeepFilterNet."
+    exit 1
+fi
+
+has_video() {
+    local file="$1"
+    # Detect true video streams, ignoring attached album artwork (disposition=attached_pic)
+    ffprobe -v error -select_streams v -show_entries stream=codec_type:disposition=attached_pic -of csv=p=0 "$file" 2>/dev/null | grep -q "video,0"
+}
+
+has_audio() {
+    local file="$1"
+    ffprobe -v error -select_streams a:0 -show_entries stream=codec_type -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null | grep -q "audio"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Arguments & Options
+# ─────────────────────────────────────────────────────────────────────────────
+
+NORMALIZE="${NORMALIZE:-0}"
+ASK_NORMALIZE=0
+POST_FILTER="${POST_FILTER:-0}"
+ATTEN_LIMIT="${ATTEN_LIMIT:-}"
+OUTPUT_FORMAT="${OUTPUT_FORMAT:-preserve}"
+
+FILES=()
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -h|--help)
+            echo "Usage: $(basename "$0") [OPTIONS] <FILE1> [FILE2...]"
+            echo ""
+            echo "Options:"
+            echo "  --normalize          Apply EBU R128 loudness normalization after denoising"
+            echo "  --pf, --post-filter  Enable post-filter to remove residual metallic/watery noise"
+            echo "  --atten <dB>         Attenuation limit in dB (e.g. 30 or 40 for natural room tone)"
+            echo "  --ask                Prompt with a dialog whether to normalize loudness"
+            echo "  --wav                Force output audio to WAV (extracts audio if input is video)"
+            echo "  -h, --help           Show this help"
+            exit 0
+            ;;
+        --normalize)
+            NORMALIZE=1
+            shift
+            ;;
+        --pf|--post-filter)
+            POST_FILTER=1
+            shift
+            ;;
+        --atten)
+            if [ "$#" -lt 2 ] || ! [[ "$2" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+                notify_error "Invalid Attenuation" "--atten requires a non-negative dB value, for example: --atten 35"
+                exit 2
+            fi
+            ATTEN_LIMIT="$2"
+            shift 2
+            ;;
+        --ask)
+            ASK_NORMALIZE=1
+            shift
+            ;;
+        --wav)
+            OUTPUT_FORMAT="wav"
+            shift
+            ;;
+        *)
+            FILES+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if [ "${#FILES[@]}" -eq 0 ]; then
+    notify_error "No Files Selected" "Please select at least one audio or video file to clean."
+    exit 1
+fi
+
+if [ "$ASK_NORMALIZE" -eq 1 ] && command -v zenity >/dev/null 2>&1; then
+    if zenity --question --title="DeepFilterNet" \
+        --text="Apply EBU R128 loudness normalization as well?\n\n• Normalizes speech volume to standard broadcast level (-16 LUFS)\n• Prevents volume jumps and digital clipping" \
+        --ok-label="Normalize" --cancel-label="Denoise Only" 2>/dev/null; then
+        NORMALIZE=1
+    else
+        NORMALIZE=0
+    fi
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Workspace & Cleanup
+# ─────────────────────────────────────────────────────────────────────────────
+
+TMP_DIR="$(mktemp -d -t thunar_deepfilter_XXXXXX)"
+cleanup() {
+    rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT INT TERM
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Processing Loop
+# ─────────────────────────────────────────────────────────────────────────────
+
+TOTAL_COUNT="${#FILES[@]}"
+SUCCESS_COUNT=0
+FAILED_COUNT=0
+
+if [ "$TOTAL_COUNT" -eq 1 ]; then
+    notify "DeepFilterNet" "Denoising $(basename "${FILES[0]}")..."
+else
+    notify "DeepFilterNet" "Denoising $TOTAL_COUNT file(s)..."
+fi
+
+for file in "${FILES[@]}"; do
+    if [ ! -f "$file" ]; then
+        echo "Skipping non-existent file: $file" >&2
+        ((FAILED_COUNT++)) || true
+        continue
+    fi
+
+    filename="$(basename "$file")"
+
+    # Verify input has audio
+    if ! has_audio "$file"; then
+        notify_error "No Audio Track" "File has no audio stream to clean:\n$filename"
+        ((FAILED_COUNT++)) || true
+        continue
+    fi
+
+    dir="$(dirname "$file")"
+    base_name="${filename%.*}"
+    orig_ext="${filename##*.}"
+    orig_ext_lower="$(echo "$orig_ext" | tr '[:upper:]' '[:lower:]')"
+    is_vid=0
+    if has_video "$file"; then
+        is_vid=1
+    fi
+
+    # Determine target output extension and whether we are remuxing video
+    remux_video=0
+    if [ "$is_vid" -eq 1 ]; then
+        if [ "$OUTPUT_FORMAT" = "wav" ]; then
+            # User explicitly requested WAV output: extract cleaned audio only
+            target_ext="wav"
+            remux_video=0
+        else
+            target_ext="$orig_ext_lower"
+            remux_video=1
+        fi
+    else
+        if [ "$OUTPUT_FORMAT" = "preserve" ]; then
+            target_ext="$orig_ext_lower"
+        else
+            target_ext="$OUTPUT_FORMAT"
+        fi
+    fi
+
+    # Determine unique output path to prevent overwriting
+    output_candidate="$dir/${base_name}_cleaned.$target_ext"
+    counter=1
+    while [ -e "$output_candidate" ]; do
+        output_candidate="$dir/${base_name}_cleaned_${counter}.$target_ext"
+        ((counter++))
+    done
+    target_output="$output_candidate"
+
+    # Temporary files for this iteration
+    tmp_48k="$TMP_DIR/in_48k.wav"
+    df_out_dir="$TMP_DIR/df_out"
+    rm -rf "$df_out_dir" "$tmp_48k"
+    mkdir -p "$df_out_dir"
+
+    echo "Extracting audio from $filename to 48kHz mono WAV..."
+    if ! ffmpeg -y -v error -i "$file" -vn -ar 48000 -ac 1 -c:a pcm_s16le "$tmp_48k"; then
+        notify_error "Extraction Failed" "Could not extract audio from:\n$filename"
+        ((FAILED_COUNT++)) || true
+        continue
+    fi
+
+    # Build DeepFilterNet command (always compensate delay with -D for video/lip sync)
+    DF_CMD=("$DEEP_FILTER_BIN" "-D")
+    if [ "$POST_FILTER" -eq 1 ]; then
+        DF_CMD+=("--pf")
+    fi
+    if [ -n "$ATTEN_LIMIT" ]; then
+        DF_CMD+=("-a" "$ATTEN_LIMIT")
+    fi
+    DF_CMD+=("$tmp_48k" "-o" "$df_out_dir")
+
+    echo "Running DeepFilterNet on $filename..."
+    if ! "${DF_CMD[@]}" >/dev/null 2>&1; then
+        notify_error "Denoising Failed" "DeepFilterNet execution failed on:\n$filename"
+        ((FAILED_COUNT++)) || true
+        continue
+    fi
+
+    # Find the output generated by deep-filter
+    cleaned_wav="$(find "$df_out_dir" -maxdepth 1 -type f -name "*.wav" | head -n 1)"
+    if [ -z "$cleaned_wav" ] || [ ! -s "$cleaned_wav" ]; then
+        notify_error "Denoising Failed" "No output produced for:\n$filename"
+        ((FAILED_COUNT++)) || true
+        continue
+    fi
+
+    # Build post-processing filter chain if requested
+    LOUDNORM_FILTER=()
+    if [ "$NORMALIZE" -eq 1 ]; then
+        LOUDNORM_FILTER=(-af "loudnorm=I=-16:LRA=11:TP=-1.5")
+    fi
+
+    if [ "$remux_video" -eq 1 ]; then
+        echo "Remuxing video with cleaned audio into $(basename "$target_output")..."
+        # Choose audio codec suitable for container
+        AUDIO_CODEC_ARGS=(-c:a aac -b:a 192k -ar 48000)
+        case "$target_ext" in
+            webm)
+                AUDIO_CODEC_ARGS=(-c:a libopus -b:a 128k -ar 48000)
+                ;;
+            mkv)
+                AUDIO_CODEC_ARGS=(-c:a aac -b:a 192k -ar 48000)
+                ;;
+            avi)
+                AUDIO_CODEC_ARGS=(-c:a mp3 -q:a 2 -ar 48000)
+                ;;
+        esac
+
+        VIDEO_FILTER_ARGS=()
+        if [ "$NORMALIZE" -eq 1 ]; then
+            VIDEO_FILTER_ARGS=(-filter:a "loudnorm=I=-16:LRA=11:TP=-1.5")
+        fi
+
+        ffmpeg -y -v error \
+            -i "$file" \
+            -i "$cleaned_wav" \
+            -map 0:v? \
+            -map 1:a \
+            -map 0:s? \
+            -c:v copy \
+            -c:s copy \
+            "${VIDEO_FILTER_ARGS[@]}" \
+            "${AUDIO_CODEC_ARGS[@]}" \
+            "$target_output"
+    else
+        echo "Encoding cleaned audio to $(basename "$target_output")..."
+        case "$target_ext" in
+            wav)
+                ffmpeg -y -v error -i "$cleaned_wav" "${LOUDNORM_FILTER[@]}" -c:a pcm_s16le "$target_output"
+                ;;
+            mp3)
+                ffmpeg -y -v error -i "$cleaned_wav" "${LOUDNORM_FILTER[@]}" -c:a libmp3lame -q:a 2 "$target_output"
+                ;;
+            m4a|aac)
+                ffmpeg -y -v error -i "$cleaned_wav" "${LOUDNORM_FILTER[@]}" -c:a aac -b:a 192k "$target_output"
+                ;;
+            flac)
+                ffmpeg -y -v error -i "$cleaned_wav" "${LOUDNORM_FILTER[@]}" -c:a flac "$target_output"
+                ;;
+            ogg|opus)
+                ffmpeg -y -v error -i "$cleaned_wav" "${LOUDNORM_FILTER[@]}" -c:a libopus -b:a 128k "$target_output"
+                ;;
+            *)
+                ffmpeg -y -v error -i "$cleaned_wav" "${LOUDNORM_FILTER[@]}" "$target_output"
+                ;;
+        esac
+    fi
+
+    if [ -s "$target_output" ]; then
+        ((SUCCESS_COUNT++)) || true
+    else
+        notify_error "Save Failed" "Failed to write final file:\n$(basename "$target_output")"
+        ((FAILED_COUNT++)) || true
+    fi
+done
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Final Notification
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [ "$SUCCESS_COUNT" -gt 0 ]; then
+    if [ "$SUCCESS_COUNT" -eq 1 ]; then
+        notify "DeepFilterNet Complete" "Successfully cleaned:\n$(basename "$target_output")"
+    else
+        notify "DeepFilterNet Complete" "Successfully cleaned $SUCCESS_COUNT of $TOTAL_COUNT file(s)."
+    fi
+elif [ "$FAILED_COUNT" -gt 0 ]; then
+    notify_error "DeepFilterNet Failed" "Failed to process selected file(s)."
+fi

@@ -1,24 +1,454 @@
 #!/bin/sh
-file1="$1"
-file2="$2"
+#
+# smart-compare - compare two files and report the verdict in a dialog.
+#
+#   smart-compare FILE-A FILE-B           byte compare (default)
+#   smart-compare                         pick both files with a file chooser
+#   smart-compare --method=hash A B       compare by digest
+#   smart-compare --tool=xxh3sum A B      choose the digest tool
+#   smart-compare A B xxh3sum             shorthand for the two lines above
+#
+# Exit status: 0 = identical, 1 = different, 2 = usage / I/O error
+#
+set -u
 
-if [ -z "$file2" ] || [ -n "$3" ]; then
-    zenity --error --text="Error: Please select exactly TWO files." --title="Smart Compare"
+TITLE="Smart Compare"
+NL='
+'
+
+ZENITY=''
+METHOD=''
+METHOD_NOTE=''
+TOOL_ARG=''
+HASH_TOOL=''
+HASH_LABEL=''
+fa=''
+fb=''
+fx=''
+nf=0
+nx=0
+
+# ---------------------------------------------------------------- utilities
+
+have() { command -v "$1" >/dev/null 2>&1; }
+
+abs() {
+    case $1 in
+        /*) printf '%s\n' "$1" ;;
+        *)  printf '%s\n' "$(pwd)/$1" ;;
+    esac
+}
+
+# Zenity renders its text as Pango markup: markup characters coming from file
+# names must be escaped, or the dialog garbles the text or refuses to open.
+pango() {
+    printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
+# Reverse of pango(), also dropping the <b>/<i>/<tt> tags this script produces,
+# so the message stays readable when there is no GUI.
+plain() {
+    printf '%s' "$1" | sed -e 's|</\{0,1\}b>||g' \
+                            -e 's|</\{0,1\}i>||g' \
+                            -e 's|</\{0,1\}tt>||g' \
+                            -e 's/&amp;/\&/g' -e 's/&lt;/</g' -e 's/&gt;/>/g'
+}
+
+notify() { # kind(info|warning|error)  title  text
+    if [ -n "$ZENITY" ]; then
+        zenity --"$1" --title="$2" --text="$3" 2>/dev/null
+    else
+        printf '%s\n%s\n' "$2" "$(plain "$3")" >&2
+    fi
+}
+
+abort() { # kind  title  text  [status]
+    notify "$1" "$2" "$3"
+    exit "${4:-2}"
+}
+
+add_file() {
+    nf=$((nf + 1))
+    case $nf in
+        1) fa=$1 ;;
+        2) fb=$1 ;;
+        *)
+            if [ "$nx" -eq 0 ]; then fx=$1; else fx="$fx $1"; fi
+            nx=$((nx + 1))
+            ;;
+    esac
+}
+
+usage() {
+    cat <<EOF
+Usage: ${0##*/} [OPTION]... FILE-A FILE-B
+       ${0##*/} [OPTION]...
+
+Compares two files and shows the verdict in a Zenity dialog (or on the
+terminal when Zenity is not installed).
+
+Options:
+  -m, --method METHOD   "cmp"  byte compare (default)
+                        "hash" compare digests
+  -t, --tool TOOL       digest tool: auto (default), none, xxh3sum, xxhsum,
+                        xxh128sum, xxh64sum, sha256sum, shasum, md5sum,
+                        openssl (aliases: xxh3, xxh128, xxh64, sha256, md5)
+  -h, --help            show this help
+
+With no files a file chooser is opened for each one.  The method or tool may
+also be given as a third word:   ${0##*/} a.bin b.bin xxh3sum
+
+Default flow: different sizes are rejected without reading any data, then
+cmp(1) reports the byte offset of the first difference.  A digest is computed
+only for matching files, so mismatched multi-gigabyte files cost almost
+nothing.  Use --method=hash when you want both digests recorded, or
+--tool=none when you want no digest at all.
+
+Exit status: 0 = identical, 1 = different, 2 = usage / I/O error.
+EOF
+}
+
+# ------------------------------------------------------------- measurements
+
+file_size() { # byte count of file $1
+    sz=$(stat -c%s -- "$1" 2>/dev/null) ||
+    sz=$(stat -f%z "$1" 2>/dev/null) ||
+    sz=$(wc -c <"$1" 2>/dev/null) || return 1
+    sz=$(printf '%s' "$sz" | tr -cd '0-9')
+    [ -n "$sz" ] || return 1
+    printf '%s\n' "$sz"
+}
+
+file_id() { # device:inode of file $1
+    stat -c'%d:%i' -- "$1" 2>/dev/null || stat -f'%d:%i' "$1" 2>/dev/null
+}
+
+human_size() {
+    awk -v n="$1" 'BEGIN {
+        split("B KiB MiB GiB TiB PiB", u, " ")
+        i = 1
+        while (n >= 1024 && i < 6) { n /= 1024; i++ }
+        if (i == 1) printf "%d %s", n, u[i]
+        else        printf "%.1f %s", n, u[i]
+    }'
+}
+
+same_file() { # true when both names resolve to one file/inode
+    [ "$1" = "$2" ] && return 0
+    [ "$1" -ef "$2" ] 2>/dev/null && return 0     # fast path (not in POSIX sh)
+    id1=$(file_id "$1") || return 1               # portable fallback
+    id2=$(file_id "$2") || return 1
+    [ -n "$id1" ] && [ "$id1" = "$id2" ]
+}
+
+# ------------------------------------------------------------------- digest
+# The digest is only shown to the user.  In the default mode the verdict comes
+# from size + cmp(1), so a missing or broken hash tool can never fake a match.
+
+hexfield() { # extract the checksum word from "$1", empty output = unusable
+    printf '%s\n' "$1" | awk '
+        {
+            for (i = 1; i <= NF; i++)
+                if ($i ~ /^[0-9A-Fa-f]+$/ && length($i) >= 8) { print tolower($i); exit }
+        }'
+}
+
+canonical_tool() {
+    case $1 in
+        xxh3|xxh3sum)              printf '%s\n' xxh3sum ;;
+        xxhsum)                    printf '%s\n' xxhsum ;;
+        xxh128|xxh3-128|xxh128sum) printf '%s\n' xxh128sum ;;
+        xxh64|xxh64sum)            printf '%s\n' xxh64sum ;;
+        sha256|sha2|sha256sum)     printf '%s\n' sha256sum ;;
+        shasum)                    printf '%s\n' shasum ;;
+        md5|md5sum)                printf '%s\n' md5sum ;;
+        openssl)                   printf '%s\n' openssl ;;
+        none|off|no)               printf '%s\n' none ;;
+        *) return 1 ;;
+    esac
+}
+
+tool_label() { # tool  digest-hex-length (0 = unknown)
+    case $1 in
+        xxh3sum)   case $2 in 32) echo 'xxHash3-128' ;; 16) echo 'xxHash3-64' ;; *) echo 'xxHash3' ;; esac ;;
+        xxhsum)    case $2 in 32) echo 'xxHash3-128' ;; 16) echo 'xxHash64'  ;; *) echo 'xxHash'   ;; esac ;;
+        xxh128sum) echo 'xxHash3-128' ;;
+        xxh64sum)  echo 'xxHash64' ;;
+        md5sum)    echo 'MD5' ;;
+        shasum|sha256sum|openssl) echo 'SHA-256' ;;
+        *) return 1 ;;
+    esac
+}
+
+digest() { # prints the digest of file $1, fails when it cannot be computed
+    raw=''
+    case ${HASH_TOOL:-} in
+        xxh3sum)   raw=$(xxh3sum "$1" 2>/dev/null) || return 1 ;;
+        xxhsum)    # prefer xxh3-128 when this build supports -H3
+            raw=$(xxhsum -H3 "$1" 2>/dev/null) || raw=''
+            [ -n "$(hexfield "$raw")" ] || raw=$(xxhsum "$1" 2>/dev/null) || raw=''
+            ;;
+        xxh128sum) raw=$(xxh128sum "$1" 2>/dev/null) || return 1 ;;
+        xxh64sum)  raw=$(xxh64sum "$1" 2>/dev/null) || return 1 ;;
+        sha256sum) raw=$(sha256sum "$1" 2>/dev/null) || return 1 ;;
+        shasum)    raw=$(shasum -a 256 "$1" 2>/dev/null) || return 1 ;;
+        md5sum)    raw=$(md5sum "$1" 2>/dev/null) || return 1 ;;
+        openssl)   raw=$(openssl dgst -sha256 "$1" 2>/dev/null) || return 1 ;;
+        *) return 1 ;;
+    esac
+    out=$(hexfield "$raw")
+    [ -n "$out" ] || return 1
+    printf '%s\n' "$out"
+}
+
+pick_digest_tool() {
+    HASH_TOOL=''
+    HASH_LABEL=''
+
+    [ "$TOOL_ARG" = none ] && return 1
+
+    if [ -n "$TOOL_ARG" ] && [ "$TOOL_ARG" != auto ]; then
+        have "$TOOL_ARG" || abort error "$TITLE" \
+            "The requested hash tool '$TOOL_ARG' is not installed.${NL}${NL}Install it, or use --tool=auto." 2
+        HASH_TOOL=$TOOL_ARG
+        HASH_LABEL=$(tool_label "$HASH_TOOL" 0)
+        digest /dev/null >/dev/null 2>&1 || abort error "$TITLE" \
+            "'$HASH_TOOL' is installed but did not produce a usable digest." 2
+        return 0
+    fi
+
+    for t in xxh3sum xxhsum xxh128sum xxh64sum sha256sum shasum md5sum openssl; do
+        have "$t" || continue
+        HASH_TOOL=$t
+        HASH_LABEL=$(tool_label "$t" 0)
+        digest /dev/null >/dev/null 2>&1 && return 0   # self-test before trusting it
+        HASH_TOOL=''
+        HASH_LABEL=''
+    done
+    return 1
+}
+
+# ------------------------------------------------------------- verdicts
+
+compare_with_cmp() {
+    cmp_out=$(cmp "$path1" "$path2" 2>&1)
+    cmp_rc=$?
+
+    diff_at=$(printf '%s\n' "$cmp_out" | awk '
+        match($0, /(byte|char) [0-9]+/) {
+            s = substr($0, RSTART, RLENGTH); gsub(/[^0-9]/, "", s); print s; exit
+        }')
+
+    note_line=''
+    [ -n "$METHOD_NOTE" ] && note_line="${NL}<i>$METHOD_NOTE</i>"
+
+    if [ "$cmp_rc" -eq 0 ]; then
+        # Identical: one digest covers both files, and only here -- on a
+        # mismatch the digest would add I/O without adding information.
+        hash1=''
+        if [ -n "$HASH_TOOL" ]; then
+            hash1=$(digest "$path1") || hash1=''
+        fi
+        if [ -n "$hash1" ]; then
+            hash_line="${NL}${NL}<b>$(tool_label "$HASH_TOOL" "${#hash1}"):</b> <tt>$hash1</tt>${NL}<i>One digest covers both files.</i>"
+        elif [ -n "$HASH_TOOL" ]; then
+            hash_line="${NL}${NL}<i>The $HASH_TOOL digest could not be computed.</i>"
+        elif [ "$TOOL_ARG" = none ]; then
+            hash_line=''
+        else
+            hash_line="${NL}${NL}<i>No hash tool found (install xxHash to record a digest).</i>"
+        fi
+        msg="<b>Files match perfectly.</b>${NL}${NL}Both are $size1 bytes ($(human_size "$size1")), verified byte by byte.$hash_line$note_line"
+        notify info "Match Confirmed" "$msg"
+        exit 0
+    fi
+
+    if [ "$cmp_rc" -eq 1 ]; then
+        if [ -n "$diff_at" ]; then
+            head="Same size ($size1 bytes) but different content.${NL}First difference at byte $diff_at."
+        else
+            head="Same size ($size1 bytes) but different content."
+        fi
+        msg="<b>Files do not match.</b>${NL}${NL}$head${NL}${NL}<i>No digests were computed: cmp stopped at the first difference. Use --method=hash to record them.</i>$note_line"
+        notify error "Content Mismatch" "$msg"
+        exit 1
+    fi
+
+    msg="<b>Could not compare the files.</b>${NL}${NL}cmp reported:${NL}<i>$(pango "$cmp_out")</i>${NL}${NL}<i>Re-run with --method=hash for a digest-based verdict.</i>$note_line"
+    notify error "Comparison Failed" "$msg"
+    exit 2
+}
+
+compare_with_hash() {
+    hash1=$(digest "$path1") || hash1=''
+    hash2=$(digest "$path2") || hash2=''
+
+    if [ -z "$hash1" ] || [ -z "$hash2" ]; then
+        msg="<b>Could not compute the digest.</b>${NL}${NL}Tool: $HASH_TOOL${NL}• $name1: ${hash1:-failed}${NL}• $name2: ${hash2:-failed}"
+        notify error "Digest Failed" "$msg"
+        exit 2
+    fi
+
+    label=$(tool_label "$HASH_TOOL" "${#hash1}")
+    case $HASH_TOOL in
+        xxh*) caveat="${NL}${NL}<i>xxHash is a fast, non-cryptographic checksum.</i>" ;;
+        *)    caveat='' ;;
+    esac
+    note_line=''
+    [ -n "$METHOD_NOTE" ] && note_line="${NL}<i>$METHOD_NOTE</i>"
+
+    if [ "$hash1" = "$hash2" ]; then
+        msg="<b>Files match perfectly.</b>${NL}${NL}Both are $size1 bytes ($(human_size "$size1")).${NL}${NL}<b>$label:</b> <tt>$hash1</tt>${NL}<i>Same digest for both files.</i>$note_line$caveat"
+        notify info "Match Confirmed" "$msg"
+        exit 0
+    fi
+
+    msg="<b>Files do not match.</b>${NL}${NL}Same size ($size1 bytes) but different content.${NL}${NL}<b>$label:</b>${NL}• $name1: <tt>$hash1</tt>${NL}• $name2: <tt>$hash2</tt>${NL}<i>Use --method=cmp to locate the first differing byte.</i>$note_line$caveat"
+    notify error "Content Mismatch" "$msg"
+    exit 1
+}
+
+# --------------------------------------------------------------------- main
+
+have zenity && ZENITY=1
+
+while [ "$#" -gt 0 ]; do
+    case $1 in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -m|--method)
+            shift
+            [ "$#" -gt 0 ] || abort error "$TITLE" "--method needs a value: cmp or hash." 2
+            METHOD=$1
+            ;;
+        --method=*)
+            METHOD=${1#*=}
+            ;;
+        -t|--tool)
+            shift
+            [ "$#" -gt 0 ] || abort error "$TITLE" "--tool needs a value (for example xxh3sum)." 2
+            TOOL_ARG=$1
+            ;;
+        --tool=*)
+            TOOL_ARG=${1#*=}
+            ;;
+        --)
+            shift
+            while [ "$#" -gt 0 ]; do
+                add_file "$1"
+                shift
+            done
+            break
+            ;;
+        -*)
+            abort error "$TITLE" "Unknown option: $(pango "$1")${NL}${NL}Try '${0##*/} --help'." 2
+            ;;
+        *)
+            add_file "$1"
+            ;;
+    esac
+    shift
+done
+
+# Shorthand: "smart-compare A B cmp|hash" or "smart-compare A B xxh3sum"
+if [ "$nx" -eq 1 ]; then
+    case $fx in
+        cmp|hash)
+            [ -z "$METHOD" ] || abort error "$TITLE" "Two comparison methods were given." 2
+            METHOD=$fx
+            nx=0
+            ;;
+        *)
+            if canonical_tool "$fx" >/dev/null 2>&1; then
+                [ -z "$TOOL_ARG" ] || abort error "$TITLE" "Two hash tools were given." 2
+                TOOL_ARG=$fx
+                nx=0
+            fi
+            ;;
+    esac
+fi
+
+if [ "$nx" -gt 0 ]; then
+    abort error "$TITLE" "Please select exactly TWO files.${NL}${NL}Extra name(s): $(pango "$fx")" 2
+fi
+
+case $METHOD in
+    ''|cmp|hash) : ;;
+    *) abort error "$TITLE" "Unknown method: $(pango "$METHOD")${NL}${NL}Use 'cmp' (default) or 'hash'." 2 ;;
+esac
+[ -n "$METHOD" ] || METHOD=cmp
+
+if [ -n "$TOOL_ARG" ]; then
+    TOOL_ARG=$(canonical_tool "$TOOL_ARG") || abort error "$TITLE" \
+        "Unknown hash tool.${NL}${NL}Use auto, none, xxh3sum, xxhsum, xxh128sum, xxh64sum,${NL}sha256sum, shasum, md5sum or openssl." 2
+fi
+
+if [ "$nf" -eq 0 ]; then
+    [ -n "$ZENITY" ] || abort error "$TITLE" \
+        "No files were given and Zenity is not available to ask for them." 2
+    file1=$(zenity --file-selection --title="$TITLE - select the FIRST file")  || exit 2
+    file2=$(zenity --file-selection --title="$TITLE - select the SECOND file") || exit 2
+elif [ "$nf" -eq 2 ]; then
+    file1=$fa
+    file2=$fb
+else
+    shown=$fa
+    [ "$nf" -ge 2 ] && shown="$shown $fb"
+    abort error "$TITLE" \
+        "Please select exactly TWO files.${NL}${NL}Received $nf file name(s): $(pango "$shown")" 2
+fi
+
+for f in "$file1" "$file2"; do
+    [ -e "$f" ] || abort error "$TITLE" "File not found:${NL}$(pango "$f")" 2
+    [ -f "$f" ] || abort error "$TITLE" "Not a regular file:${NL}$(pango "$f")" 2
+    [ -r "$f" ] || abort error "$TITLE" "Not readable:${NL}$(pango "$f")" 2
+done
+
+name1=$(pango "$(basename "$file1")")
+name2=$(pango "$(basename "$file2")")
+path1=$(abs "$file1")
+path2=$(abs "$file2")
+
+# --- Stage 0: one file picked twice (or two hard links) trivially matches.
+if same_file "$path1" "$path2"; then
+    notify info "Match Confirmed" "<b>Same File:</b>${NL}${NL}Both paths point to the exact same file/inode."
+    exit 0
+fi
+
+size1=$(file_size "$path1") || abort error "$TITLE" "Cannot read the size of:${NL}$name1" 2
+size2=$(file_size "$path2") || abort error "$TITLE" "Cannot read the size of:${NL}$name2" 2
+
+# --- Stage 1: different length can never be identical. Stop before reading data.
+if [ "$size1" -ne "$size2" ]; then
+    delta=$((size1 - size2))
+    [ "$delta" -lt 0 ] && delta=$((-delta))
+    msg="<b>Files do not match.</b>${NL}${NL}The sizes differ, so the contents cannot be identical. No data was read.${NL}${NL}• $name1: $size1 bytes ($(human_size "$size1"))${NL}• $name2: $size2 bytes ($(human_size "$size2"))${NL}• difference: $delta bytes"
+    notify warning "Instant Mismatch" "$msg"
     exit 1
 fi
 
-size1=$(stat -c%s "$file1")
-size2=$(stat -c%s "$file2")
+# --- Stage 2: pick the engine.  cmp(1) is the default; digests are only a
+#     fallback here, or the engine when --method=hash was requested.
+pick_digest_tool || true
 
-if [ "$size1" -ne "$size2" ]; then
-    zenity --warning --text="<b>Files do not match!</b>\n\nSize difference detected instantly:\n• $(basename "$file1"): $size1 bytes\n• $(basename "$file2"): $size2 bytes\n\nSkipping hash calculation to save time." --title="Instant Mismatch"
-else
-    hash1=$(xxh3sum "$file1" | awk '{print $1}')
-    hash2=$(xxh3sum "$file2" | awk '{print $1}')
-
-    if [ "$hash1" = "$hash2" ]; then
-        zenity --info --text="<b>Success! Files match perfectly.</b>\n\nBoth files are $size1 bytes.\n\n<b>xxHash3:</b>\n$hash1" --title="Match Confirmed"
+if [ "$METHOD" = cmp ] && ! have cmp; then
+    if [ -n "$HASH_TOOL" ]; then
+        METHOD=hash
+        METHOD_NOTE="cmp(1) is not installed here, so the files were compared by digest."
     else
-        zenity --error --text="<b>Collision Alert!</b>\n\nFiles have identical sizes ($size1 bytes) but DIFFERENT content.\n\n• Hash 1: $hash1\n• Hash 2: $hash2" --title="Hash Mismatch"
+        abort error "$TITLE" \
+            "Neither cmp(1) nor any hash tool is installed.${NL}${NL}Install diffutils, coreutils or xxhash and try again." 2
     fi
 fi
+
+if [ "$METHOD" = hash ] && [ -z "$HASH_TOOL" ]; then
+    abort error "$TITLE" \
+        "No usable hash tool found (xxh3sum, xxhsum, xxh128sum, xxh64sum,${NL}sha256sum, shasum, md5sum, openssl).${NL}${NL}Install one, or use --method=cmp." 2
+fi
+
+case $METHOD in
+    cmp)  compare_with_cmp ;;
+    hash) compare_with_hash ;;
+esac
