@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.99.1",
+  "lastChangelogVersion": "1.1.0",
   "npmCommand": [
     "bun"
   ],
@@ -32,7 +32,12 @@
         "-dist/index.js"
       ]
     },
-    "npm:pi-btw",
+    {
+      "source": "npm:pi-btw",
+      "skills": [
+        "-skills/btw/SKILL.md"
+      ]
+    },
     "npm:pi-mono-multi-edit",
     "npm:@dreki-gg/pi-modes",
     "npm:pi-qq",
@@ -138,20 +143,25 @@
         "-extensions/context7.ts"
       ]
     },
-    "npm:pi-google-services",
+    {
+      "source": "npm:pi-google-services",
+      "skills": [
+        "-SKILL.md"
+      ]
+    },
     "npm:@xynogen/pix-optimizer",
     "npm:@palmtom/pi-models",
     {
       "source": "npm:@router-for-me/pi-cliproxyapi-provider",
       "extensions": [
-        "+extensions/index.ts",
-        "+extensions/tps.ts"
+        "-extensions/index.ts",
+        "-extensions/tps.ts"
       ]
     },
     {
       "source": "npm:pi-cliproxyapi-provider",
       "extensions": [
-        "-extensions/index.ts"
+        "+extensions/index.ts"
       ]
     }
   ],

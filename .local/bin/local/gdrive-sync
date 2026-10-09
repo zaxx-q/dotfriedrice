@@ -184,6 +184,8 @@ if rclone bisync "$LOCAL_DIR" "$REMOTE" \
         "${EXCLUDE_FLAGS[@]}" \
         --create-empty-src-dirs \
         --resilient \
+        --recover \
+        --max-lock 15m \
         "${EXTRA_FLAGS[@]}" \
         --log-file "$LOGFILE" --log-level INFO; then
     log "Sync completed successfully"

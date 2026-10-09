@@ -252,4 +252,15 @@
 	<patterns>*</patterns>
 	<video-files/>
 </action>
+<action>
+	<icon>image-x-generic</icon>
+	<name>Convert to WebP</name>
+	<submenu></submenu>
+	<unique-id>1791505529038504-1</unique-id>
+	<command>bash -c &apos;if /home/zaxx/.local/bin/convert img2webp &quot;$@&quot;; then if [ &quot;$#&quot; -eq 1 ]; then msg=&quot;Converted 1 image to WebP&quot;; else msg=&quot;Converted $# images to WebP&quot;; fi; notify-send &quot;Convert to WebP&quot; &quot;$msg&quot; -i image-x-generic; else notify-send -u critical &quot;Convert to WebP&quot; &quot;Failed to convert image(s)&quot; -i dialog-error; fi&apos; _ %F</command>
+	<description>Convert image(s) to WebP</description>
+	<range>*</range>
+	<patterns>*</patterns>
+	<image-files/>
+</action>
 </actions>
