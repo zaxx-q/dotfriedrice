@@ -154,14 +154,14 @@
     {
       "source": "npm:@router-for-me/pi-cliproxyapi-provider",
       "extensions": [
-        "-extensions/index.ts",
-        "-extensions/tps.ts"
+        "+extensions/index.ts",
+        "+extensions/tps.ts"
       ]
     },
     {
       "source": "npm:pi-cliproxyapi-provider",
       "extensions": [
-        "+extensions/index.ts"
+        "-extensions/index.ts"
       ]
     }
   ],

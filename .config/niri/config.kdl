@@ -542,9 +542,12 @@ binds {
 
  // Wallpaper.
     Mod+BackSlash            hotkey-overlay-title="Next wallpaper (rotate mode)" { spawn "wallchemy-rotate" "next"; }
-    Mod+Shift+BackSlash      hotkey-overlay-title="Hot wallpaper" { spawn "wallchemy-rotate" "hot"; }
-    Mod+Ctrl+BackSlash       hotkey-overlay-title="Top wallpaper" { spawn "wallchemy-rotate" "top"; }
-    Mod+Ctrl+Shift+BackSlash hotkey-overlay-title="Open current wallpaper on Wallhaven" { spawn "wallchemy-rotate" "open"; }
+    Mod+Shift+BackSlash      hotkey-overlay-title="Restore previous wallpaper" { spawn "wallchemy-rotate" "previous"; }
+    Mod+Ctrl+BackSlash       hotkey-overlay-title="Save current wallpaper as favorite" { spawn "wallchemy-rotate" "favorite"; }
+    Mod+Ctrl+Shift+BackSlash hotkey-overlay-title="Browse favorite wallpapers" { spawn "wallchemy-rotate" "favorites"; }
+    Mod+Alt+BackSlash        hotkey-overlay-title="Hot wallpaper" { spawn "wallchemy-rotate" "hot"; }
+    Mod+Alt+Shift+BackSlash  hotkey-overlay-title="Top wallpaper" { spawn "wallchemy-rotate" "top"; }
+    Mod+Ctrl+Alt+BackSlash   hotkey-overlay-title="Open current wallpaper on Wallhaven" { spawn "wallchemy-rotate" "open"; }
 
  // Media keys.
  // XF86AudioRaiseVolume     allow-when-locked=true hotkey-overlay-title="Raise volume" { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.05+"; }
