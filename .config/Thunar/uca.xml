@@ -17,7 +17,7 @@
 	<name>Copy Path</name>
 	<submenu></submenu>
 	<unique-id>1782322031564567-1</unique-id>
-	<command>bash -c &apos;for f in %F; do echo &quot;$f&quot; | sed &quot;s|^$HOME|~|&quot;; done | wl-copy&apos;</command>
+	<command>bash -c &apos;for f in &quot;$@&quot;; do echo &quot;$f&quot;; done | sed &quot;s|^$HOME|~|&quot; | wl-copy -n&apos; _ %F</command>
 	<description>Copy absolute file path to clipboard</description>
 	<range></range>
 	<patterns>*</patterns>
@@ -138,12 +138,12 @@
 	<video-files/>
 </action>
 <action>
-	<icon>insert-image</icon>
-	<name>Paste image from clipboard</name>
+	<icon>edit-paste</icon>
+	<name>Paste as File</name>
 	<submenu></submenu>
 	<unique-id>1788920859161936-1</unique-id>
-	<command>paste-clipboard-as-webp %f</command>
-	<description>Paste image from clipboard as webp</description>
+	<command>paste-clipboard-as-file %f</command>
+	<description>Paste clipboard image as WebP or text into a new file</description>
 	<range>*</range>
 	<patterns>*</patterns>
 	<directories/>

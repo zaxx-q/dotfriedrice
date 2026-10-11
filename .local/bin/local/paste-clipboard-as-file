@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+# Paste the current clipboard contents into a file in the supplied directory.
+
+set -euo pipefail
+
+TARGET_DIR="${1:-$PWD}"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+TMP_FILE="$(mktemp)"
+QUALITY="${WEBP_QUALITY:-82}"
+CLIPBOARD_KIND=""
+
+cleanup() {
+    rm -f "$TMP_FILE"
+}
+trap cleanup EXIT
+
+notify() {
+    notify-send "Paste as File" "$1" 2>/dev/null || \
+        zenity --info --title="Paste as File" --text="$1" 2>/dev/null || \
+        printf '%s\n' "$1"
+}
+
+notify_error() {
+    notify-send -u critical "Paste as File" "$1" 2>/dev/null || \
+        zenity --error --title="Paste as File" --text="$1" 2>/dev/null || \
+        printf '%s\n' "$1" >&2
+}
+
+grab_wayland_clipboard() {
+    local types type
+
+    types=$(wl-paste --list-types 2>/dev/null) || return 1
+
+    # Prefer an image when the clipboard offers both image and text formats.
+    while IFS= read -r type; do
+        case "$type" in
+            image/*)
+                if wl-paste --type "$type" >"$TMP_FILE" 2>/dev/null && [ -s "$TMP_FILE" ]; then
+                    CLIPBOARD_KIND="image"
+                    return 0
+                fi
+                ;;
+        esac
+    done <<<"$types"
+
+    while IFS= read -r type; do
+        case "$type" in
+            text/*|UTF8_STRING|STRING)
+                if wl-paste --no-newline --type "$type" >"$TMP_FILE" 2>/dev/null; then
+                    CLIPBOARD_KIND="text"
+                    return 0
+                fi
+                ;;
+        esac
+    done <<<"$types"
+
+    return 1
+}
+
+grab_x11_clipboard() {
+    local targets type
+
+    targets=$(xclip -selection clipboard -t TARGETS -o 2>/dev/null) || return 1
+
+    while IFS= read -r type; do
+        case "$type" in
+            image/*)
+                if xclip -selection clipboard -t "$type" -o >"$TMP_FILE" 2>/dev/null && [ -s "$TMP_FILE" ]; then
+                    CLIPBOARD_KIND="image"
+                    return 0
+                fi
+                ;;
+        esac
+    done <<<"$targets"
+
+    while IFS= read -r type; do
+        case "$type" in
+            text/*|UTF8_STRING|STRING)
+                if xclip -selection clipboard -t "$type" -o >"$TMP_FILE" 2>/dev/null; then
+                    CLIPBOARD_KIND="text"
+                    return 0
+                fi
+                ;;
+        esac
+    done <<<"$targets"
+
+    return 1
+}
+
+grab_clipboard() {
+    if [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-paste >/dev/null 2>&1; then
+        grab_wayland_clipboard && return 0
+    fi
+
+    if command -v xclip >/dev/null 2>&1; then
+        grab_x11_clipboard && return 0
+    fi
+
+    return 1
+}
+
+[ -d "$TARGET_DIR" ] || {
+    notify_error "The target is not a directory: $TARGET_DIR"
+    exit 1
+}
+
+if ! grab_clipboard; then
+    notify_error "No image or text found on the clipboard."
+    exit 1
+fi
+
+case "$CLIPBOARD_KIND" in
+    image)
+        extension="webp"
+        kind_label="WebP image"
+        ;;
+    text)
+        extension="txt"
+        kind_label="text"
+        ;;
+    *)
+        notify_error "Could not determine the clipboard contents."
+        exit 1
+        ;;
+esac
+
+command -v zenity >/dev/null 2>&1 || {
+    notify_error "Zenity is required to choose a file name."
+    exit 1
+}
+
+if ! name=$(zenity --entry --title="Paste as File" \
+    --text="Name for the new $kind_label file (leave blank for a timestamp):"); then
+    exit 0
+fi
+
+if [ -z "$name" ]; then
+    filename="$TIMESTAMP.$extension"
+else
+    case "$name" in
+        */*|.|..)
+            notify_error "The name must not contain a path."
+            exit 1
+            ;;
+    esac
+    filename="$name"
+    if [ "$CLIPBOARD_KIND" = "image" ]; then
+        [[ "$filename" == *.webp ]] || filename="$filename.webp"
+    elif [[ "$filename" != *.* || "$filename" == .* ]]; then
+        filename="$filename.txt"
+    fi
+fi
+
+OUTPUT="$TARGET_DIR/$filename"
+if [ -e "$OUTPUT" ]; then
+    notify_error "A file named $filename already exists."
+    exit 1
+fi
+
+if [ "$CLIPBOARD_KIND" = "image" ]; then
+    if command -v cwebp >/dev/null 2>&1; then
+        cwebp -quiet -q "$QUALITY" "$TMP_FILE" -o "$OUTPUT"
+    elif command -v magick >/dev/null 2>&1; then
+        magick "$TMP_FILE" -quality "$QUALITY" "$OUTPUT"
+    elif command -v convert >/dev/null 2>&1; then
+        convert "$TMP_FILE" -quality "$QUALITY" "$OUTPUT"
+    else
+        notify_error "Need cwebp (webp package) or ImageMagick installed."
+        exit 1
+    fi
+else
+    mv -- "$TMP_FILE" "$OUTPUT"
+fi
+
+notify "Saved: $filename"

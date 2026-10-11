@@ -1,191 +1,140 @@
 {
-  "lastChangelogVersion": "1.1.0",
-  "npmCommand": [
-    "bun"
-  ],
-  "packages": [
-    {
-      "source": "npm:pi-free",
-      "extensions": [
-        "-index.ts",
-        "-dist/index.js"
-      ]
-    },
-    {
-      "source": "npm:@narumitw/pi-caffeinate",
-      "extensions": [
-        "-src/caffeinate.ts",
-        "-src/index.ts",
-        "-dist/index.ts"
-      ]
-    },
-    {
-      "source": "npm:@narumitw/pi-firecrawl",
-      "extensions": [
-        "+src/index.ts"
-      ]
-    },
-    "npm:pi-boomerang",
-    {
-      "source": "npm:pi-smart-fetch",
-      "extensions": [
-        "-dist/index.js"
-      ]
-    },
-    {
-      "source": "npm:pi-btw",
-      "skills": [
-        "-skills/btw/SKILL.md"
-      ]
-    },
-    "npm:pi-mono-multi-edit",
-    "npm:@dreki-gg/pi-modes",
-    "npm:pi-qq",
-    {
-      "source": "npm:@mrclrchtr/supi-ask-user",
-      "extensions": [
-        "+src/extension.ts"
-      ]
-    },
-    {
-      "source": "npm:@mrclrchtr/supi-bash-timeout",
-      "extensions": [
-        "-src/extension.ts"
-      ]
-    },
-    {
-      "source": "npm:@mrclrchtr/supi-claude-md",
-      "extensions": [
-        "-src/extension.ts"
-      ],
-      "skills": [
-        "+skills/claude-md-improver/SKILL.md",
-        "+skills/claude-md-revision/SKILL.md"
-      ]
-    },
-    "npm:@mrclrchtr/supi-context",
-    {
-      "source": "npm:@jerryan/pi-todo-lite",
-      "extensions": [
-        "-extension.ts"
-      ]
-    },
-    {
-      "source": "npm:pi-hide-messages",
-      "extensions": [
-        "-index.ts"
-      ]
-    },
-    {
-      "source": "npm:pi-interactive-shell",
-      "skills": [
-        "-skills/pi-interactive-shell/SKILL.md"
-      ],
-      "extensions": [
-        "-index.ts"
-      ]
-    },
-    "npm:pi-invisible-continue",
-    {
-      "source": "npm:pi-lens",
-      "extensions": [
-        "-dist/index.js"
-      ],
-      "skills": [
-        "-skills/pi-lens-ast-grep/SKILL.md",
-        "-skills/pi-lens-lsp-navigation/SKILL.md",
-        "-skills/pi-lens-write-ast-grep-rule/SKILL.md",
-        "-skills/pi-lens-write-tree-sitter-rule/SKILL.md"
-      ]
-    },
-    "npm:@ff-labs/pi-fff",
-    {
-      "source": "npm:@gotgenes/pi-permission-system",
-      "extensions": [
-        "-src/index.ts"
-      ]
-    },
-    {
-      "source": "npm:@tintinweb/pi-subagents",
-      "extensions": [
-        "-src/index.ts"
-      ]
-    },
-    {
-      "source": "npm:@gotgenes/pi-subagents",
-      "extensions": [
-        "-src/index.ts"
-      ]
-    },
-    "npm:@gotgenes/pi-autoformat",
-    {
-      "source": "npm:@gotgenes/pi-session-tools",
-      "extensions": [
-        "-src/index.ts"
-      ]
-    },
-    {
-      "source": "npm:@ayulab/pi-rewind",
-      "extensions": [
-        "-index.js"
-      ]
-    },
-    "npm:@neilurk12/pi-lazygit",
-    "npm:pi-simplify",
-    "npm:pi-toggle-skills",
-    "npm:@narumitw/pi-starship",
-    {
-      "source": "npm:@upstash/context7-pi",
-      "skills": [
-        "-skills/context7-docs/SKILL.md"
-      ],
-      "extensions": [
-        "-extensions/context7.ts"
-      ]
-    },
-    {
-      "source": "npm:pi-google-services",
-      "skills": [
-        "-SKILL.md"
-      ]
-    },
-    "npm:@xynogen/pix-optimizer",
-    "npm:@palmtom/pi-models",
-    {
-      "source": "npm:@router-for-me/pi-cliproxyapi-provider",
-      "extensions": [
-        "+extensions/index.ts",
-        "+extensions/tps.ts"
-      ]
-    },
-    {
-      "source": "npm:pi-cliproxyapi-provider",
-      "extensions": [
-        "-extensions/index.ts"
-      ]
-    }
-  ],
-  "theme": "noctalia",
-  "extensions": [
-    "-extensions/ephemeral/index.ts",
-    "-extensions/whimsical.ts",
-    "-extensions/custom-statusline.ts",
-    "-extensions/todos/index.ts",
-    "extensions/review.ts",
-    "+extensions/env-loader.ts",
-    "-extensions/resilient-retry.ts",
-    "-extensions/tps-tracker.ts",
-    "+extensions/environment-details.ts"
-  ],
-  "defaultThinkingLevel": "high",
-  "compaction": {
-    "enabled": false
-  },
-  "terminal": {
-    "showTerminalProgress": true
-  },
-  "hideThinkingBlock": false,
-  "defaultProvider": "cliproxyapi",
-  "defaultModel": "gemini-3.8-flash-high",
-  "transport": "websocket-cached"
+	"lastChangelogVersion": "1.1.0",
+	"npmCommand": ["bun"],
+	"packages": [
+		{
+			"source": "npm:pi-free",
+			"extensions": ["-index.ts", "-dist/index.js"]
+		},
+		{
+			"source": "npm:@narumitw/pi-caffeinate",
+			"extensions": ["-src/caffeinate.ts", "-src/index.ts", "-dist/index.ts"]
+		},
+		{
+			"source": "npm:@narumitw/pi-firecrawl",
+			"extensions": ["+src/index.ts"]
+		},
+		"npm:pi-boomerang",
+		{
+			"source": "npm:pi-smart-fetch",
+			"extensions": ["-dist/index.js"]
+		},
+		{
+			"source": "npm:pi-btw",
+			"skills": ["-skills/btw/SKILL.md"]
+		},
+		"npm:pi-mono-multi-edit",
+		"npm:@dreki-gg/pi-modes",
+		"npm:pi-qq",
+		{
+			"source": "npm:@mrclrchtr/supi-ask-user",
+			"extensions": ["+src/extension.ts"]
+		},
+		{
+			"source": "npm:@mrclrchtr/supi-bash-timeout",
+			"extensions": ["-src/extension.ts"]
+		},
+		{
+			"source": "npm:@mrclrchtr/supi-claude-md",
+			"extensions": ["-src/extension.ts"],
+			"skills": [
+				"+skills/claude-md-improver/SKILL.md",
+				"+skills/claude-md-revision/SKILL.md"
+			]
+		},
+		"npm:@mrclrchtr/supi-context",
+		{
+			"source": "npm:@jerryan/pi-todo-lite",
+			"extensions": ["-extension.ts"]
+		},
+		{
+			"source": "npm:pi-hide-messages",
+			"extensions": ["-index.ts"]
+		},
+		{
+			"source": "npm:pi-interactive-shell",
+			"skills": ["-skills/pi-interactive-shell/SKILL.md"],
+			"extensions": ["-index.ts"]
+		},
+		"npm:pi-invisible-continue",
+		{
+			"source": "npm:pi-lens",
+			"extensions": ["-dist/index.js"],
+			"skills": [
+				"-skills/pi-lens-ast-grep/SKILL.md",
+				"-skills/pi-lens-lsp-navigation/SKILL.md",
+				"-skills/pi-lens-write-ast-grep-rule/SKILL.md",
+				"-skills/pi-lens-write-tree-sitter-rule/SKILL.md"
+			]
+		},
+		"npm:@ff-labs/pi-fff",
+		{
+			"source": "npm:@gotgenes/pi-permission-system",
+			"extensions": ["-src/index.ts"]
+		},
+		{
+			"source": "npm:@tintinweb/pi-subagents",
+			"extensions": ["-src/index.ts"]
+		},
+		{
+			"source": "npm:@gotgenes/pi-subagents",
+			"extensions": ["-src/index.ts"]
+		},
+		"npm:@gotgenes/pi-autoformat",
+		{
+			"source": "npm:@gotgenes/pi-session-tools",
+			"extensions": ["-src/index.ts"]
+		},
+		{
+			"source": "npm:@ayulab/pi-rewind",
+			"extensions": ["-index.js"]
+		},
+		"npm:@neilurk12/pi-lazygit",
+		"npm:pi-simplify",
+		"npm:pi-toggle-skills",
+		"npm:@narumitw/pi-starship",
+		{
+			"source": "npm:@upstash/context7-pi",
+			"skills": ["-skills/context7-docs/SKILL.md"],
+			"extensions": ["-extensions/context7.ts"]
+		},
+		{
+			"source": "npm:pi-google-services",
+			"skills": ["-SKILL.md"]
+		},
+		"npm:@xynogen/pix-optimizer",
+		"npm:@palmtom/pi-models",
+		{
+			"source": "npm:@router-for-me/pi-cliproxyapi-provider",
+			"extensions": ["+extensions/index.ts", "+extensions/tps.ts"]
+		},
+		{
+			"source": "npm:pi-cliproxyapi-provider",
+			"extensions": ["-extensions/index.ts"]
+		}
+	],
+	"theme": "noctalia",
+	"extensions": [
+		"-extensions/ephemeral/index.ts",
+		"-extensions/whimsical.ts",
+		"-extensions/custom-statusline.ts",
+		"-extensions/todos/index.ts",
+		"extensions/review.ts",
+		"+extensions/env-loader.ts",
+		"-extensions/resilient-retry.ts",
+		"-extensions/tps-tracker.ts",
+		"+extensions/environment-details.ts"
+	],
+	"defaultThinkingLevel": "high",
+	"defaultTools": ["+codemode"],
+	"compaction": {
+		"enabled": false
+	},
+	"terminal": {
+		"showTerminalProgress": true
+	},
+	"hideThinkingBlock": false,
+	"defaultProvider": "cliproxyapi",
+	"defaultModel": "gemini-3.8-flash-high",
+	"transport": "websocket-cached"
 }

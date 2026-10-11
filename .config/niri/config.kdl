@@ -541,13 +541,13 @@ binds {
  // Mod+Ctrl+Shift+N         hotkey-overlay-title="Toggle silencing notifications" { spawn "dfr-toggle-notifications"; }
 
  // Wallpaper.
-    Mod+BackSlash            hotkey-overlay-title="Next wallpaper (rotate mode)" { spawn "wallchemy-rotate" "next"; }
-    Mod+Shift+BackSlash      hotkey-overlay-title="Restore previous wallpaper" { spawn "wallchemy-rotate" "previous"; }
-    Mod+Ctrl+BackSlash       hotkey-overlay-title="Save current wallpaper as favorite" { spawn "wallchemy-rotate" "favorite"; }
-    Mod+Ctrl+Shift+BackSlash hotkey-overlay-title="Browse favorite wallpapers" { spawn "wallchemy-rotate" "favorites"; }
-    Mod+Alt+BackSlash        hotkey-overlay-title="Hot wallpaper" { spawn "wallchemy-rotate" "hot"; }
-    Mod+Alt+Shift+BackSlash  hotkey-overlay-title="Top wallpaper" { spawn "wallchemy-rotate" "top"; }
-    Mod+Ctrl+Alt+BackSlash   hotkey-overlay-title="Open current wallpaper on Wallhaven" { spawn "wallchemy-rotate" "open"; }
+    Mod+BackSlash            repeat=false cooldown-ms=300 hotkey-overlay-title="Next wallpaper (rotate mode)" { spawn "wallchemy" "rotate"; }
+    Mod+Shift+BackSlash      repeat=false cooldown-ms=200 hotkey-overlay-title="Restore previous wallpaper" { spawn "wallchemy" "previous"; }
+    Mod+Ctrl+BackSlash       repeat=false hotkey-overlay-title="Save current wallpaper as favorite" { spawn "wallchemy" "favorite"; }
+    Mod+Ctrl+Shift+BackSlash repeat=false hotkey-overlay-title="Browse favorite wallpapers" { spawn "wallchemy" "favorites"; }
+    Mod+Alt+BackSlash        repeat=false cooldown-ms=500 hotkey-overlay-title="Hot wallpaper" { spawn "wallchemy" "hot"; }
+    Mod+Alt+Shift+BackSlash  repeat=false cooldown-ms=500 hotkey-overlay-title="Top wallpaper" { spawn "wallchemy" "top"; }
+    Mod+Ctrl+Alt+BackSlash   repeat=false hotkey-overlay-title="Open current wallpaper on Wallhaven" { spawn "wallchemy" "open"; }
 
  // Media keys.
  // XF86AudioRaiseVolume     allow-when-locked=true hotkey-overlay-title="Raise volume" { spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.05+"; }

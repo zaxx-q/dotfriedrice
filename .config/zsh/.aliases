@@ -38,3 +38,5 @@ alias rg="rg --hidden --glob '!.git/*' --hyperlink-format='zed://file/{path}:{li
 alias grok="grok --disable-web-search"
 
 alias azan="mise x node -- azaan"
+
+alias chargethreshold="busctl call org.freedesktop.UPower /org/freedesktop/UPower/devices/battery_BAT0 org.freedesktop.UPower.Device EnableChargeThreshold b true"
