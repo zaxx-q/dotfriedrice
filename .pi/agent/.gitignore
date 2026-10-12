@@ -3,6 +3,8 @@ sessions/
 npm/
 models*.json
 auth.json
+/crashes.json
+/mcp-auth.json
 /settings/pi-dynamic-models.json
 /extensions/pi-permission-system/logs
 /fff

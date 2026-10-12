@@ -153,7 +153,7 @@
 	<name>Convert for DaVinci Resolve (Fast)</name>
 	<submenu>Video</submenu>
 	<unique-id>resolve-convert-lb-20260912</unique-id>
-	<command>/home/zaxx/.local/bin/resolve-convert-thunar lb %F</command>
+	<command>/home/zaxx/.local/bin/resolve-convert --thunar convert lb %F</command>
 	<description>Convert in-place to DNxHR LB / PCM directly beside this file</description>
 	<range>*</range>
 	<patterns>*</patterns>
@@ -165,7 +165,7 @@
 	<name>Convert for DaVinci Resolve (High Quality)</name>
 	<submenu>Video</submenu>
 	<unique-id>resolve-convert-sq-20260912</unique-id>
-	<command>/home/zaxx/.local/bin/resolve-convert-thunar sq %F</command>
+	<command>/home/zaxx/.local/bin/resolve-convert --thunar convert sq %F</command>
 	<description>Convert in-place to DNxHR SQ / PCM directly beside this file</description>
 	<range>*</range>
 	<patterns>*</patterns>
@@ -177,7 +177,7 @@
 	<name>Export Web MP4 (Fast AMD)</name>
 	<submenu>Video</submenu>
 	<unique-id>resolve-deliver-fast-20260912</unique-id>
-	<command>/home/zaxx/.local/bin/resolve-thunar-deliver fast %F</command>
+	<command>/home/zaxx/.local/bin/resolve-convert --thunar deliver fast %F</command>
 	<description>Encode video in-place to H.264/AAC MP4 using AMD hardware</description>
 	<range>*</range>
 	<patterns>*</patterns>
@@ -188,7 +188,7 @@
 	<name>Export Web MP4 (Best Quality CPU)</name>
 	<submenu>Video</submenu>
 	<unique-id>resolve-deliver-quality-20260912</unique-id>
-	<command>/home/zaxx/.local/bin/resolve-thunar-deliver quality %F</command>
+	<command>/home/zaxx/.local/bin/resolve-convert --thunar deliver quality %F</command>
 	<description>Encode video in-place to high quality H.264/AAC MP4 using CPU x264</description>
 	<range>*</range>
 	<patterns>*</patterns>

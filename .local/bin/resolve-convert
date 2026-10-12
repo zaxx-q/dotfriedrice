@@ -1,92 +1,303 @@
 #!/usr/bin/env bash
-# Convert media in-place for DaVinci Resolve Free on Linux.
-# Creates <file>_resolve.mov (or .wav) directly beside each input file.
+# Convert and deliver media for DaVinci Resolve Free on Linux.
+#
+# Subcommands:
+#   convert  Convert media in-place to DNxHR/PCM (for Resolve import)
+#   deliver  Produce web-ready H.264/AAC MP4 files from Resolve masters
+#
+# The --thunar flag wraps either subcommand in a visible Ghostty terminal,
+# intended for use with Thunar custom actions.
+#
+# Examples:
+#   resolve-convert convert lb video.mp4            # DNxHR LB
+#   resolve-convert convert sq *.mkv                # DNxHR SQ
+#   resolve-convert deliver --quality master.mov    # x264 MP4
+#   resolve-convert deliver --fast master.mov       # AMD VA-API MP4
+#   resolve-convert --thunar convert lb video.mp4   # Same, in a terminal
+#   resolve-convert --thunar deliver fast video.mp4 # Same, in a terminal
 
 set -Eeuo pipefail
 
-QUALITY="lb"
-if [[ $# -gt 0 && ("$1" == "lb" || "$1" == "sq" || "$1" == "hq") ]]; then
-  QUALITY="$1"
+# ---------------------------------------------------------------------------
+# Thunar wrapper: re-exec inside a Ghostty terminal
+# ---------------------------------------------------------------------------
+
+if [[ "${1:-}" == "--thunar" ]]; then
   shift
+  subcmd="${1:-}"
+  [[ $# -gt 0 ]] && shift
+
+  self="$(readlink -f "$0")"
+  # shellcheck disable=SC2016
+  exec ghostty --gtk-single-instance=false \
+    --title="Resolve ${subcmd} (${1:-})" \
+    -e bash -c '
+      "$1" "$2" "${@:3}"
+      status=$?
+      printf "\nFinished. Press Enter to close this window..."
+      read -r
+      exit "$status"
+    ' resolve-convert "$self" "$subcmd" "$@"
 fi
 
-case "$QUALITY" in
-  lb) PROFILE="dnxhr_lb" ;;
-  sq) PROFILE="dnxhr_sq" ;;
-  hq) PROFILE="dnxhr_hq" ;;
-  *)  PROFILE="dnxhr_lb" ;;
+# ---------------------------------------------------------------------------
+# Dispatch subcommand
+# ---------------------------------------------------------------------------
+
+subcmd="${1:-}"
+shift || true
+
+case "$subcmd" in
+  convert) ;;
+  deliver) ;;
+  *)
+    cat <<'EOF'
+Usage: resolve-convert <subcommand> [options] <files...>
+
+Subcommands:
+  convert [lb|sq|hq] <files...>           Convert media to DNxHR/PCM for Resolve
+  deliver [--quality|--fast] <files...>    Encode to web-ready H.264/AAC MP4
+
+Add --thunar before the subcommand to run inside a Ghostty terminal window.
+EOF
+    exit 2
+    ;;
 esac
+
+# ---------------------------------------------------------------------------
+# Shared helpers
+# ---------------------------------------------------------------------------
 
 notify() {
   command -v notify-send >/dev/null 2>&1 || return 0
   notify-send -a 'DaVinci Resolve' "$1" "$2" >/dev/null 2>&1 || true
 }
 
-converted=0
-failed=0
+info() { printf '[resolve-convert] %s\n' "$*"; }
+warn() { printf '[resolve-convert] WARNING: %s\n' "$*" >&2; }
+die()  { printf '[resolve-convert] ERROR: %s\n' "$*" >&2; exit 1; }
 
-for input in "$@"; do
-  [[ -f "$input" ]] || continue
-  
-  input="$(realpath "$input")"
-  dir="$(dirname "$input")"
-  filename="$(basename "$input")"
-  stem="${filename%.*}"
+# ---------------------------------------------------------------------------
+# convert: media -> DNxHR MOV / PCM WAV
+# ---------------------------------------------------------------------------
 
-  # Inspect streams with ffprobe (counting streams avoids phone metadata CSV quirks)
-  video_count=$(ffprobe -v error -select_streams v -show_entries stream=index -of csv=p=0 "$input" 2>/dev/null | wc -l)
-  audio_count=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$input" 2>/dev/null | wc -l)
-  if (( video_count > 0 )); then
-    kind="video"
-  elif (( audio_count > 0 )); then
-    kind="audio"
-  else
-    printf 'Skipping non-media file: %s\n' "$filename"
-    continue
+do_convert() {
+  local QUALITY="lb"
+  if [[ $# -gt 0 && ("$1" == "lb" || "$1" == "sq" || "$1" == "hq") ]]; then
+    QUALITY="$1"
+    shift
   fi
 
-  if [[ "$kind" == "video" ]]; then
-    output="$dir/${stem}_resolve.mov"
-    temp="$dir/.${stem}_resolve.partial.mov"
-    printf 'Converting video: %s -> %s [%s]\n' "$filename" "$(basename "$output")" "$PROFILE"
-    
-    if ffmpeg -nostdin -hide_banner -loglevel error -stats \
-        -i "$input" \
-        -map 0:v:0 -map 0:a? -map_metadata 0 \
-        -c:v dnxhd -profile:v "$PROFILE" -pix_fmt yuv422p \
-        -c:a pcm_s24le -ar 48000 \
-        -movflags +write_colr+use_metadata_tags \
-        -y "$temp"; then
-      mv -f "$temp" "$output"
-      ((++converted))
-      printf 'Done: %s\n' "$output"
-    else
-      rm -f "$temp"
-      ((++failed))
-      printf 'Failed to convert: %s\n' "$input" >&2
-    fi
-  else
-    output="$dir/${stem}_resolve.wav"
-    temp="$dir/.${stem}_resolve.partial.wav"
-    printf 'Converting audio: %s -> %s\n' "$filename" "$(basename "$output")"
-    
-    if ffmpeg -nostdin -hide_banner -loglevel error -stats \
-        -i "$input" -map 0:a:0 -map_metadata 0 \
-        -c:a pcm_s24le -ar 48000 -y "$temp"; then
-      mv -f "$temp" "$output"
-      ((++converted))
-      printf 'Done: %s\n' "$output"
-    else
-      rm -f "$temp"
-      ((++failed))
-      printf 'Failed to convert: %s\n' "$input" >&2
-    fi
-  fi
-done
+  local PROFILE
+  case "$QUALITY" in
+    lb) PROFILE="dnxhr_lb" ;;
+    sq) PROFILE="dnxhr_sq" ;;
+    hq) PROFILE="dnxhr_hq" ;;
+  esac
 
-if (( failed > 0 )); then
-  notify 'DaVinci Conversion Failed' "$failed file(s) failed."
-  exit 1
-elif (( converted > 0 )); then
-  notify 'DaVinci Conversion Complete' "$converted file(s) ready in the same folder."
-fi
+  local converted=0 failed=0
+
+  for input in "$@"; do
+    [[ -f "$input" ]] || continue
+
+    input="$(realpath "$input")"
+    local dir filename stem
+    dir="$(dirname "$input")"
+    filename="$(basename "$input")"
+    stem="${filename%.*}"
+
+    local video_count audio_count
+    video_count=$(ffprobe -v error -select_streams v -show_entries stream=index -of csv=p=0 "$input" 2>/dev/null | wc -l)
+    audio_count=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$input" 2>/dev/null | wc -l)
+
+    local kind=""
+    if (( video_count > 0 )); then
+      kind="video"
+    elif (( audio_count > 0 )); then
+      kind="audio"
+    else
+      printf 'Skipping non-media file: %s\n' "$filename"
+      continue
+    fi
+
+    if [[ "$kind" == "video" ]]; then
+      local output="$dir/${stem}_resolve.mov"
+      local temp="$dir/.${stem}_resolve.partial.mov"
+      printf 'Converting video: %s -> %s [%s]\n' "$filename" "$(basename "$output")" "$PROFILE"
+
+      if ffmpeg -nostdin -hide_banner -loglevel error -stats \
+          -i "$input" \
+          -map 0:v:0 -map 0:a? -map_metadata 0 \
+          -c:v dnxhd -profile:v "$PROFILE" -pix_fmt yuv422p \
+          -c:a pcm_s24le -ar 48000 \
+          -movflags +write_colr+use_metadata_tags \
+          -y "$temp"; then
+        mv -f "$temp" "$output"
+        ((++converted))
+        printf 'Done: %s\n' "$output"
+      else
+        rm -f "$temp"
+        ((++failed))
+        printf 'Failed to convert: %s\n' "$input" >&2
+      fi
+    else
+      local output="$dir/${stem}_resolve.wav"
+      local temp="$dir/.${stem}_resolve.partial.wav"
+      printf 'Converting audio: %s -> %s\n' "$filename" "$(basename "$output")"
+
+      if ffmpeg -nostdin -hide_banner -loglevel error -stats \
+          -i "$input" -map 0:a:0 -map_metadata 0 \
+          -c:a pcm_s24le -ar 48000 -y "$temp"; then
+        mv -f "$temp" "$output"
+        ((++converted))
+        printf 'Done: %s\n' "$output"
+      else
+        rm -f "$temp"
+        ((++failed))
+        printf 'Failed to convert: %s\n' "$input" >&2
+      fi
+    fi
+  done
+
+  if (( failed > 0 )); then
+    notify 'DaVinci Conversion Failed' "$failed file(s) failed."
+    exit 1
+  elif (( converted > 0 )); then
+    notify 'DaVinci Conversion Complete' "$converted file(s) ready in the same folder."
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# deliver: video -> web-ready H.264/AAC MP4
+# ---------------------------------------------------------------------------
+
+do_deliver() {
+  local MODE="quality" CRF=18 QP=20 FORCE=false OUTPUT=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --quality|quality)
+        MODE="quality"; shift ;;
+      --fast|fast)
+        MODE="fast"; shift ;;
+      --crf)
+        [[ $# -ge 2 && "$2" =~ ^[0-9]+$ ]] || die "--crf requires an integer"
+        CRF="$2"; shift 2 ;;
+      --qp)
+        [[ $# -ge 2 && "$2" =~ ^[0-9]+$ ]] || die "--qp requires an integer"
+        QP="$2"; shift 2 ;;
+      -o|--output)
+        [[ $# -ge 2 ]] || die "$1 requires an output path"
+        OUTPUT="$2"; shift 2 ;;
+      -f|--force)
+        FORCE=true; shift ;;
+      -h|--help)
+        cat <<'EOF'
+Usage: resolve-convert deliver [options] <master-video> [...]
+
+Create a broadly compatible H.264/AAC MP4 beside each selected input.
+
+Options:
+      --quality          Software x264: best quality per file size (default)
+      --fast             AMD VA-API H.264: faster, less compression-efficient
+      --crf N            x264 quality value for --quality (default: 18)
+      --qp N             VA-API constant-quality value for --fast (default: 20)
+  -o, --output FILE      Output path; valid with exactly one input
+  -f, --force            Replace an existing output
+  -h, --help             Show this help
+
+Examples:
+  resolve-convert deliver --quality master.mov
+  resolve-convert deliver --fast -o final.mp4 master.mov
+EOF
+        exit 0 ;;
+      --)
+        shift; break ;;
+      -*)
+        die "unknown option: $1" ;;
+      *)
+        break ;;
+    esac
+  done
+
+  [[ $# -gt 0 ]] || { do_deliver --help >&2; exit 2; }
+  [[ -z "$OUTPUT" || $# -eq 1 ]] || die "--output can only be used with one input"
+  command -v ffmpeg >/dev/null 2>&1 || die "ffmpeg is required"
+
+  if [[ "$MODE" == fast ]]; then
+    [[ -r /dev/dri/renderD128 ]] || die 'AMD VA-API device /dev/dri/renderD128 is unavailable'
+  fi
+
+  local converted=0 failed=0
+
+  for input in "$@"; do
+    [[ -f "$input" ]] || {
+      warn "Skipping unavailable input: $input"
+      ((++failed))
+      continue
+    }
+
+    input=$(realpath "$input")
+    local output
+    if [[ -n "$OUTPUT" ]]; then
+      output=$(realpath -m "$OUTPUT")
+    else
+      local stem="${input%.*}"
+      output="${stem}-web-${MODE}.mp4"
+    fi
+
+    [[ "$input" != "$output" ]] || die "refusing to overwrite input: $input"
+    if [[ -e "$output" && $FORCE == false ]]; then
+      info "Skip existing output: $output"
+      continue
+    fi
+
+    mkdir -p "$(dirname "$output")"
+    local temporary
+    temporary="$(dirname "$output")/.${output##*/}.partial.mp4"
+    rm -f -- "$temporary"
+    info "${MODE}: $input -> $output"
+
+    if [[ "$MODE" == quality ]]; then
+      if ffmpeg -nostdin -hide_banner -loglevel error -stats \
+          -i "$input" -map 0:v:0 -map 0:a? -map_metadata 0 \
+          -c:v libx264 -preset medium -crf "$CRF" -pix_fmt yuv420p \
+          -c:a aac -b:a 192k -movflags +faststart -y "$temporary"; then
+        mv -f -- "$temporary" "$output"
+        ((++converted))
+      else
+        rm -f -- "$temporary"
+        ((++failed))
+        warn "Delivery failed: $input"
+      fi
+    else
+      if ffmpeg -nostdin -hide_banner -loglevel error -stats \
+          -vaapi_device /dev/dri/renderD128 -i "$input" \
+          -map 0:v:0 -map 0:a? -map_metadata 0 \
+          -vf 'format=nv12,hwupload' \
+          -c:v h264_vaapi -rc_mode CQP -qp "$QP" -profile:v high -g 60 \
+          -c:a aac -b:a 192k -movflags +faststart -y "$temporary"; then
+        mv -f -- "$temporary" "$output"
+        ((++converted))
+      else
+        rm -f -- "$temporary"
+        ((++failed))
+        warn "Delivery failed: $input"
+      fi
+    fi
+  done
+
+  info "Summary: delivered=$converted failed=$failed"
+  if (( failed > 0 )); then
+    notify 'Resolve delivery failed' "$failed file(s) failed."
+    exit 1
+  fi
+  notify 'Resolve delivery complete' "$converted MP4 file(s) created."
+}
+
+# ---------------------------------------------------------------------------
+
+case "$subcmd" in
+  convert) do_convert "$@" ;;
+  deliver) do_deliver "$@" ;;
+esac

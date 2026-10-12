@@ -14,6 +14,7 @@ waybar)
   ;;
 mako)
   makoctl reload
+  dfr-theme-set-bg --keep-current
   ;;
 swaybg)
   killall swaybg
