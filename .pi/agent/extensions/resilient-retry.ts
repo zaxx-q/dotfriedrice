@@ -19,8 +19,12 @@
  * Place in ~/.pi/agent/extensions/resilient-retry.ts
  */
 
-import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
-import { matchesKey, Text, truncateToWidth, Key } from "@earendil-works/pi-tui";
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+	Theme,
+} from "@earendil-works/pi-coding-agent";
+import { Key, matchesKey, Text, truncateToWidth } from "@earendil-works/pi-tui";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -36,7 +40,10 @@ const FIXED_COOLDOWN_MS = 7_000;
 // ---------------------------------------------------------------------------
 
 const RETRYABLE_RE =
-	/overloaded|provider.?returned.?error|rate.?limit|too many requests|429|500|502|503|504|service.?unavailable|temporarily.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|connection.?lost|websocket.?closed|websocket.?error|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up|ended without|stream ended before message_stop|http2 request did not get a response|timed? out|timeout|terminated|retry delay|quota exceeded/i;
+	/overloaded|provider.?returned.?error|gateway.?error|rate.?limit|too many requests|429|500|502|503|504|service.?unavailable|temporarily.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|connection.?lost|websocket.?closed|websocket.?error|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up|ended without|stream ended before message_stop|http2 request did not get a response|timed? out|timeout|terminated|retry delay|quota exceeded/i;
+
+/** A gateway has temporarily paused a model and named when it will resume. */
+const CAPACITY_PACING_RE = /pacing (?:its )?capacity|takes requests again/i;
 
 const OVERFLOW_RE =
 	/context.?length|token.?limit|too.?long|max.?context|context.?window|prompt.?too|maximum.?context/i;
@@ -60,7 +67,11 @@ function isExtendedRetryable(errorMessage: string | undefined): boolean {
 	if (OVERFLOW_RE.test(errorMessage)) return false;
 
 	// Server explicitly tells us to retry — always honour that
-	if (SERVER_SAYS_RETRY_RE.test(errorMessage)) return true;
+	if (
+		SERVER_SAYS_RETRY_RE.test(errorMessage) ||
+		CAPACITY_PACING_RE.test(errorMessage)
+	)
+		return true;
 
 	// Truly permanent account-level limits (no retry hint from server)
 	if (PERMANENT_RE.test(errorMessage)) return false;
@@ -84,8 +95,10 @@ function parseServerRetryDelay(errorMessage: string): number | undefined {
 }
 
 function categorizeError(msg: string): string {
+	if (CAPACITY_PACING_RE.test(msg)) return "Model Capacity Pacing";
 	if (/quota exceeded/i.test(msg)) return "Quota Exceeded (rotating)";
 	if (/overloaded/i.test(msg)) return "Server Overloaded";
+	if (/gateway.?error/i.test(msg)) return "Gateway Error";
 	if (/rate.?limit|too many requests|429/i.test(msg)) return "Rate Limited";
 	if (/500/i.test(msg)) return "Internal Server Error (500)";
 	if (/502/i.test(msg)) return "Bad Gateway (502)";
@@ -94,7 +107,8 @@ function categorizeError(msg: string): string {
 	if (/504/i.test(msg)) return "Gateway Timeout (504)";
 	if (/timed? out|timeout/i.test(msg)) return "Request Timeout";
 	if (/connection.?refused/i.test(msg)) return "Connection Refused";
-	if (/connection.?lost|connection.?error|network.?error/i.test(msg)) return "Connection Lost";
+	if (/connection.?lost|connection.?error|network.?error/i.test(msg))
+		return "Connection Lost";
 	if (/websocket/i.test(msg)) return "WebSocket Error";
 	if (/fetch failed/i.test(msg)) return "Fetch Failed";
 	if (/ended without|stream ended/i.test(msg)) return "Premature Stream End";
@@ -186,12 +200,18 @@ class CountdownComponent {
 			matchesKey(data, "space")
 		) {
 			this.finish(false);
-		} else if (matchesKey(data, Key.ctrl("right")) || matchesKey(data, Key.ctrl("up"))) {
+		} else if (
+			matchesKey(data, Key.ctrl("right")) ||
+			matchesKey(data, Key.ctrl("up"))
+		) {
 			this.seconds += 30;
 			this.initialSeconds = Math.max(this.initialSeconds, this.seconds);
 			this.invalidate();
 			this.tui.requestRender();
-		} else if (matchesKey(data, Key.ctrl("left")) || matchesKey(data, Key.ctrl("down"))) {
+		} else if (
+			matchesKey(data, Key.ctrl("left")) ||
+			matchesKey(data, Key.ctrl("down"))
+		) {
 			this.seconds = Math.max(1, this.seconds - 30);
 			this.invalidate();
 			this.tui.requestRender();
@@ -216,12 +236,21 @@ class CountdownComponent {
 		lines.push("");
 		lines.push(bar);
 		lines.push("");
-		lines.push(truncateToWidth(`  ${th.fg("warning", "⟳")} ${th.fg("text", this.label)}`, width));
+		lines.push(
+			truncateToWidth(
+				`  ${th.fg("warning", "⟳")} ${th.fg("text", this.label)}`,
+				width,
+			),
+		);
 		lines.push("");
 
 		const barWidth = Math.max(10, width - 6);
-		const ratio = this.initialSeconds > 0 ? this.seconds / this.initialSeconds : 0;
-		const filled = Math.max(0, Math.min(barWidth, Math.round(ratio * barWidth)));
+		const ratio =
+			this.initialSeconds > 0 ? this.seconds / this.initialSeconds : 0;
+		const filled = Math.max(
+			0,
+			Math.min(barWidth, Math.round(ratio * barWidth)),
+		);
 		const empty = barWidth - filled;
 		const progressBar =
 			th.fg("warning", "█".repeat(filled)) + th.fg("dim", "░".repeat(empty));
@@ -259,7 +288,8 @@ export default function (pi: ExtensionAPI) {
 	// ------------------------------------------------------------------
 	pi.on("context", async (event) => {
 		const filtered = event.messages.filter((m: any) => {
-			if (m.role === "custom" && m.customType === NUDGE_CUSTOM_TYPE) return false;
+			if (m.role === "custom" && m.customType === NUDGE_CUSTOM_TYPE)
+				return false;
 			return true;
 		});
 
@@ -282,9 +312,12 @@ export default function (pi: ExtensionAPI) {
 	// ------------------------------------------------------------------
 	// Hide nudge messages from the TUI
 	// ------------------------------------------------------------------
-	pi.registerMessageRenderer(NUDGE_CUSTOM_TYPE, (_message, _options, _theme) => {
-		return new Text("", 0, 0);
-	});
+	pi.registerMessageRenderer(
+		NUDGE_CUSTOM_TYPE,
+		(_message, _options, _theme) => {
+			return new Text("", 0, 0);
+		},
+	);
 
 	// ------------------------------------------------------------------
 	// Track whether built-in retry engaged for the current agent cycle
@@ -299,29 +332,32 @@ export default function (pi: ExtensionAPI) {
 	//
 	// This fires exactly once after the full built-in cycle finishes.
 	// ------------------------------------------------------------------
-	(pi as any).on("auto_retry_end", async (event: any, ctx: ExtensionContext) => {
-		if (event.success) {
-			if (state && !state.aborted) {
-				const elapsed = Date.now() - state.startTime;
-				const totalAttempts = builtinAttempts + state.attempts;
-				ctx.ui.setStatus(STATUS_KEY, undefined);
-				ctx.ui.notify(
-					`✓ Recovered after ${totalAttempts} attempts (${formatDuration(elapsed)})`,
-					"info",
-				);
-				state = undefined;
+	(pi as any).on(
+		"auto_retry_end",
+		async (event: any, ctx: ExtensionContext) => {
+			if (event.success) {
+				if (state && !state.aborted) {
+					const elapsed = Date.now() - state.startTime;
+					const totalAttempts = builtinAttempts + state.attempts;
+					ctx.ui.setStatus(STATUS_KEY, undefined);
+					ctx.ui.notify(
+						`✓ Recovered after ${totalAttempts} attempts (${formatDuration(elapsed)})`,
+						"info",
+					);
+					state = undefined;
+				}
+				builtinAttempts = 0;
+				return;
 			}
-			builtinAttempts = 0;
-			return;
-		}
 
-		if (gaveUp) return;
+			if (gaveUp) return;
 
-		const errorMessage: string = event.finalError ?? "Unknown error";
-		if (!isExtendedRetryable(errorMessage)) return;
+			const errorMessage: string = event.finalError ?? "Unknown error";
+			if (!isExtendedRetryable(errorMessage)) return;
 
-		await handleRetryableFailure(errorMessage, ctx);
-	});
+			await handleRetryableFailure(errorMessage, ctx);
+		},
+	);
 
 	// ------------------------------------------------------------------
 	// PATH B: Built-in retry SKIPPED the error entirely
@@ -347,7 +383,12 @@ export default function (pi: ExtensionAPI) {
 		}
 
 		// --- Successful recovery during extended retry (first-attempt win) ---
-		if (state && !state.aborted && lastAssistant && lastAssistant.stopReason !== "error") {
+		if (
+			state &&
+			!state.aborted &&
+			lastAssistant &&
+			lastAssistant.stopReason !== "error"
+		) {
 			const elapsed = Date.now() - state.startTime;
 			const totalAttempts = builtinAttempts + state.attempts;
 			ctx.ui.setStatus(STATUS_KEY, undefined);
@@ -533,7 +574,10 @@ export default function (pi: ExtensionAPI) {
 							selected--;
 							cachedWidth = undefined;
 							tui.requestRender();
-						} else if (matchesKey(data, Key.down) && selected < items.length - 1) {
+						} else if (
+							matchesKey(data, Key.down) &&
+							selected < items.length - 1
+						) {
 							selected++;
 							cachedWidth = undefined;
 							tui.requestRender();
@@ -568,10 +612,7 @@ export default function (pi: ExtensionAPI) {
 						);
 						if (delayHint) {
 							lines.push(
-								truncateToWidth(
-									`  ${th.fg("muted", delayHint)}`,
-									width,
-								),
+								truncateToWidth(`  ${th.fg("muted", delayHint)}`, width),
 							);
 						}
 						lines.push("");
@@ -629,7 +670,9 @@ export default function (pi: ExtensionAPI) {
 		let delayMs = FIXED_COOLDOWN_MS;
 		if (!st.isFixedCooldown) {
 			// Exponential backoff with jitter, capped
-			const roundIndex = st.isUnlimited ? (st.attempts - 1) : (st.totalRounds - st.roundsRemaining - 1);
+			const roundIndex = st.isUnlimited
+				? st.attempts - 1
+				: st.totalRounds - st.roundsRemaining - 1;
 			const base = 3000;
 			const raw = base * 2 ** Math.min(roundIndex, 5);
 			const jitter = Math.random() * 0.3 * raw;
@@ -661,15 +704,17 @@ export default function (pi: ExtensionAPI) {
 		if (!ctx.hasUI) {
 			await new Promise((r) => setTimeout(r, delayMs));
 		} else {
-			const cancelled = await ctx.ui.custom<boolean>((tui, theme, _kb, done) => {
-				return new CountdownComponent(
-					delayMs,
-					`Extended retry ${roundLabel} — ${theme.fg("warning", st.category)}`,
-					theme,
-					tui,
-					done,
-				);
-			});
+			const cancelled = await ctx.ui.custom<boolean>(
+				(tui, theme, _kb, done) => {
+					return new CountdownComponent(
+						delayMs,
+						`Extended retry ${roundLabel} — ${theme.fg("warning", st.category)}`,
+						theme,
+						tui,
+						done,
+					);
+				},
+			);
 
 			if (cancelled) {
 				st.aborted = true;
